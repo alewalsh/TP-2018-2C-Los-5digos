@@ -1,0 +1,3 @@
+/home/utnso/repositorios/tp-2018-1c-Program-Rangers/ProgramRangersCommons/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/utnso/repositorios/tp-2018-1c-Program-Rangers/ProgramRangersCommons/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/utnso/repositorios/tp-2018-1c-Program-Rangers/ProgramRangersCommons/cmake-build-debug/CMakeFiles/ProgramRangersCommons.dir
