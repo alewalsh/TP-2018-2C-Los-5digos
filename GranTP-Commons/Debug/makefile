@@ -22,25 +22,21 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: DAM
-
-dependents:
-	-cd /home/utnso/git/tp-2018-2c-Los-5digos/GranTP-Commons/Debug && $(MAKE) clean all
+all: libGranTP-Commons.so
 
 # Tool invocations
-DAM: $(OBJS) $(USER_OBJS) /home/utnso/git/tp-2018-2c-Los-5digos/GranTP-Commons/Debug/libGranTP-Commons.so
+libGranTP-Commons.so: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/git/tp-2018-2c-Los-5digos/GranTP-Commons/Debug" -o "DAM" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -shared -o "libGranTP-Commons.so" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) DAM
+	-$(RM) $(LIBRARIES)$(OBJS)$(C_DEPS) libGranTP-Commons.so
 	-@echo ' '
 
 .PHONY: all clean dependents
-/home/utnso/git/tp-2018-2c-Los-5digos/GranTP-Commons/Debug/libGranTP-Commons.so:
 
 -include ../makefile.targets

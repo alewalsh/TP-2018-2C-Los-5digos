@@ -3,6 +3,7 @@
 	<name>DAM</name>
 	<comment></comment>
 	<projects>
+		<project>GranTP-Commons</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

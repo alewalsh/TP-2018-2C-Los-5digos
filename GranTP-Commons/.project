@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>MDJ_FileSystem</name>
+	<name>GranTP-Commons</name>
 	<comment></comment>
 	<projects>
-		<project>GranTP-Commons</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
