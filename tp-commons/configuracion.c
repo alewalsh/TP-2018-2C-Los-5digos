@@ -51,53 +51,53 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             char *algorithm = leerString(configFile, "ALG_PLAN", logger);
             safa->algoritmo = getAlgorithm(algorithm);
             free(algorithm);
-            safa->estimacion = leerInt(configFile, "ESTIMACION_INICIAL", logger);
-            int alfa = leerInt(configFile, "ALFA", logger);
-            safa->alfa = alfa * 1.0 / 100;
-            safa->ipCoord = leerIP(configFile, "IP_COOR", logger);
-            safa->puertoCoord = leerPuerto(configFile, "PUERTO_COOR", logger);
-            safa->claves_iniciales = leerString(configFile, "CLAVE_INICIAL_BLOQUEADA", logger);
-            ret = safa;
-            break;
-        case CPU:
-            if (checkAmountOfParams(configFile, 5, logger)) {
-                ret = NULL;
-                break;
-            }
-            coordinador = (configCoordinador *) malloc(sizeof(configCoordinador));
-            coordinador->puerto = leerPuerto(configFile, "PUERTO", logger);
-            coordinador->algoritmo = leerString(configFile, "ALG_DISTRIBUCION", logger);
-            coordinador->cantEntradas = leerInt(configFile, "CANT_ENTRADAS", logger);
-            coordinador->entradas = leerInt(configFile, "ENTRADA", logger);
-            coordinador->retardo = leerInt(configFile, "RETARDO", logger);
-            ret = coordinador;
-            break;
-        case DAM:
-            if (checkAmountOfParams(configFile, 6, logger)) {
-                ret = NULL;
-                break;
-            }
-            esi = (configESI *) malloc(sizeof(configESI));
-            esi->ipCoor = leerIP(configFile, "IP_COOR", logger);
-            esi->puertoCoord = leerPuerto(configFile, "PUERTO_COOR", logger);
-            esi->ipPlanificador = leerIP(configFile, "IP_PLANIFICADOR", logger);
-            esi->puertoPlanificador = leerPuerto(configFile, "PUERTO_PLANIFICADOR", logger);
-            esi->scriptPath = leerString(configFile, "SCRIPT_PATH", logger);
-            ret = esi;
-            break;
-        case MDJ:
-            if (checkAmountOfParams(configFile, 6, logger)) {
-                ret = NULL;
-                break;
-            }
-            instancia = (configInstancia *) malloc(sizeof(configInstancia));
-            instancia->ipCoor = leerIP(configFile, "IP_COOR", logger);
-            instancia->puertoCoord = leerPuerto(configFile, "PUERTO_COOR", logger);
-            instancia->algoritmo = leerString(configFile, "ALG_REEMPLAZO", logger);
-            instancia->path = leerString(configFile, "PATH", logger);
-            instancia->nombre = leerString(configFile, "NOMBRE", logger);
-            instancia->dump = leerInt(configFile, "DUMP", logger);
-            ret = instancia;
+//            safa->estimacion = leerInt(configFile, "ESTIMACION_INICIAL", logger);
+//            int alfa = leerInt(configFile, "ALFA", logger);
+//            safa->alfa = alfa * 1.0 / 100;
+//            safa->ipCoord = leerIP(configFile, "IP_COOR", logger);
+//            safa->puertoCoord = leerPuerto(configFile, "PUERTO_COOR", logger);
+//            safa->claves_iniciales = leerString(configFile, "CLAVE_INICIAL_BLOQUEADA", logger);
+//            ret = safa;
+//            break;
+//        case CPU:
+//            if (checkAmountOfParams(configFile, 5, logger)) {
+//                ret = NULL;
+//                break;
+//            }
+//            coordinador = (configCoordinador *) malloc(sizeof(configCoordinador));
+//            coordinador->puerto = leerPuerto(configFile, "PUERTO", logger);
+//            coordinador->algoritmo = leerString(configFile, "ALG_DISTRIBUCION", logger);
+//            coordinador->cantEntradas = leerInt(configFile, "CANT_ENTRADAS", logger);
+//            coordinador->entradas = leerInt(configFile, "ENTRADA", logger);
+//            coordinador->retardo = leerInt(configFile, "RETARDO", logger);
+//            ret = coordinador;
+//            break;
+//        case DAM:
+//            if (checkAmountOfParams(configFile, 6, logger)) {
+//                ret = NULL;
+//                break;
+//            }
+//            esi = (configESI *) malloc(sizeof(configESI));
+//            esi->ipCoor = leerIP(configFile, "IP_COOR", logger);
+//            esi->puertoCoord = leerPuerto(configFile, "PUERTO_COOR", logger);
+//            esi->ipPlanificador = leerIP(configFile, "IP_PLANIFICADOR", logger);
+//            esi->puertoPlanificador = leerPuerto(configFile, "PUERTO_PLANIFICADOR", logger);
+//            esi->scriptPath = leerString(configFile, "SCRIPT_PATH", logger);
+//            ret = esi;
+//            break;
+//        case MDJ:
+//            if (checkAmountOfParams(configFile, 6, logger)) {
+//                ret = NULL;
+//                break;
+//            }
+//            instancia = (configInstancia *) malloc(sizeof(configInstancia));
+//            instancia->ipCoor = leerIP(configFile, "IP_COOR", logger);
+//            instancia->puertoCoord = leerPuerto(configFile, "PUERTO_COOR", logger);
+//            instancia->algoritmo = leerString(configFile, "ALG_REEMPLAZO", logger);
+//            instancia->path = leerString(configFile, "PATH", logger);
+//            instancia->nombre = leerString(configFile, "NOMBRE", logger);
+//            instancia->dump = leerInt(configFile, "DUMP", logger);
+//            ret = instancia;
             break;
         case FM9:
         	break;
@@ -175,44 +175,44 @@ void validar_puerto(int puerto, t_log *logger) {
 }
 
 void freeConfig(void *conf, processType processType) {
-    configPlanificador *planificador;
-    configCoordinador *coordinador;
-    configInstancia *instancia;
-    configESI *esi;
-
-    if (conf != NULL) {
-        switch (processType) {
-            case PLANIFICADOR:
-                planificador = (configPlanificador *) conf;
-                free(planificador->ipCoord);
-                /*chequear si tengo que hacer un free por cada elemento del array*/
-                free(planificador->claves_iniciales);
-                free(planificador);
-                break;
-            case COORDINADOR:
-                coordinador = (configCoordinador *) conf;
-                free(coordinador->algoritmo);
-                free(coordinador);
-                break;
-            case ESI:
-                esi = (configESI *) conf;
-                free(esi->ipCoor);
-                free(esi->ipPlanificador);
-                free(esi->scriptPath);
-                free(esi);
-                break;
-            case INSTANCIA:
-                instancia = (configInstancia *) conf;
-                free(instancia->ipCoor);
-                free(instancia->algoritmo);
-                free(instancia->path);
-                free(instancia->nombre);
-                free(instancia);
-                break;
-            default:
-                break;
-        }
-    }
+//    configPlanificador *planificador;
+//    configCoordinador *coordinador;
+//    configInstancia *instancia;
+//    configESI *esi;
+//
+//    if (conf != NULL) {
+//        switch (processType) {
+//            case PLANIFICADOR:
+//                planificador = (configPlanificador *) conf;
+//                free(planificador->ipCoord);
+//                /*chequear si tengo que hacer un free por cada elemento del array*/
+//                free(planificador->claves_iniciales);
+//                free(planificador);
+//                break;
+//            case COORDINADOR:
+//                coordinador = (configCoordinador *) conf;
+//                free(coordinador->algoritmo);
+//                free(coordinador);
+//                break;
+//            case ESI:
+//                esi = (configESI *) conf;
+//                free(esi->ipCoor);
+//                free(esi->ipPlanificador);
+//                free(esi->scriptPath);
+//                free(esi);
+//                break;
+//            case INSTANCIA:
+//                instancia = (configInstancia *) conf;
+//                free(instancia->ipCoor);
+//                free(instancia->algoritmo);
+//                free(instancia->path);
+//                free(instancia->nombre);
+//                free(instancia);
+//                break;
+//            default:
+//                break;
+//        }
+//    }
 }
 
 t_list *leerArray(t_config *configFile, char *parametro, t_log *logger) {

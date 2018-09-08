@@ -476,98 +476,98 @@ int acceptConnection(int socketListen, int *pNewSocket, uint16_t handshake,
  */
 char *codigoIDToString(uint16_t code) {
     switch (code) {
-        case INSTANCIA_HSK:
-            return "Handshake instancia";
-        case COORDINADOR_HSK:
-            return "Handshake coordinador";
-        case PLANIFICADOR_HSK:
-            return "Handshake planificador";
-        case ESI_HSK:
-            return "Handshake esi";
-        case INS_COORD_CONNECT:
-            return "INS_COORD_CONNECT";
-        case INS_COORD_OK:
-            return "INS_COORD_OK";
-        case INS_COORD_FAIL:
-            return "INS_COORD_FAIL";
-        case INS_COORD_GET_FAIL:
-            return "INS_COORD_GET_FAIL";
-        case INS_COORD_SET_FAIL:
-            return "INS_COORD_SET_FAIL";
-        case INS_COORD_STORE_FAIL:
-            return "INS_COORD_STORE_FAIL";
-        case INS_COORD_GET_OK:
-            return "INS_COORD_GET_OK";
-        case INS_COORD_SET_OK:
-            return "INS_COORD_SET_OK";
-        case INS_COORD_STORE_OK:
-            return "INS_COORD_STORE_OK";
-        case INS_COORD_COMPACT_OK:
-            return "INS_COORD_COMPACT_OK";
-        case INS_COORD_BEGIN_COMPACT:
-            return "INS_COORD_BEGIN_COMPACT";
-        case COORD_INS_WELCOME :
-            return "COORD_INS_WELCOME";
-        case COORD_INS_OK :
-            return "COORD_INS_OK";
-        case COORD_INS_FAIL :
-            return "COORD_INS_FAIL";
-        case COORD_INS_GET :
-            return "COORD_INS_GET";
-        case COORD_INS_STORE :
-            return "COORD_INS_STORE";
-        case COORD_INS_SET :
-            return "COORD_INS_SET";
-        case COORD_INS_COMPACT :
-            return "COORD_INS_COMPACT";
-        case ESI_PLAN_CONNECT :
-            return "ESI_PLAN_CONNECT";
-        case ESI_PLAN_OK :
-            return "ESI_PLAN_OK";
-        case ESI_PLAN_FAIL :
-            return "ESI_PLAN_FAIL";
-        case ESI_PLAN_FINISH :
-            return "ESI_PLAN_FINISH";
-        case ESI_PLAN_EOF :
-            return "ESI_PLAN_EOF";
-        case PLAN_ESI_WELCOME :
-            return "PLAN_ESI_WELCOME";
-        case PLAN_ESI_PLAY :
-            return "PLAN_ESI_PLAY";
-        case PLAN_ESI_DEAD :
-            return "PLAN_ESI_DEAD";
-        case ESI_COORD_CONNECT :
-            return "ESI_COORD_CONNECT";
-        case ESI_COORD_SENDPKG :
-            return "ESI_COORD_SENDPKG";
-        case COORD_ESI_WELCOME :
-            return "COORD_ESI_WELCOME";
-        case COORD_ESI_OK :
-            return "COORD_ESI_OK";
-        case COORD_ESI_FAIL :
-            return "COORD_ESI_FAIL";
-        case COORD_PLAN_WELCOME :
-            return "COORD_PLAN_WELCOME";
-        case COORD_PLAN_BLOCK :
-            return "COORD_PLAN_BLOCK";
-        case COORD_PLAN_STORE :
-            return "COORD_PLAN_STORE";
-        case CORRD_PLAN_STATUS_FOUND :
-            return "CORRD_PLAN_STATUS_FOUND";
-        case CORRD_PLAN_STATUS_NOT_FOUND :
-            return "CORRD_PLAN_STATUS_NOT_FOUND";
-        case PLAN_COORD_CONNECT :
-            return "PLAN_COORD_CONNECT";
-        case PLAN_COORD_OK :
-            return "PLAN_COORD_OK";
-        case PLAN_COORD_BLOCKED :
-            return "PLAN_COORD_BLOCKED";
-        case PLAN_CORRD_STORE_FAIL :
-            return "PLAN_CORRD_STORE_FAIL";
-        case PLAN_CORRD_STORE_OK :
-            return "PLAN_CORRD_STORE_OK";
-        case PLAN_CORRD_STATUS :
-            return "PLAN_CORRD_STATUS";
+//        case INSTANCIA_HSK:
+//            return "Handshake instancia";
+//        case COORDINADOR_HSK:
+//            return "Handshake coordinador";
+//        case PLANIFICADOR_HSK:
+//            return "Handshake planificador";
+//        case ESI_HSK:
+//            return "Handshake esi";
+//        case INS_COORD_CONNECT:
+//            return "INS_COORD_CONNECT";
+//        case INS_COORD_OK:
+//            return "INS_COORD_OK";
+//        case INS_COORD_FAIL:
+//            return "INS_COORD_FAIL";
+//        case INS_COORD_GET_FAIL:
+//            return "INS_COORD_GET_FAIL";
+//        case INS_COORD_SET_FAIL:
+//            return "INS_COORD_SET_FAIL";
+//        case INS_COORD_STORE_FAIL:
+//            return "INS_COORD_STORE_FAIL";
+//        case INS_COORD_GET_OK:
+//            return "INS_COORD_GET_OK";
+//        case INS_COORD_SET_OK:
+//            return "INS_COORD_SET_OK";
+//        case INS_COORD_STORE_OK:
+//            return "INS_COORD_STORE_OK";
+//        case INS_COORD_COMPACT_OK:
+//            return "INS_COORD_COMPACT_OK";
+//        case INS_COORD_BEGIN_COMPACT:
+//            return "INS_COORD_BEGIN_COMPACT";
+//        case COORD_INS_WELCOME :
+//            return "COORD_INS_WELCOME";
+//        case COORD_INS_OK :
+//            return "COORD_INS_OK";
+//        case COORD_INS_FAIL :
+//            return "COORD_INS_FAIL";
+//        case COORD_INS_GET :
+//            return "COORD_INS_GET";
+//        case COORD_INS_STORE :
+//            return "COORD_INS_STORE";
+//        case COORD_INS_SET :
+//            return "COORD_INS_SET";
+//        case COORD_INS_COMPACT :
+//            return "COORD_INS_COMPACT";
+//        case ESI_PLAN_CONNECT :
+//            return "ESI_PLAN_CONNECT";
+//        case ESI_PLAN_OK :
+//            return "ESI_PLAN_OK";
+//        case ESI_PLAN_FAIL :
+//            return "ESI_PLAN_FAIL";
+//        case ESI_PLAN_FINISH :
+//            return "ESI_PLAN_FINISH";
+//        case ESI_PLAN_EOF :
+//            return "ESI_PLAN_EOF";
+//        case PLAN_ESI_WELCOME :
+//            return "PLAN_ESI_WELCOME";
+//        case PLAN_ESI_PLAY :
+//            return "PLAN_ESI_PLAY";
+//        case PLAN_ESI_DEAD :
+//            return "PLAN_ESI_DEAD";
+//        case ESI_COORD_CONNECT :
+//            return "ESI_COORD_CONNECT";
+//        case ESI_COORD_SENDPKG :
+//            return "ESI_COORD_SENDPKG";
+//        case COORD_ESI_WELCOME :
+//            return "COORD_ESI_WELCOME";
+//        case COORD_ESI_OK :
+//            return "COORD_ESI_OK";
+//        case COORD_ESI_FAIL :
+//            return "COORD_ESI_FAIL";
+//        case COORD_PLAN_WELCOME :
+//            return "COORD_PLAN_WELCOME";
+//        case COORD_PLAN_BLOCK :
+//            return "COORD_PLAN_BLOCK";
+//        case COORD_PLAN_STORE :
+//            return "COORD_PLAN_STORE";
+//        case CORRD_PLAN_STATUS_FOUND :
+//            return "CORRD_PLAN_STATUS_FOUND";
+//        case CORRD_PLAN_STATUS_NOT_FOUND :
+//            return "CORRD_PLAN_STATUS_NOT_FOUND";
+//        case PLAN_COORD_CONNECT :
+//            return "PLAN_COORD_CONNECT";
+//        case PLAN_COORD_OK :
+//            return "PLAN_COORD_OK";
+//        case PLAN_COORD_BLOCKED :
+//            return "PLAN_COORD_BLOCKED";
+//        case PLAN_CORRD_STORE_FAIL :
+//            return "PLAN_CORRD_STORE_FAIL";
+//        case PLAN_CORRD_STORE_OK :
+//            return "PLAN_CORRD_STORE_OK";
+//        case PLAN_CORRD_STATUS :
+//            return "PLAN_CORRD_STATUS";
         case SOCKET_DISCONECT :
             return "SOCKET_DISCONECT";
         case PING:
