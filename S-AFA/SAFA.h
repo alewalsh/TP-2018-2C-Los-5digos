@@ -14,6 +14,7 @@
 #include <configuracion.h>
 #include <socket.h>
 #include <pthread.h>
+#include "handler"
 
 t_log* logger;
 
