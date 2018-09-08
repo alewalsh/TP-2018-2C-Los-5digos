@@ -58,20 +58,20 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
 //            safa->puertoCoord = leerPuerto(configFile, "PUERTO_COOR", logger);
 //            safa->claves_iniciales = leerString(configFile, "CLAVE_INICIAL_BLOQUEADA", logger);
 //            ret = safa;
-//            break;
-//        case CPU:
-//            if (checkAmountOfParams(configFile, 5, logger)) {
-//                ret = NULL;
-//                break;
-//            }
-//            coordinador = (configCoordinador *) malloc(sizeof(configCoordinador));
-//            coordinador->puerto = leerPuerto(configFile, "PUERTO", logger);
-//            coordinador->algoritmo = leerString(configFile, "ALG_DISTRIBUCION", logger);
-//            coordinador->cantEntradas = leerInt(configFile, "CANT_ENTRADAS", logger);
-//            coordinador->entradas = leerInt(configFile, "ENTRADA", logger);
-//            coordinador->retardo = leerInt(configFile, "RETARDO", logger);
-//            ret = coordinador;
-//            break;
+            break;
+        case CPU:
+            if (checkAmountOfParams(configFile, 5, logger)) {
+                ret = NULL;
+                break;
+            }
+            cpu = (configCPU *) malloc(sizeof(configCPU));
+            cpu->ipSAFA = leerIP(configFile, "IP_SAFA", logger);
+            cpu->puertoSAFA = leerPuerto(configFile, "PUERTO_SAFA", logger);
+            cpu->ipDAM = leerIP(configFile, "IP_DAM", logger);
+            cpu->puertoDAM = leerPuerto(configFile, "PUERTO_DAM", logger);
+            cpu->retardo = leerInt(configFile, "RETARDO", logger);
+            ret = cpu;
+            break;
 //        case DAM:
 //            if (checkAmountOfParams(configFile, 6, logger)) {
 //                ret = NULL;
