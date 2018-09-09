@@ -15,9 +15,22 @@ uint16_t getAlgorithm(char *algorithm) {
         return RR;
     } else if (string_equals_ignore_case(algorithm, "VRR")) {
         return VRR;
-    } else {
+    } else if (string_equals_ignore_case(algorithm, "PROPIO")) {
         return PROPIO;
-    }
+    } else
+    	return 0;
+}
+
+uint16_t getModoEjecucion(char * modo)
+{
+	if (string_equals_ignore_case(modo, "SEG")) {
+		return SEG;
+	} else if (string_equals_ignore_case(modo, "TPI")) {
+		return TPI;
+	} else if (string_equals_ignore_case(modo, "SPA")){
+		return SPA;
+	} else
+		return 0;
 }
 
 void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
@@ -48,58 +61,67 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             }
             safa = (configSAFA *) malloc(sizeof(configSAFA));
             safa->puerto = leerPuerto(configFile, "PUERTO", logger);
-            char *algorithm = leerString(configFile, "ALG_PLAN", logger);
+            char *algorithm = leerString(configFile, "ALGORITMO", logger);
             safa->algoritmo = getAlgorithm(algorithm);
             free(algorithm);
-//            safa->estimacion = leerInt(configFile, "ESTIMACION_INICIAL", logger);
-//            int alfa = leerInt(configFile, "ALFA", logger);
-//            safa->alfa = alfa * 1.0 / 100;
-//            safa->ipCoord = leerIP(configFile, "IP_COOR", logger);
-//            safa->puertoCoord = leerPuerto(configFile, "PUERTO_COOR", logger);
-//            safa->claves_iniciales = leerString(configFile, "CLAVE_INICIAL_BLOQUEADA", logger);
-//            ret = safa;
-//            break;
-//        case CPU:
-//            if (checkAmountOfParams(configFile, 5, logger)) {
-//                ret = NULL;
-//                break;
-//            }
-//            coordinador = (configCoordinador *) malloc(sizeof(configCoordinador));
-//            coordinador->puerto = leerPuerto(configFile, "PUERTO", logger);
-//            coordinador->algoritmo = leerString(configFile, "ALG_DISTRIBUCION", logger);
-//            coordinador->cantEntradas = leerInt(configFile, "CANT_ENTRADAS", logger);
-//            coordinador->entradas = leerInt(configFile, "ENTRADA", logger);
-//            coordinador->retardo = leerInt(configFile, "RETARDO", logger);
-//            ret = coordinador;
-//            break;
-//        case DAM:
-//            if (checkAmountOfParams(configFile, 6, logger)) {
-//                ret = NULL;
-//                break;
-//            }
-//            esi = (configESI *) malloc(sizeof(configESI));
-//            esi->ipCoor = leerIP(configFile, "IP_COOR", logger);
-//            esi->puertoCoord = leerPuerto(configFile, "PUERTO_COOR", logger);
-//            esi->ipPlanificador = leerIP(configFile, "IP_PLANIFICADOR", logger);
-//            esi->puertoPlanificador = leerPuerto(configFile, "PUERTO_PLANIFICADOR", logger);
-//            esi->scriptPath = leerString(configFile, "SCRIPT_PATH", logger);
-//            ret = esi;
-//            break;
-//        case MDJ:
-//            if (checkAmountOfParams(configFile, 6, logger)) {
-//                ret = NULL;
-//                break;
-//            }
-//            instancia = (configInstancia *) malloc(sizeof(configInstancia));
-//            instancia->ipCoor = leerIP(configFile, "IP_COOR", logger);
-//            instancia->puertoCoord = leerPuerto(configFile, "PUERTO_COOR", logger);
-//            instancia->algoritmo = leerString(configFile, "ALG_REEMPLAZO", logger);
-//            instancia->path = leerString(configFile, "PATH", logger);
-//            instancia->nombre = leerString(configFile, "NOMBRE", logger);
-//            instancia->dump = leerInt(configFile, "DUMP", logger);
-//            ret = instancia;
+            safa->quantum = leerInt(configFile, "QUANTUM", logger);
+            safa->grado_mp = leerInt(configFile, "MULTIPROGRAMACION", logger);
+            safa->retardo = leerInt(configFile, "RETARDO", logger);
+            ret = safa;
+            break;
+        case CPU:
+            if (checkAmountOfParams(configFile, 5, logger)) {
+                ret = NULL;
+                break;
+            }
+            cpu = (configCPU *) malloc(sizeof(configCPU));
+            cpu->ipSAFA = leerIP(configFile, "IP_SAFA", logger);
+            cpu->puertoSAFA = leerPuerto(configFile, "PUERTO_SAFA", logger);
+            cpu->ipDAM = leerIP(configFile, "IP_DAM", logger);
+            cpu->puertoDAM = leerPuerto(configFile, "PUERTO_DAM", logger);
+            cpu->retardo = leerInt(configFile, "RETARDO", logger);
+            ret = cpu;
+            break;
+        case DAM:
+            if (checkAmountOfParams(configFile, 8, logger)) {
+                ret = NULL;
+                break;
+            }
+            dam = (configDAM *) malloc(sizeof(configDAM));
+            dam->puertoDAM = leerPuerto(configFile, "PUERTO", logger);
+            dam->ipSAFA = leerIP(configFile, "IP_SAFA", logger);
+            dam->puertoSAFA = leerPuerto(configFile, "PUERTO_SAFA", logger);
+            dam->ipMDJ = leerIP(configFile, "IP_MDJ", logger);
+            dam->puertoMDJ = leerPuerto(configFile, "PUERTO_MDJ", logger);
+            dam->ipFM9 = leerIP(configFile, "IP_FM9", logger);
+            dam->puertoFM9 = leerPuerto(configFile, "PUERTO_FM9", logger);
+            dam->transferSize = leerInt(configFile, "TRANSFER_SIZE", logger);
+            ret = dam;
+            break;
+        case MDJ:
+            if (checkAmountOfParams(configFile, 3, logger)) {
+                ret = NULL;
+                break;
+            }
+            mdj = (configMDJ *) malloc(sizeof(configMDJ));
+            mdj->puertoMDJ = leerPuerto(configFile, "PUERTO", logger);
+            mdj->puntoMontaje = leerString(configFile, "PUNTO_MONTAJE", logger);
+            mdj->retardo = leerInt(configFile, "RETARDO", logger);
+            ret = mdj;
             break;
         case FM9:
+        	if (checkAmountOfParams(configFile, 5, logger)) {
+				ret = NULL;
+				break;
+			}
+            funesMemory = (configFM9 *) malloc(sizeof(configFM9));
+            funesMemory->puertoFM9 = leerPuerto(configFile, "PUERTO", logger);
+            char *modo = leerString(configFile, "MODO", logger);
+            funesMemory->modoEjecucion = getModoEjecucion(modo);
+            free(modo);
+            funesMemory->tamMemoria = leerInt(configFile, "TAMANIO", logger);
+            funesMemory->tamMaxLinea = leerInt(configFile, "MAX_LINEA", logger);
+            funesMemory->tamPagina = leerInt(configFile, "TAM_PAGINA", logger);
         	break;
         default:
             ret = NULL;
@@ -175,44 +197,44 @@ void validar_puerto(int puerto, t_log *logger) {
 }
 
 void freeConfig(void *conf, processType processType) {
-//    configPlanificador *planificador;
-//    configCoordinador *coordinador;
-//    configInstancia *instancia;
-//    configESI *esi;
-//
-//    if (conf != NULL) {
-//        switch (processType) {
-//            case PLANIFICADOR:
-//                planificador = (configPlanificador *) conf;
-//                free(planificador->ipCoord);
-//                /*chequear si tengo que hacer un free por cada elemento del array*/
-//                free(planificador->claves_iniciales);
-//                free(planificador);
-//                break;
-//            case COORDINADOR:
-//                coordinador = (configCoordinador *) conf;
-//                free(coordinador->algoritmo);
-//                free(coordinador);
-//                break;
-//            case ESI:
-//                esi = (configESI *) conf;
-//                free(esi->ipCoor);
-//                free(esi->ipPlanificador);
-//                free(esi->scriptPath);
-//                free(esi);
-//                break;
-//            case INSTANCIA:
-//                instancia = (configInstancia *) conf;
-//                free(instancia->ipCoor);
-//                free(instancia->algoritmo);
-//                free(instancia->path);
-//                free(instancia->nombre);
-//                free(instancia);
-//                break;
-//            default:
-//                break;
-//        }
-//    }
+	configSAFA *safa;
+	configCPU *cpu;
+	configDAM *dam;
+	configFM9 *funesMemory;
+	configMDJ *mdj;
+
+    if (conf != NULL) {
+        switch (processType) {
+            case SAFA:
+            	safa = (configSAFA *) conf;
+                free(safa);
+                break;
+            case CPU:
+                cpu = (configCPU *) conf;
+                free(cpu->ipDAM);
+                free(cpu->ipSAFA);
+                free(cpu);
+                break;
+            case DAM:
+            	dam = (configDAM *) conf;
+                free(dam->ipFM9);
+                free(dam->ipMDJ);
+                free(dam->ipSAFA);
+                free(dam);
+                break;
+            case FM9:
+            	funesMemory = (configFM9 *) conf;
+                free(funesMemory);
+                break;
+            case MDJ:
+            	mdj = (configMDJ *) conf;
+            	free(mdj->puntoMontaje);
+            	free(mdj);
+            	break;
+            default:
+                break;
+        }
+    }
 }
 
 t_list *leerArray(t_config *configFile, char *parametro, t_log *logger) {

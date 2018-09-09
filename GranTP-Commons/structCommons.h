@@ -46,6 +46,10 @@ enum typeScheduler {
     RR = 1, VRR, PROPIO
 };
 
+enum typeExceution {
+	SEG = 1, TPI, SPA
+};
+
 typedef struct {
     uint16_t type;
     int socket;
