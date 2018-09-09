@@ -56,7 +56,7 @@ typedef struct {
 
 typedef struct {
     int puertoFM9;
-    char *modoEjecucion;
+    uint16_t modoEjecucion;
     int tamMemoria;
     int tamMaxLinea;
     int tamPagina;
@@ -64,7 +64,7 @@ typedef struct {
 
 typedef struct {
     int puertoMDJ;
-    char *puertoMontaje;
+    char *puntoMontaje;
     int retardo;
 } configMDJ;
 

@@ -13,4 +13,6 @@
 #include <commons/log.h>
 #include <configuracion.h>
 
+configCPU * config;
+
 #endif /* CPU_H_ */
