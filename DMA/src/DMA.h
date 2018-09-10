@@ -14,8 +14,10 @@
 #include <commons/log.h>
 #include <pthread.h>
 #include <socket.h>
+#include <configuracion.h>
 
 t_log* logger;
+configDAM * config;
 
 void sig_handler(int signo);
 void exit_gracefully(int error);
