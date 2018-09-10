@@ -119,7 +119,7 @@ enum codigoID {
 //    PLAN_CORRD_STATUS,// = 1046,
 //
     GENERIC_ERROR,
-//
+
     SOCKET_DISCONECT,// = 1048
     PING,//=1049
     PING_OK//1050
@@ -164,7 +164,7 @@ int escuchar(int puerto, int *socket, t_log *logger);
 int aceptar(int socket, int *newSocket, t_log *logger);
 
 /**
- * @NAME: cargarSoket
+ * @NAME: cargarSocket
  * @DESC: Crea un socket que se puede usar tanto para listen, si no se le pasa la ip, como para connect,
  * 		  si le paso la ip a la que me quiero conectar. La memoria de la variables puntero debe estar previamente asignada.
  * @PARAMS: {int} 	iPuerto puesto que se le asigna al socket.
@@ -172,7 +172,7 @@ int aceptar(int socket, int *newSocket, t_log *logger);
  * 			{int*}	pSocket Socket creado dentro de la funcion.
  * 			{t_log*} Logger.
  */
-int cargarSoket(int iPuerto, const char *ip, int *pSocket, t_log *logger);
+int cargarSocket(int iPuerto, const char *ip, int *pSocket, t_log *logger);
 
 /**
  * @NAME: enviarHandshake

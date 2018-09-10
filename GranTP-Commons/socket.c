@@ -29,7 +29,7 @@ t_socket *inicializarTSocket(int socket, t_log *logger) {
 int escuchar(int puerto, int *socket, t_log *logger) {
     int listenBacklog = BACKLOG;
 
-    if (cargarSoket(puerto, "", socket, logger)) {
+    if (cargarSocket(puerto, "", socket, logger)) {
         return EXIT_FAILURE;
     }
     if (listen(*socket, listenBacklog) < 0) {
@@ -62,7 +62,7 @@ int aceptar(int socket, int *newSocket, t_log *logger) {
 }
 
 /**
- * @NAME: cargarSoket
+ * @NAME: cargarSocket
  * @DESC: Crea un socket que se puede usar tanto para listen, si no se le pasa la ip, como para connect,
  * 		  si le paso la ip a la que me quiero conectar. La memoria de la variables puntero debe estar previamente asignada.
  * @PARAMS: {int} 	iPuerto puesto que se le asigna al socket.
@@ -70,12 +70,12 @@ int aceptar(int socket, int *newSocket, t_log *logger) {
  * 			{int*}	pSocket Socket creado dentro de la funcion.
  * 			{t_log*} Logger.
  */
-int cargarSoket(int iPuerto, const char *ip, int *pSocket, t_log *logger) {
+int cargarSocket(int iPuerto, const char *ip, int *pSocket, t_log *logger) {
     int socketFD;
     struct addrinfo hints, *servInfo, *p;
     int rv;
     char *puerto = string_itoa(iPuerto);
-    log_trace(logger, "--- cargarSoket ---");
+    log_trace(logger, "--- cargarSocket ---");
     if (!strcmp(puerto, "")) {
         log_error(logger, "Error al convertir el puerto a string.");
         free(puerto);
@@ -139,8 +139,7 @@ int cargarSoket(int iPuerto, const char *ip, int *pSocket, t_log *logger) {
  * 			{uint16_t}	codigoOtro Codigo del programa  al que me quiero conectar.
  * 			{t_log*} Logger.
  */
-int enviarHandshake(int socket, uint16_t codigoMio, uint16_t codigoOtro,
-                    t_log *logger) {
+int enviarHandshake(int socket, uint16_t codigoMio, uint16_t codigoOtro, t_log *logger) {
     t_package handshakeRcv;
 
     if (enviar(socket, codigoMio, NULL, 0, logger)) {
@@ -476,14 +475,16 @@ int acceptConnection(int socketListen, int *pNewSocket, uint16_t handshake,
  */
 char *codigoIDToString(uint16_t code) {
     switch (code) {
-//        case INSTANCIA_HSK:
-//            return "Handshake instancia";
-//        case COORDINADOR_HSK:
-//            return "Handshake coordinador";
-//        case PLANIFICADOR_HSK:
-//            return "Handshake planificador";
-//        case ESI_HSK:
-//            return "Handshake esi";
+        case SAFA_HSK:
+            return "Handshake SAFA";
+		case CPU_HSK:
+			return "Handshake CPU";
+		case FM9_HSK:
+			return "Handshake FM9";
+		case DAM_HSK:
+			return "Handshake DAM";
+		case MDJ_HSK:
+			return "Handshake MDJ";
 //        case INS_COORD_CONNECT:
 //            return "INS_COORD_CONNECT";
 //        case INS_COORD_OK:
