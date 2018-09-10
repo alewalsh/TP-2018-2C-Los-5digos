@@ -15,8 +15,16 @@
 #include <pthread.h>
 #include <socket.h>
 #include "handlerConexiones.h"
+#include <configuracion.h>
+#include "consola.h"
 
-t_log* logger;
+
+configSAFA *conf;
+t_log_mutex *logger;
+
+
+void inicializarRecursos();
+void liberarRecursos();
 
 void sig_handler(int signo);
 void exit_gracefully(int error);
