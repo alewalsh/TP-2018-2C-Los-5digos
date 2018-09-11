@@ -5,48 +5,83 @@
  *      Author: utnso
  */
 
-
 #include "consola.h"
 #include <mutex_log.h>
 
-extern t_log_mutex *logger;
-//int shouldExecute = 1;
-//
 
+extern t_log_mutex *logger;
+int seguirEjecutando = 1;
+
+
+void executeCommand(int comando, char *args) {
+    switch (comando) {
+        case EJECUTAR:
+//            consoleStop();
+            printf("Comando EJECUTAR seleccionado.\n");
+            break;
+        case STATUS:
+//            consolePlay();
+            printf("Comando STATUS seleccionado.\n");
+            break;
+        case FINALIZAR:
+//            consoleBlock(args);
+            printf("Comando FINALIZAR seleccionado.\n");
+            break;
+        case METRICAS:
+//            consoleUnblock(args);
+            printf("Comando METRICAS seleccionado.\n");
+            break;
+        case EXIT:
+//            seguirEjecutando = 0;
+//            consoleExit();
+            printf("Comando EXIT seleccionado.\n");
+            break;
+        case HELP:
+            printf("Comando HELP seleccionado.\n");
+            //consoleExit();
+            break;
+        default:
+            printf("El comando igresado no es valido.\n");
+//            consoleHelp();
+            break;
+    }
+}
 
 
 void mainConsola() {
 
-    char *rawline, *command, *args;
+    char *rawline;
+    char *comando;
+	char *args;
 
     consolePrintHeader();
 
 //    while (shouldExecute) {
-//	while (1) {
-//
-//        rawline = readline("\n➜  ~ ");
-//
-//        if (rawline) {
-//
-//            //agrego la linea al historial
-//            add_history(rawline);
-//
-//            if (strlen(rawline)) {
-//
-//                //Parseo el comando
-//                parseCommand(rawline, &command, &args);
-//
-//                //obtengo el id del comando
-//                int id = getIdFunction(command);
-//
-//                //lo ejecuto
-//                executeCommand(id, args);
-//            }
-//        }
-//
-//        freeCommand(command, args);
-//        free(rawline);
-//    }
+	while (1) {
+
+        rawline = readline("\n➜  ~ ");
+
+        if (rawline) {
+
+            //agrego la linea al historial
+            add_history(rawline);
+
+            if (strlen(rawline)) {
+
+                //Parseo el comando
+                parseCommand(rawline, &comando, &args);
+
+                //obtengo el id del comando
+                int id = getIdFunction(comando);
+
+                //lo ejecuto
+                executeCommand(id, args);
+            }
+        }
+
+        freeCommand(comando, args);
+        free(rawline);
+    }
 }
 
 
@@ -72,55 +107,6 @@ void consolePrintHeader() {
 }
 
 
-//void executeCommand(int command, char *args) {
-//    switch (command) {
-//        case STOP:
-//            consoleStop();
-//            break;
-//        case PLAY:
-//            consolePlay();
-//            break;
-//        case BLOCK:
-//            consoleBlock(args);
-//            break;
-//        case UNBLOCK:
-//            consoleUnblock(args);
-//            break;
-//        case LIST:
-//            consoleList(args);
-//            break;
-//        case KILL:
-//            consoleKill(args);
-//            break;
-//        case STATUS:
-//            consoleStatus(args);
-//            break;
-//        case DEADLOCK:
-//            consoleDeadlock();
-//            break;
-//        case EXIT:
-//            shouldExecute = 0;
-//            consoleExit();
-//            break;
-//        case CLEAR:
-//            consoleClear();
-//            break;
-//        case HELP:
-//            consoleHelp();
-//            break;
-//        case ESIS:
-//            consoleStatusAllESI();
-//            break;
-//        case KEYS:
-//            consoleStatusKeys();
-//            break;
-//        default:
-//            printf("El comando igresado no es valido.\n");
-//            consoleHelp();
-//            break;
-//    }
-//
-//}
 
 //
 //void consolePrintMenu() {
