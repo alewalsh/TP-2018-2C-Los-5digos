@@ -16,11 +16,11 @@ int seguirEjecutando = 1;
 void executeCommand(int comando, char *args) {
     switch (comando) {
         case EJECUTAR:
-//            consoleStop();
-            printf("Comando EJECUTAR seleccionado.\n");
+//            consolePlay(args);
+            printf("Comando EJECUTAR (%d) seleccionado.\n", comando);
             break;
         case STATUS:
-//            consolePlay();
+//            consoleStop();
             printf("Comando STATUS seleccionado.\n");
             break;
         case FINALIZAR:
@@ -32,13 +32,13 @@ void executeCommand(int comando, char *args) {
             printf("Comando METRICAS seleccionado.\n");
             break;
         case EXIT:
-//            seguirEjecutando = 0;
-//            consoleExit();
             printf("Comando EXIT seleccionado.\n");
+        	seguirEjecutando = 0;
+            consoleExit();
             break;
         case HELP:
             printf("Comando HELP seleccionado.\n");
-            //consoleExit();
+            consoleHelp();
             break;
         default:
             printf("El comando igresado no es valido.\n");
@@ -56,8 +56,7 @@ void mainConsola() {
 
     consolePrintHeader();
 
-//    while (shouldExecute) {
-	while (1) {
+    while (seguirEjecutando) {
 
         rawline = readline("\n➜  ~ ");
 
@@ -107,21 +106,3 @@ void consolePrintHeader() {
 }
 
 
-
-//
-//void consolePrintMenu() {
-//    // impresion por pantalla de los comandos disponibles
-//    printf("\n\n");
-//    printf(" STOP	  - Pausa la planificacion\n");
-//    printf(" PLAY     - Continua planificacion en pausa\n");
-//    printf(" BLOCK    - Bloquea el proceso ESI hasta ser desbloqueado\n");
-//    printf(" UNBLOCK  - Desbloquea el proceso ESI bloqueado\n");
-//    printf(" LIST     - Lista los procesos encolados esperando recurso\n");
-//    printf(" KILL     - Finaliza proceso\n");
-//    printf(" STATUS   - Consulta informacion de instancias del sistema\n");
-//    printf(" DEADLOCK - Crea​r​ copia​ de​ bloque​ de​ archivo​\n");
-//    printf(" CLEAR    - Limpiar pantalla\n");
-//    printf(" MAN      - sintaxis de cada comando\n");
-//    printf(" EXIT     - Salir de la consola\n");
-//    printf("\n\n");
-//}

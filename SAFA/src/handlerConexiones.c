@@ -24,6 +24,7 @@ void manejarConexiones(){
 		pthread_exit(NULL);
     }
     log_trace_mutex(logger, "El socket de escucha de SAFA es: %d", socketListen);
+    log_info_mutex(logger, "El socket de escucha de SAFA es: %d", socketListen);
 
     addNewSocketToMaster(socketListen);
 

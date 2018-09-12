@@ -19,7 +19,7 @@ int main(int argc, char ** argv) {
 
 	//TODO: CREAR EL ESTADO CORRUPTO Y OPERATIVO DEL SAFA
 
-    //Creo las Variables locales
+	//Creo las Variables locales
     pthread_t threadConsola;
     pthread_t threadConexiones;
 
@@ -27,13 +27,14 @@ int main(int argc, char ** argv) {
     inicializarRecursos();
 
     //Inicializo la consola del Planificador y los threads correspondientes
-    pthread_create(&threadConsola, &tattr, (void *) mainConsola, NULL);
     pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
+    pthread_create(&threadConsola, &tattr, (void *) mainConsola, NULL);
 
-    while(1){
+    while(!getExit()){
 
     }
 
+    printf("LA CONCHA DE TU HERMANA");
     liberarRecursos();
 	return EXIT_SUCCESS;
 }
@@ -61,10 +62,30 @@ void inicializarRecursos(){
 //    initSems();
     FD_ZERO(&master);
     FD_ZERO(&readset);
+
+    shouldExit = 0;
 }
 
 
 void liberarRecursos(){
+
+//    list_destroy_and_destroy_elements(statusList, freeEsi);
+//    list_destroy_and_destroy_elements(blockedKeys, freeBlockedKey);
+//
+//    pthread_mutex_destroy(&mutexStatusList);
+//    pthread_mutex_destroy(&mutexBlockedKeys);
+    pthread_mutex_destroy(&mutexMaster);
+    pthread_mutex_destroy(&mutexReadset);
+//    pthread_mutex_destroy(&mutexTime);
+    pthread_mutex_destroy(&mutexExit);
+//    pthread_mutex_destroy(&mutexStop);
+//    pthread_mutex_destroy(&mutexReadyExecute);
+//    pthread_mutex_destroy(&mutexConsole);
+//
+//    sem_destroy(&sem_shouldScheduler);
+//    sem_destroy(&sem_newEsi);
+//    sem_destroy(&sem_shouldExecute);
+//    sem_destroy(&sem_preemptive);
 
     log_destroy_mutex(logger);
     freeConfig(conf, SAFA);
@@ -78,11 +99,27 @@ void initMutexs(){
 //	pthread_mutex_init(&mutexBlockedKeys, NULL);
 	pthread_mutex_init(&mutexReadset, NULL);
 //	pthread_mutex_init(&mutexTime, NULL);
-//	pthread_mutex_init(&mutexExit, NULL);
+	pthread_mutex_init(&mutexExit, NULL);
 //	pthread_mutex_init(&mutexStop, NULL);
 //	pthread_mutex_init(&mutexReadyExecute, NULL);
 //	pthread_mutex_init(&mutexConsole, NULL);
 }
 
 
+
+
+
+////Se inicializan las listas de Estado y Claves Bloqueadas
+//void initList() {
+//    statusList = list_create();
+//    blockedKeys = list_create();
+//}
+//
+////Se inicializan todos los semaforos a ser utilizados
+//void initSems() {
+//    sem_init(&sem_shouldScheduler, 0, 1);
+//    sem_init(&sem_newEsi, 0, 0);
+//    sem_init(&sem_shouldExecute, 0, 0);
+//    sem_init(&sem_preemptive, 0, 0);
+//}
 
