@@ -17,8 +17,14 @@
 #include <configuracion.h>
 
 t_log* logger;
-configDAM * config;
+configDAM* configDMA;
 
+
+//Declaracion de funciones
+void cargarArchivoDeConfig();
+void configure_logger();
+void inicializarDMA();
+int  connect_to_server(char * ip, char * port, char * servidor);
 void sig_handler(int signo);
 void exit_gracefully(int error);
 
