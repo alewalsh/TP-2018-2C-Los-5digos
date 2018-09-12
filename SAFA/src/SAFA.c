@@ -34,7 +34,6 @@ int main(int argc, char ** argv) {
 
     }
 
-    printf("LA CONCHA DE TU HERMANA");
     liberarRecursos();
 	return EXIT_SUCCESS;
 }
@@ -45,7 +44,7 @@ void inicializarRecursos(){
     logger = log_create_mutex("SAFA.log", "SAFA", 0, LOG_LEVEL_INFO);
 
     //Cargo el archivo configuracion
-    conf = (configSAFA *) cargarConfiguracion("config", SAFA, logger->logger);
+    conf = (configSAFA *) cargarConfiguracion("/home/utnso/git/tp-2018-2c-Los-5digos/SAFA/config", SAFA, logger->logger);
 
     if(conf==NULL){
         log_error_mutex(logger, "No existe archivo configuracion");

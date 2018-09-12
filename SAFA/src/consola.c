@@ -91,7 +91,7 @@ void consolePrintHeader() {
     size_t len = 0;
     ssize_t read;
 
-    fp = fopen("logo.txt", "r");
+    fp = fopen("/home/utnso/git/tp-2018-2c-Los-5digos/SAFA/logo.txt", "r");
     if (fp == NULL) {
         log_error_mutex(logger, "Error al abrir el archivo: ");
     } else {
