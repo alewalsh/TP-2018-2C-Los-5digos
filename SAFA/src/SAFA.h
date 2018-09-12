@@ -15,10 +15,51 @@
 #include <pthread.h>
 #include <socket.h>
 #include "handlerConexiones.h"
+#include <configuracion.h>
+#include "consola.h"
 
-t_log* logger;
+
+//Para el SELECT
+fd_set master;
+fd_set readset;
+
+// ------------------------------------------------------------------------------
+//	MUTEX GLOBALES a ser utilizados
+// ------------------------------------------------------------------------------
+pthread_mutex_t mutexMaster;
+//pthread_mutex_t mutexStatusList;
+//pthread_mutex_t mutexBlockedKeys;
+pthread_mutex_t mutexReadset;
+pthread_mutex_t mutexMaxfd;
+//pthread_mutex_t mutexTime;
+//pthread_mutex_t mutexExit;
+//pthread_mutex_t mutexStop;
+//pthread_mutex_t mutexReadyExecute;
+//pthread_mutex_t mutexConsole;
+
+
+// ------------------------------------------------------------------------------
+//	VARIABLES GLOBALES
+// ------------------------------------------------------------------------------
+configSAFA *conf;
+t_log_mutex *logger;
+//int coordinator = 0;
+//int tiempo = 0;
+//int shouldExit = 0;
+int maxfd;
+//int console = 1;
+//int scheduler = 0;
+
+
+// ------------------------------------------------------------------------------
+//	METODOS
+// ------------------------------------------------------------------------------
+void inicializarRecursos();
+void liberarRecursos();
+void initMutexs();
 
 void sig_handler(int signo);
 void exit_gracefully(int error);
+
 
 #endif /* SAFA_H_ */

@@ -64,8 +64,9 @@ enum typeStatus {
 };
 
 enum command {
-    STOP = 1, PLAY, BLOCK, UNBLOCK, LIST, STATUS, KILL, DEADLOCK, CLEAR, MAN, EXIT, HELP, ESIS, KEYS
+    EJECUTAR = 1, STATUS, FINALIZAR, METRICAS, EXIT, HELP
 };
+//LIST, STATUS, KILL, DEADLOCK, CLEAR, MAN, ESIS, KEYS
 
 void freeEsiInstruction(void *esi);
 
