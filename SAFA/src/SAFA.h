@@ -17,6 +17,8 @@
 #include "handlerConexiones.h"
 #include <configuracion.h>
 #include "consola.h"
+#include <sys/inotify.h>
+#include <unistd.h>
 
 
 //Para el SELECT
@@ -51,6 +53,14 @@ int maxfd;
 //int scheduler = 0;
 
 
+// ------------------------------------------------------------------------------
+//	VARIABLES SAFA
+// ------------------------------------------------------------------------------
+
+int inotifyFd;
+int inotifyWd;
+char inotifyBuf[200];
+char* configFilePath;
 
 // ------------------------------------------------------------------------------
 //	METODOS

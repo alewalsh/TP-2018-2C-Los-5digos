@@ -18,6 +18,7 @@ pthread_attr_t tattr;
 int main(int argc, char ** argv) {
 
 	//TODO: CREAR EL ESTADO CORRUPTO Y OPERATIVO DEL SAFA
+    configFilePath = "/home/utnso/git/tp-2018-2c-Los-5digos/SAFA/config";
 
 	//Creo las Variables locales
     pthread_t threadConsola;
@@ -26,12 +27,18 @@ int main(int argc, char ** argv) {
     //inicializacion de recursos y carga de configuracion
     inicializarRecursos();
 
+    //Empiezo inotif para despues ver si hubo cambios sobre el archivo de configuracion
+	inotifyFd = inotify_init();
+	inotifyWd = inotify_add_watch(inotifyFd,configFilePath,IN_CLOSE_WRITE);
+
     //Inicializo la consola del Planificador y los threads correspondientes
     pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
     pthread_create(&threadConsola, &tattr, (void *) mainConsola, NULL);
 
     while(!getExit()){
 
+    	read(inotifyFd,inotifyBuf,200);
+    	log_info_mutex(logger,"Archivo leido es: %s", ((struct inotify_event*)inotifyBuf)->name);
     }
 
     liberarRecursos();
@@ -44,7 +51,7 @@ void inicializarRecursos(){
     logger = log_create_mutex("SAFA.log", "SAFA", 0, LOG_LEVEL_INFO);
 
     //Cargo el archivo configuracion
-    conf = (configSAFA *) cargarConfiguracion("/home/utnso/git/tp-2018-2c-Los-5digos/SAFA/config", SAFA, logger->logger);
+    conf = (configSAFA *) cargarConfiguracion(configFilePath, SAFA, logger->logger);
 
     if(conf==NULL){
         log_error_mutex(logger, "No existe archivo configuracion");
@@ -103,8 +110,6 @@ void initMutexs(){
 //	pthread_mutex_init(&mutexReadyExecute, NULL);
 //	pthread_mutex_init(&mutexConsole, NULL);
 }
-
-
 
 
 
