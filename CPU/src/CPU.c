@@ -16,14 +16,14 @@ int main(int argc, char ** argv) {
 
 void inicializarCPU(char * pathConfig)
 {
-	logger = log_create("CPU.log", "CPU", true, LOG_LEVEL_INFO);
+	loggerCPU = log_create_mutex("CPU.log", "CPU", true, LOG_LEVEL_INFO);
 	if (pathConfig != NULL)
 	{
-		config = cargarConfiguracion(pathConfig, CPU, logger);
+		config = cargarConfiguracion(pathConfig, CPU, loggerCPU->logger);
 	}
 	else
 	{
-		log_error(logger, "No hay un path correcto a un archivo de configuracion");
+		log_error_mutex(loggerCPU, "No hay un path correcto a un archivo de configuracion");
 		exit_gracefully(ERROR_PATH_CONFIG);
 	}
 	if (config != NULL)
@@ -32,34 +32,34 @@ void inicializarCPU(char * pathConfig)
 	}
 	else
 	{
-		log_error(logger, "Error en el archivo de configuracion");
+		log_error_mutex(loggerCPU, "Error en el archivo de configuracion");
 		exit_gracefully(ERROR_CONFIG);
 	}
 }
 
 void inicializarConexiones()
 {
-	cargarSocket(config->puertoDAM,config->ipDAM,socketDAM,logger);
+	cargarSocket(config->puertoDAM,config->ipDAM,socketDAM,loggerCPU->logger);
 	if (socketDAM != 0)
 	{
-		inicializarTSocket(*socketDAM, logger);
-		enviarHandshake(t_socketDAM->socket,CPU_HSK,DAM_HSK,logger);
+		inicializarTSocket(*socketDAM, loggerCPU->logger);
+		enviarHandshake(t_socketDAM->socket,CPU_HSK,DAM_HSK,loggerCPU->logger);
 	}
 	else
 	{
-		log_error(logger, "Error al conectarse al DAM.");
+		log_error_mutex(loggerCPU, "Error al conectarse al DAM.");
 		exit_gracefully(ERROR_SOCKET_DAM);
 	}
 
-	cargarSocket(config->puertoSAFA,config->ipSAFA,socketSAFA,logger);
+	cargarSocket(config->puertoSAFA,config->ipSAFA,socketSAFA,loggerCPU->logger);
 	if (socketSAFA != 0)
 	{
-		inicializarTSocket(*socketSAFA, logger);
-		enviarHandshake(t_socketSAFA->socket,CPU_HSK,SAFA_HSK,logger);
+		inicializarTSocket(*socketSAFA, loggerCPU->logger);
+		enviarHandshake(t_socketSAFA->socket,CPU_HSK,SAFA_HSK,loggerCPU->logger);
 	}
 	else
 	{
-		log_error(logger, "Error al conectarse al SAFA.");
+		log_error_mutex(loggerCPU, "Error al conectarse al SAFA.");
 		exit_gracefully(ERROR_SOCKET_SAFA);
 	}
 }
@@ -80,6 +80,6 @@ void exit_gracefully(int error)
 			}
 		}
 	}
-	log_destroy(logger);
+	log_destroy_mutex(loggerCPU);
 	exit(error);
 }

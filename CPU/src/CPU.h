@@ -18,7 +18,7 @@
 /*
  * Config
  */
-t_log * logger;
+t_log_mutex * loggerCPU;
 configCPU * config;
 
 /*
