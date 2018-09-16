@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/log.h>
-#include <configuracion.h>
+#include <grantp/configuracion.h>
 
 configCPU * config;
 

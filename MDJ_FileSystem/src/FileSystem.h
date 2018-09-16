@@ -8,8 +8,8 @@
 #include <commons/config.h>
 #include <commons/string.h>
 #include <commons/log.h>
-#include <configuracion.h>
-#include <socket.h>
+#include <grantp/configuracion.h>
+#include <grantp/socket.h>
 #include <pthread.h>
 
 t_log* logger;

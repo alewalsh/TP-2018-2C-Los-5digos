@@ -1,7 +1,7 @@
 /*
  * DMA.h
  *
- *  Created on: 9 sep. 2018
+ *  Created on: 16 sep. 2018
  *      Author: utnso
  */
 
@@ -13,8 +13,8 @@
 #include <signal.h>
 #include <commons/log.h>
 #include <pthread.h>
-#include <socket.h>
-#include <configuracion.h>
+#include <grantp/socket.h>
+#include <grantp/configuracion.h>
 
 t_log* logger;
 configDAM* configDMA;
@@ -27,6 +27,5 @@ void inicializarDMA();
 int  connect_to_server(char * ip, char * port, char * servidor);
 void sig_handler(int signo);
 void exit_gracefully(int error);
-
 
 #endif /* DMA_H_ */
