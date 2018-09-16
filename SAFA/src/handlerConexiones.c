@@ -6,10 +6,10 @@
  */
 
 #include "handlerConexiones.h"
-#include <configuracion.h>
-#include <socket.h>
-#include <mutex_log.h>
-#include <structCommons.h>
+#include <grantp/configuracion.h>
+#include <grantp/socket.h>
+#include <grantp/mutex_log.h>
+#include <grantp/structCommons.h>
 #include "SAFA.h"
 
 

@@ -9,7 +9,7 @@
  */
 
 #include "SAFA.h"
-#include <configuracion.h>
+#include <grantp/configuracion.h>
 
 
 pthread_attr_t tattr;

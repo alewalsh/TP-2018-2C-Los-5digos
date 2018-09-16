@@ -15,7 +15,7 @@
 #include <pthread.h>
 #include <grantp/socket.h>
 #include "handlerConexiones.h"
-#include <configuracion.h>
+#include <grantp/configuracion.h>
 #include "consola.h"
 #include <sys/inotify.h>
 #include <unistd.h>

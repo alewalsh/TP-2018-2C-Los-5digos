@@ -7,12 +7,12 @@
 
 
 #include "funcionesConsola.h"
-#include <javaStrings.h>
-#include <structCommons.h>
-#include <mutex_log.h>
-#include <socket.h>
+#include <grantp/javaStrings.h>
+#include <grantp/structCommons.h>
+#include <grantp/mutex_log.h>
+#include <grantp/socket.h>
 //#include "executer.h"
-#include "compression.h"
+#include <grantp/compression.h>
 //#include "blockedKeyFunctions.h"
 
 // ----------------------------------------------------------------------------------------------------------------------

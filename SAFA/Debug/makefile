@@ -26,7 +26,7 @@ endif
 all: SAFA
 
 dependents:
-	-cd /home/utnso/git/tp-2018-2c-Los-5digos/GranTPCommons/Debug && $(MAKE) all
+	-cd /home/utnso/git/tp-2018-2c-Los-5digos/GranTPCommons/Debug && $(MAKE) clean all
 
 # Tool invocations
 SAFA: $(OBJS) $(USER_OBJS) /home/utnso/git/tp-2018-2c-Los-5digos/GranTPCommons/Debug/libGranTPCommons.so

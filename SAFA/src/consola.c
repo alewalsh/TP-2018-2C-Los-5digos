@@ -6,7 +6,7 @@
  */
 
 #include "consola.h"
-#include <mutex_log.h>
+#include <grantp/mutex_log.h>
 
 
 extern t_log_mutex *logger;

@@ -9,8 +9,8 @@
 #define HANDLERCONEXIONES_H_
 
 #include <stdint.h>
-#include <socket.h>
-#include <configuracion.h>
+#include <grantp/socket.h>
+#include <grantp/configuracion.h>
 #include "funcionesSAFA.h"
 #include <semaphore.h>
 //#include "handlerCoordinator.h"
