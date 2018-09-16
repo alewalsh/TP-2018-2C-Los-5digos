@@ -13,7 +13,7 @@
 #include <signal.h>
 #include <commons/log.h>
 #include <pthread.h>
-#include <socket.h>
+#include <grantp/socket.h>
 #include "handlerConexiones.h"
 
 t_log* logger;

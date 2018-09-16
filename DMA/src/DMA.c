@@ -3,14 +3,14 @@
  Name        : DMA.c
  Author      : Franco Lopez
  Version     :
- Copyright   : Your copyright notice
- Description : Proyecto destinado al DMA
+ Copyright   : 
+ Description : Hello World in C, Ansi-style
  ============================================================================
  */
 
 #include "DMA.h"
 
-int main(int argc, char ** argv){
+int main(void) {
 	configure_logger();
 	cargarArchivoDeConfig();
 	//inicializarDMA();
