@@ -70,7 +70,7 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             ret = safa;
             break;
         case CPU:
-            if (checkAmountOfParams(configFile, 5, logger)) {
+            if (checkAmountOfParams(configFile, 7, logger)) {
                 ret = NULL;
                 break;
             }
@@ -79,6 +79,8 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             cpu->puertoSAFA = leerPuerto(configFile, "PUERTO_SAFA", logger);
             cpu->ipDAM = leerIP(configFile, "IP_DAM", logger);
             cpu->puertoDAM = leerPuerto(configFile, "PUERTO_DAM", logger);
+            cpu->ipFM9 = leerIP(configFile, "IP_FM9", logger);
+            cpu->puertoFM9 = leerPuerto(configFile, "PUERTO_FM9", logger);
             cpu->retardo = leerInt(configFile, "RETARDO", logger);
             ret = cpu;
             break;

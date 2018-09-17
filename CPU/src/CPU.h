@@ -16,22 +16,36 @@
 #include <limits.h>
 
 /*
+ *  Ejemplo DTB: habria que ponerlo en GranTPCommons si utilizamos este.
+ */
+
+typedef struct {
+	int idGDT;
+    char *dirEscriptorio;
+    int programCounter;
+    bool flagInicializado;
+    char *tablaDirecciones;
+} t_dtb;
+
+/*
  * Config
  */
-t_log_mutex * loggerCPU;
 configCPU * config;
 
 /*
  * Variables globales
  */
+t_log_mutex * loggerCPU;
 
 /*
  * Sockets
  */
 t_socket * t_socketDAM;
 t_socket * t_socketSAFA;
+t_socket * t_socketFM9;
 int * socketDAM;
 int * socketSAFA;
+int * socketFM9;
 
 /*
  * Estructuras particulares CPU
@@ -39,11 +53,10 @@ int * socketSAFA;
 
 enum codigosError
 {
-	ERROR_SOCKET_DAM = INT_MIN,
-	ERROR_SOCKET_SAFA,
+	ERROR_SOCKET = INT_MIN,
 	ERROR_PATH_CONFIG,
 	ERROR_CONFIG,
-	FIN_EXITOSO
+	ERROR_DTB
 };
 
 /*
@@ -70,5 +83,14 @@ void inicializarConexiones();
  * @PARAMS: {int} error Indica un codigo para verificar si finaliza la ejecucion por error o por fin de ejecucion.
  */
 void exit_gracefully(int error);
+
+
+char * enumToProcess(int proceso);
+
+void conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket);
+
+void recibirDTB();
+t_dtb * transformarPaqueteADTB(t_package * paquete);
+
 
 #endif /* CPU_H_ */

@@ -11,7 +11,54 @@
 
 int main(int argc, char ** argv) {
 	inicializarCPU(argv[1]);
-	exit_gracefully(FIN_EXITOSO);
+	//Recibir DTB y verificar valor de flag de inicializacion
+	recibirDTB();
+	exit_gracefully(EXIT_SUCCESS);
+}
+
+void recibirDTB()
+{
+	while(1)
+	{
+		// Aca habria que quedarse esperando por un DTB enviado por el SAFA.
+		t_package * paquete = malloc(sizeof(t_package));
+		recibir(t_socketSAFA->socket,paquete,loggerCPU->logger);
+		// Luego de recibirlo tengo que verificar su flag de inicializacion
+		t_dtb * DTB = transformarPaqueteADTB(paquete);
+		// Si es 0, levanto un hilo y realizo  la operación Dummy - Iniciar G.DT
+		if (DTB->flagInicializado == 0)
+		{
+			// Solicitarle al DAM la busqueda del Escriptorio en el MDJ
+
+			// Desalojar al DTB Dummy, avisando a SAFA que lo bloquee
+
+		}
+		// Si es 1, levanto un hilo y comienzo la ejecución de sentencias
+		else if (DTB->flagInicializado == 1)
+		{
+			// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
+
+			// Por cada unidad de tiempo de quantum, se ejecutara una linea del Escriptorio indicado en el DTB
+
+			// Comunicarse con el FM9 en caso de ser necesario.
+
+			// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
+			// lo pase a la cola de Exit.
+
+		}
+		else
+		{
+			exit_gracefully(ERROR_DTB);
+		}
+		free(paquete);
+	}
+}
+
+t_dtb * transformarPaqueteADTB(t_package * paquete)
+{
+	t_dtb * dtb = malloc(sizeof(t_dtb));
+	// Aca habria que realizar lo que sería una deserializacion de la info dentro de paquete->data
+	return dtb;
 }
 
 void inicializarCPU(char * pathConfig)
@@ -39,29 +86,47 @@ void inicializarCPU(char * pathConfig)
 
 void inicializarConexiones()
 {
-	cargarSocket(config->puertoDAM,config->ipDAM,socketDAM,loggerCPU->logger);
-	if (socketDAM != 0)
-	{
-		inicializarTSocket(*socketDAM, loggerCPU->logger);
-		enviarHandshake(t_socketDAM->socket,CPU_HSK,DAM_HSK,loggerCPU->logger);
-	}
-	else
-	{
-		log_error_mutex(loggerCPU, "Error al conectarse al DAM.");
-		exit_gracefully(ERROR_SOCKET_DAM);
-	}
+	conectarseAProceso(config->puertoDAM,config->ipDAM,socketDAM,DAM_HSK, t_socketDAM);
+	conectarseAProceso(config->puertoSAFA,config->ipSAFA,socketSAFA,SAFA_HSK, t_socketSAFA);
+	conectarseAProceso(config->puertoFM9,config->ipFM9,socketFM9,FM9_HSK, t_socketFM9);
+}
 
-	cargarSocket(config->puertoSAFA,config->ipSAFA,socketSAFA,loggerCPU->logger);
-	if (socketSAFA != 0)
+void conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket)
+{
+	cargarSocket(puerto,ip,socket,loggerCPU->logger);
+	if (socket != 0)
 	{
-		inicializarTSocket(*socketSAFA, loggerCPU->logger);
-		enviarHandshake(t_socketSAFA->socket,CPU_HSK,SAFA_HSK,loggerCPU->logger);
+		inicializarTSocket(*socket, loggerCPU->logger);
+		enviarHandshake(TSocket->socket,CPU_HSK,handshakeProceso,loggerCPU->logger);
 	}
 	else
 	{
-		log_error_mutex(loggerCPU, "Error al conectarse al SAFA.");
-		exit_gracefully(ERROR_SOCKET_SAFA);
+		log_error_mutex(loggerCPU, "Error al conectarse al %s", enumToProcess(handshakeProceso));
+		exit_gracefully(ERROR_SOCKET);
 	}
+}
+
+char * enumToProcess(int proceso)
+{
+	char * nombreProceso = "";
+	switch(proceso)
+	{
+		case FM9_HSK:
+			nombreProceso = "FM9";
+			break;
+		case DAM_HSK:
+			nombreProceso = "DAM";
+			break;
+		case SAFA_HSK:
+			nombreProceso = "SAFA";
+			break;
+		default:
+			log_error_mutex(loggerCPU, "Enum proceso error.");
+			break;
+	}
+	if (strcmp(nombreProceso,"") == 0)
+		exit_gracefully(-1);
+	return nombreProceso;
 }
 
 void exit_gracefully(int error)
