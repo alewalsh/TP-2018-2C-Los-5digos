@@ -66,20 +66,20 @@ void inicializarConexiones()
 
 void exit_gracefully(int error)
 {
-	if (error != ERROR_PATH_CONFIG)
-	{
+//	if (error != ERROR_PATH_CONFIG)
+//	{
 		free(config);
-		if (error != ERROR_SOCKET_DAM)
-		{
+//		if (error != ERROR_SOCKET_DAM)
+//		{
 			free(t_socketDAM);
 			close(*socketDAM);
-			if (error != ERROR_SOCKET_SAFA)
-			{
+//			if (error != ERROR_SOCKET_SAFA)
+//			{
 				free(t_socketSAFA);
 				close(*socketSAFA);
-			}
-		}
-	}
+//			}
+//		}
+//	}
 	log_destroy_mutex(loggerCPU);
 	exit(error);
 }

@@ -11,8 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/log.h>
-#include <configuracion.h>
-#include <socket.h>
+#include <grantp/configuracion.h>
+#include <grantp/socket.h>
 #include <limits.h>
 
 /*

@@ -26,13 +26,13 @@ endif
 all: CPU
 
 dependents:
-	-cd /home/utnso/git/tp-2018-2c-Los-5digos/GranTP-Commons/Debug && $(MAKE) all
+	-cd /home/utnso/git/tp-2018-2c-Los-5digos/GranTPCommons/Debug && $(MAKE) all
 
 # Tool invocations
-CPU: $(OBJS) $(USER_OBJS) /home/utnso/git/tp-2018-2c-Los-5digos/GranTP-Commons/Debug/libGranTP-Commons.so
+CPU: $(OBJS) $(USER_OBJS) /home/utnso/git/tp-2018-2c-Los-5digos/GranTPCommons/Debug/libGranTPCommons.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/git/tp-2018-2c-Los-5digos/GranTP-Commons/Debug" -o "CPU" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/git/tp-2018-2c-Los-5digos/GranTPCommons/Debug" -o "CPU" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -42,6 +42,6 @@ clean:
 	-@echo ' '
 
 .PHONY: all clean dependents
-/home/utnso/git/tp-2018-2c-Los-5digos/GranTP-Commons/Debug/libGranTP-Commons.so:
+/home/utnso/git/tp-2018-2c-Los-5digos/GranTPCommons/Debug/libGranTPCommons.so:
 
 -include ../makefile.targets

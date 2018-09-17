@@ -1,19 +1,16 @@
 /*
  ============================================================================
  Name        : FunesMemory9.c
- Author      : 
+ Author      : Nicolas Barrelier
  Version     :
- Copyright   : Your copyright notice
+ Copyright   : 
  Description : Hello World in C, Ansi-style
  ============================================================================
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <commons/temporal.h>
+#include "FunesMemory9.h"
 
 int main(void) {
-
 	char * tiempo = temporal_get_string_time();
 	puts(tiempo);
 	free(tiempo);

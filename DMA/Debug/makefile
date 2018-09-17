@@ -8,6 +8,7 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include src/subdir.mk
 -include subdir.mk
 -include objects.mk
 
@@ -22,25 +23,25 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: DAM
+all: DMA
 
 dependents:
-	-cd /home/utnso/git/tp-2018-2c-Los-5digos/GranTP-Commons/Debug && $(MAKE) clean all
+	-cd /home/utnso/git/tp-2018-2c-Los-5digos/GranTPCommons/Debug && $(MAKE) clean all
 
 # Tool invocations
-DAM: $(OBJS) $(USER_OBJS) /home/utnso/git/tp-2018-2c-Los-5digos/GranTP-Commons/Debug/libGranTP-Commons.so
+DMA: $(OBJS) $(USER_OBJS) /home/utnso/git/tp-2018-2c-Los-5digos/GranTPCommons/Debug/libGranTPCommons.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/git/tp-2018-2c-Los-5digos/GranTP-Commons/Debug" -o "DAM" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/git/tp-2018-2c-Los-5digos/GranTPCommons/Debug" -o "DMA" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) DAM
+	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) DMA
 	-@echo ' '
 
 .PHONY: all clean dependents
-/home/utnso/git/tp-2018-2c-Los-5digos/GranTP-Commons/Debug/libGranTP-Commons.so:
+/home/utnso/git/tp-2018-2c-Los-5digos/GranTPCommons/Debug/libGranTPCommons.so:
 
 -include ../makefile.targets
