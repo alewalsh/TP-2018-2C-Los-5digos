@@ -23,6 +23,7 @@ int main(int argc, char ** argv) {
 	//Creo las Variables locales
     pthread_t threadConsola;
     pthread_t threadConexiones;
+    pthread_t threadCambioConfig;
 
     //inicializacion de recursos y carga de configuracion
     inicializarRecursos();
@@ -32,18 +33,18 @@ int main(int argc, char ** argv) {
 	inotifyWd = inotify_add_watch(inotifyFd,configFilePath,IN_CLOSE_WRITE);
 
     //Inicializo la consola del Planificador y los threads correspondientes
+    pthread_create(&threadCambioConfig, &tattr, (void *) cambiosConfig, NULL);
     pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
     pthread_create(&threadConsola, &tattr, (void *) mainConsola, NULL);
 
     while(!getExit()){
 
-    	read(inotifyFd,inotifyBuf,200);
-    	log_info_mutex(logger,"Archivo leido es: %s", ((struct inotify_event*)inotifyBuf)->name);
     }
 
     liberarRecursos();
 	return EXIT_SUCCESS;
 }
+
 
 
 void inicializarRecursos(){
@@ -111,6 +112,13 @@ void initMutexs(){
 //	pthread_mutex_init(&mutexConsole, NULL);
 }
 
+
+void cambiosConfig(){
+	//TODO: Por ahora, si hay cambios me avisa. Tengo que ver como pausar la ejecucion
+	// y mandar el resto de los avisos, tmb ver que cambios hubo en el doc
+	read(inotifyFd,inotifyBuf,200);
+	log_info_mutex(logger,"Archivo leido es: %s", ((struct inotify_event*)inotifyBuf)->name);
+}
 
 
 ////Se inicializan las listas de Estado y Claves Bloqueadas
