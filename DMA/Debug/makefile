@@ -26,7 +26,7 @@ endif
 all: DMA
 
 dependents:
-	-cd /home/utnso/Git/tp-2018-2c-Los-5digos/GranTPCommons/Debug && $(MAKE) clean all
+	-cd /home/utnso/Git/tp-2018-2c-Los-5digos/GranTPCommons/Debug && $(MAKE) all
 
 # Tool invocations
 DMA: $(OBJS) $(USER_OBJS) /home/utnso/Git/tp-2018-2c-Los-5digos/GranTPCommons/Debug/libGranTPCommons.so
