@@ -16,9 +16,13 @@
 #include <grantp/socket.h>
 #include <grantp/configuracion.h>
 
-t_socket* socketSafa;
-t_socket* socketMdj;
-t_socket* socketFm9;
+t_socket* t_socketSafa;
+t_socket* t_socketMdj;
+t_socket* t_socketFm9;
+
+int * socketSafa;
+int * socketMdj;
+int * socketFm9;
 
 t_log* logger;
 configDAM* configDMA;
@@ -29,12 +33,21 @@ pthread_t hiloSafa;
 pthread_t hiloMdj;
 pthread_t hiloFm9;
 
+//Errores
+enum codigosError
+{
+	ERROR_PATH_CONFIG = 3,
+	ERROR_CONFIG = 4,
+	ERROR_SOCKET = 5
+};
 
 //Declaracion de funciones
 void cargarArchivoDeConfig();
 void configure_logger();
 void iniciarHilosDelDMA();
 void sig_handler(int signo);
+void conectAndHandskahe(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket);
+char * enumToProcess(int proceso);
 void * conectarseConSafa();
 void *conectarseConMdj();
 void *conectarseConFm9();
