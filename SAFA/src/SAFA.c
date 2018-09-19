@@ -33,8 +33,8 @@ int main(int argc, char ** argv) {
 	inotifyWd = inotify_add_watch(inotifyFd,configFilePath,IN_CLOSE_WRITE);
 
     //Inicializo la consola del Planificador y los threads correspondientes
-    pthread_create(&threadCambioConfig, &tattr, (void *) cambiosConfig, NULL);
     pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
+    pthread_create(&threadCambioConfig, &tattr, (void *) cambiosConfig, NULL);
     pthread_create(&threadConsola, &tattr, (void *) mainConsola, NULL);
 
     while(!getExit()){
