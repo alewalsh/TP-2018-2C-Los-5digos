@@ -13,13 +13,55 @@
 #include "SAFA.h"
 
 
+
+//void manejarSolicitud(t_package pkg, int socketFD) {
+//
+//    switch (pkg.code) {
+//        case ESI_PLAN_CONNECT:
+//            if (esiConnection(socketFD, pkg, logger)) {
+//                log_error_mutex(logger, "Hubo un error en la conexion con el esi");
+//                break;
+//            }
+//            sem_post(&sem_newEsi);
+//            break;
+//        case COORD_PLAN_BLOCK:
+//            //log_info_mutex(logger, "El coordinador me pide que bloquee un recurso");
+//            if (blockKey(socketFD, pkg, logger)) {
+//                log_error_mutex(logger, "No se pudo completar la operacion de bloqueo");
+//            }
+//            break;
+//        case COORD_PLAN_STORE:
+//            //log_info_mutex(logger, "El coordinador me pide que desbloque un recurso");
+//            if (storeKey(socketFD, pkg, logger)) {
+//                log_error_mutex(logger, "No se pudo completar la operacion de desbloqueo");
+//            }
+//            break;
+//        case SOCKET_DISCONECT:
+//            handlerDisconnect(socketFD);
+//            close(socketFD);
+//            deleteSocketFromMaster(socketFD);
+//            break;
+//        default:
+//            log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
+//            log_warning_mutex(logger, "Ojo, estas recibiendo un mensaje que no esperabas.");
+//            break;
+//
+//    }
+//
+//    free(pkg.data);
+//
+//}
+
+
+
 void manejarConexiones(){
 
     int socketListen, i,nuevoFd;
     uint16_t handshake;
     t_package pkg;
 
-    int estadoSAFA = 2;  // 2 corrupto - 0 operativo
+    int estadoSAFA = Corrupto;
+	int CPUConectado, DAMConectado = 0;
 	log_trace_mutex(logger, "Se inicializa SAFA en estado Corrupto");
 
     //Creo el socket y me quedo escuchando
@@ -33,11 +75,10 @@ void manejarConexiones(){
 
     addNewSocketToMaster(socketListen);
 
-
     //TODO: Voy a tener que agregar que no se empiece a planificar hasta esto
-    while(!estadoSAFA == 0){
-    	//Escucho conexiones. Cuando se me conecta el DAM bajo estado a 0, y cuando hay 1 cpu
-    	// tmb bajo a 0
+
+    while(estadoSAFA != Operativo){
+
         if (acceptConnection(socketListen, &nuevoFd, SAFA_HSK, &handshake, logger->logger)) {
             log_error_mutex(logger, "No se acepta la conexion");
         }
@@ -46,17 +87,22 @@ void manejarConexiones(){
             case DAM_HSK:
             	log_trace_mutex(logger, "Se me conecto el DAM, socket: %d", nuevoFd);
                 addNewSocketToMaster(nuevoFd);
-            	estadoSAFA--;
+            	DAMConectado++;
                 break;
             case CPU_HSK:
             	log_trace_mutex(logger, "Se me conecto un CPU, socket: %d", nuevoFd);
                 addNewSocketToMaster(nuevoFd);
-            	estadoSAFA--;
+                CPUConectado++;
                 break;
             default:
                 log_warning_mutex(logger, "Se me quizo conectar alguien que no espero");
                 close(nuevoFd);
                 break;
+        }
+
+        if ((CPUConectado != 0) && (DAMConectado != 0)){
+        	estadoSAFA = Operativo;
+        	//TODO: Aca podria mandar el dummy
         }
     }
 
@@ -97,7 +143,7 @@ void manejarConexiones(){
                         log_error_mutex(logger, "No se pudo recibir el mensaje");
                         //handlerDisconnect(i);
                     } else {
-                        //manageRequest(pkg, i);
+                        manejarSolicitud(pkg, i);
                     }
 
                 }

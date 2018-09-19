@@ -24,10 +24,11 @@ extern fd_set readset;
 //extern sem_t sem_newEsi;
 //extern pthread_mutex_t mutexReadyExecute;
 
+
 // ------------------------------------------------------------------------------
 //	VARIABLES GLOBALES
 // ------------------------------------------------------------------------------
-int estadoSAFA;
+
 
 
 void manejarConexiones();
