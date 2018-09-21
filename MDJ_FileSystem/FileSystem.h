@@ -12,9 +12,13 @@
 #include <grantp/socket.h>
 #include <pthread.h>
 
+
+pthread_t threadDAM;
+pthread_attr_t tattr;
+t_socket* socketEscucha;
+
 t_log* logger;
 configMDJ* configuracion;
-t_socket* socketDAM;
 
 enum codigosError
 {
@@ -24,9 +28,10 @@ enum codigosError
 	FIN_EXITOSO
 };
 
-void inicializarCPU(char *);
+void inicializarMDJ(char *);
 void inicializarConexion();
-void esperarInstruccionDAM(int);
+void esperarInstruccionDAM();
 void exit_gracefully(int);
+void responderDAM();
 
 #endif /* FileSystem_H_ */
