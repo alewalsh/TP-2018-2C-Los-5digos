@@ -66,6 +66,7 @@ typedef struct {
 
 typedef struct {
     int puertoMDJ;
+    char *ip_propia;
     char *puntoMontaje;
     int retardo;
 } configMDJ;

@@ -107,6 +107,7 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             }
             mdj = (configMDJ *) malloc(sizeof(configMDJ));
             mdj->puertoMDJ = leerPuerto(configFile, "PUERTO", logger);
+            mdj->ip_propia = leerString(configFile, "IP_PROPIA", logger);
             mdj->puntoMontaje = leerString(configFile, "PUNTO_MONTAJE", logger);
             mdj->retardo = leerInt(configFile, "RETARDO", logger);
             ret = mdj;
@@ -234,6 +235,7 @@ void freeConfig(void *conf, processType processType) {
                 break;
             case MDJ:
             	mdj = (configMDJ *) conf;
+            	free(mdj->ip_propia);
             	free(mdj->puntoMontaje);
             	free(mdj);
             	break;

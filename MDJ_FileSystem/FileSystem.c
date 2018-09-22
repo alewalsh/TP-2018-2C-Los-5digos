@@ -1,13 +1,16 @@
 #include "FileSystem.h"
 
 int main(int argc, char ** argv) {
-	inicializarCPU(argv[1]);
-//	inicializarConexion();
+	inicializarMDJ(argv[1]);
+	//cargarFIFA(); //TODO proxixma entrega
+	inicializarConexion();
+	//inincializarConsola()
 
 	exit_gracefully(FIN_EXITOSO);
 }
 
-void inicializarCPU(char * pathConfig){
+void inicializarMDJ(char * pathConfig){
+
 	logger = log_create("MDJ.log", "MDJ", true, LOG_LEVEL_INFO);
 	if (pathConfig != NULL){
 		configuracion = cargarConfiguracion(pathConfig, MDJ, logger);
@@ -26,28 +29,29 @@ void inicializarCPU(char * pathConfig){
 	log_info(logger, "Puerto = %d", configuracion->puertoMDJ);
 	log_info(logger, "Punto montaje = %s", configuracion->puntoMontaje);
 	log_info(logger, "Retardo = %d", configuracion->retardo);
+	log_info(logger, "IP propia = %s", configuracion->ip_propia);
 }
 
-//void inicializarConexion(){
-//	int socketEscucha;
-//	socketDAM = inicializarTSocket(socketEscucha, logger);
-//	escuchar(configuracion->puertoMDJ, socketDAM, logger);
-//
-//	//esto pasarlo a un thead propio
-//	esperarInstruccionDAM(socketDAM);
-//}
-//
-//void esperarInstruccionDAM(int socketEscucha){
-//	while(1){
-//		int socketCliente;
-//		aceptar(socketEscucha, socketCliente, logger);
-//
-//		t_package instruccion;
-//		recibir(socketCliente, instruccion, logger);
-//
-//		//switch segun contenido de instruccion
-//	}
-//}
+void inicializarConexion(){
+	int * socketPropio;
+	int socket = cargarSoket(configuracion->puertoMDJ,configuracion->ip_propia, socketPropio, logger);
+	socketEscucha = inicializarTSocket(socket, logger);
+	recibirHandshake(&socketEscucha->socket, MDJ_HSK, DAM_HSK, logger);
+	escuchar(configuracion->puertoMDJ, &socketEscucha->socket, logger);
+//	enviarHandshake(&socketEscucha->socket, MDJ_HSK, DAM_HSK, logger);
+
+    pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
+}
+
+void esperarInstruccionDAM(){
+	while(1){
+
+//		recibir(socketEscucha, /*package*/,logger);
+
+		responderDAM();
+	}
+}
+
 
 void exit_gracefully(int error){
 	if (error != ERROR_PATH_CONFIG)
