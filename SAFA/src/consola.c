@@ -104,5 +104,3 @@ void consolePrintHeader() {
     printf("Para consultar comandos de consola escriba 'HELP'\n");
     printf("\n");
 }
-
-

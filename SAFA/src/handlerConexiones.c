@@ -53,7 +53,6 @@
 //}
 
 
-
 void manejarConexiones(){
 
     int socketListen, i,nuevoFd;
@@ -121,6 +120,7 @@ void manejarConexiones(){
         }
 
         log_trace_mutex(logger, "El valor del select es: %d", result);
+
         log_trace_mutex(logger, "Analizo resultado del select para ver quien me hablo");
 
         for (i = 0; i <= getMaxfd(); i++) {
@@ -128,6 +128,7 @@ void manejarConexiones(){
         	if (isSetted(i)) { // ¡¡tenemos datos!!
 
         		if (i == socketListen) {
+
                     // CAMBIOS EN EL SOCKET QUE ESCUCHA, acepto las nuevas conexiones
                     log_trace_mutex(logger, "Cambios en Listener de SAFA, se gestionara la conexion correspondiente");
                     if (acceptConnection(socketListen, &nuevoFd, SAFA_HSK, &handshake, logger->logger)) {
