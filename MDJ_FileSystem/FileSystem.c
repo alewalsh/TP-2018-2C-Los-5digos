@@ -36,7 +36,8 @@ void inicializarConexion(){
 	int * socketPropio;
 	int socket = cargarSocket(configuracion->puertoMDJ,configuracion->ip_propia, socketPropio, logger);
 	socketEscucha = inicializarTSocket(socket, logger);
-	recibirHandshake(&socketEscucha->socket, MDJ_HSK, DAM_HSK, logger);
+
+	while(recibirHandshake(&socketEscucha->socket, MDJ_HSK, DAM_HSK, logger));
 
 	printf("Se conecto el DAM");
    // pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);

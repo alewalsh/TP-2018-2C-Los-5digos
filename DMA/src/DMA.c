@@ -105,7 +105,7 @@ void * conectarseConCPU(){
 }
 
 void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket){
-	cargarSocket(puerto,ip,socket,logger);
+	cargarSocket(puerto,"",socket,logger);
 	if (socket != 0)
 	{
 		inicializarTSocket(*socket, logger);

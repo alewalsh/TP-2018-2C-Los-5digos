@@ -11,8 +11,8 @@
 #include "FunesMemory9.h"
 
 int main(int argc, char** argv) {
-	logger = log_create_mutex("CPU.log", "CPU", true, LOG_LEVEL_INFO);
-	config = cargarConfiguracion(argv[1], CPU, logger->logger);
+	logger = log_create_mutex("FM9.log", "FM9", true, LOG_LEVEL_INFO);
+	config = cargarConfiguracion(argv[1], FM9, logger->logger);
 
 	manejarConexiones();
 	return EXIT_SUCCESS;
@@ -23,6 +23,7 @@ void manejarConexiones(){
 	uint16_t handshake;
 	t_package pkg;
 
+	printf("%d",config->puertoFM9);
 	//Creo el socket y me quedo escuchando
 	if (escuchar(config->puertoFM9, &socketListen, logger->logger)) {
 		liberarRecursos();

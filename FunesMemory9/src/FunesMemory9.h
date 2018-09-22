@@ -10,7 +10,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <commons/temporal.h>
 #include <grantp/configuracion.h>
 #include <grantp/socket.h>
 #include <grantp/mutex_log.h>

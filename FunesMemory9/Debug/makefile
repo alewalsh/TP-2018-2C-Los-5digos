@@ -25,11 +25,14 @@ endif
 # All Target
 all: FunesMemory9
 
+dependents:
+	-cd /home/utnso/Git/tp-2018-2c-Los-5digos/GranTPCommons/Debug && $(MAKE) clean all
+
 # Tool invocations
-FunesMemory9: $(OBJS) $(USER_OBJS)
+FunesMemory9: $(OBJS) $(USER_OBJS) /home/utnso/Git/tp-2018-2c-Los-5digos/GranTPCommons/Debug/libGranTPCommons.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc  -o "FunesMemory9" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/Git/tp-2018-2c-Los-5digos/GranTPCommons/Debug" -o "FunesMemory9" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -39,5 +42,6 @@ clean:
 	-@echo ' '
 
 .PHONY: all clean dependents
+/home/utnso/Git/tp-2018-2c-Los-5digos/GranTPCommons/Debug/libGranTPCommons.so:
 
 -include ../makefile.targets

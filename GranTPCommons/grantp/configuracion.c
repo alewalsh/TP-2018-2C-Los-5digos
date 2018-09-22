@@ -107,25 +107,26 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             }
             mdj = (configMDJ *) malloc(sizeof(configMDJ));
             mdj->puertoMDJ = leerPuerto(configFile, "PUERTO", logger);
-            mdj->ip_propia = leerString(configFile, "IP_PROPIA", logger);
+            mdj->ip_propia = leerIP(configFile, "IP_PROPIA", logger);
             mdj->puntoMontaje = leerString(configFile, "PUNTO_MONTAJE", logger);
             mdj->retardo = leerInt(configFile, "RETARDO", logger);
             ret = mdj;
             break;
         case FM9:
-        	if (checkAmountOfParams(configFile, 5, logger)) {
+        	if (checkAmountOfParams(configFile, 6, logger)) {
 				ret = NULL;
 				break;
 			}
             funesMemory = (configFM9 *) malloc(sizeof(configFM9));
             funesMemory->puertoFM9 = leerPuerto(configFile, "PUERTO", logger);
-            funesMemory->ip_propia = leerString(configFile, "IP_PROPIA", logger);
+            funesMemory->ip_propia = leerIP(configFile, "IP_PROPIA", logger);
             char *modo = leerString(configFile, "MODO", logger);
             funesMemory->modoEjecucion = getModoEjecucion(modo);
             free(modo);
             funesMemory->tamMemoria = leerInt(configFile, "TAMANIO", logger);
             funesMemory->tamMaxLinea = leerInt(configFile, "MAX_LINEA", logger);
             funesMemory->tamPagina = leerInt(configFile, "TAM_PAGINA", logger);
+            ret = funesMemory;
         	break;
         default:
             ret = NULL;

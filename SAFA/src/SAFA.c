@@ -20,7 +20,7 @@ int main(int argc, char ** argv) {
 
 	//TODO: CREAR EL ESTADO CORRUPTO Y OPERATIVO DEL SAFA
 
-    configFilePath = "/home/utnso/git/tp-2018-2c-Los-5digos/SAFA/config";
+    configFilePath = "/home/utnso/Git/tp-2018-2c-Los-5digos/SAFA/config.cfg";
 
 	//Creo las Variables locales
     pthread_t threadConsola;
@@ -30,16 +30,19 @@ int main(int argc, char ** argv) {
     //inicializacion de recursos y carga de configuracion
     inicializarRecursos();
 
+    printf("Recursos incializados");
 
     //Empiezo inotif para despues ver si hubo cambios sobre el archivo de configuracion
 	inotifyFd = inotify_init();
 	inotifyWd = inotify_add_watch(inotifyFd,configFilePath,IN_CLOSE_WRITE);
 
+	printf("Se crean los hilos de safa");
     //Inicializo la consola del Planificador y los threads correspondientes
     pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
     pthread_create(&threadCambioConfig, &tattr, (void *) cambiosConfig, NULL);
     pthread_create(&threadConsola, &tattr, (void *) mainConsola, NULL);
 
+    printf("Hilos creados");
     while(!getExit()){
     }
 
