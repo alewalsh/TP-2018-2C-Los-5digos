@@ -61,9 +61,9 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             }
             safa = (configSAFA *) malloc(sizeof(configSAFA));
             safa->puerto = leerPuerto(configFile, "PUERTO", logger);
-            char *algorithm = leerString(configFile, "ALGORITMO", logger);
-            safa->algoritmo = getAlgorithm(algorithm);
-            free(algorithm);
+            char *algor = leerString(configFile, "ALGORITMO", logger);
+            safa->algoritmo = getAlgorithm(algor);
+            free(algor);
             safa->quantum = leerInt(configFile, "QUANTUM", logger);
             safa->grado_mp = leerInt(configFile, "MULTIPROGRAMACION", logger);
             safa->retardo = leerInt(configFile, "RETARDO", logger);
@@ -204,10 +204,14 @@ void freeConfig(void *conf, processType processType) {
 	configFM9 *funesMemory;
 	configMDJ *mdj;
 
+
+	//TODO: Verificar porque hay que hacer mas free de los que esta, faltan algunas cosas
+
     if (conf != NULL) {
         switch (processType) {
             case SAFA:
             	safa = (configSAFA *) conf;
+            	//TODO: Juan revisara las cosas que se tienen que liberar enSAFA(ver planif)
                 free(safa);
                 break;
             case CPU:

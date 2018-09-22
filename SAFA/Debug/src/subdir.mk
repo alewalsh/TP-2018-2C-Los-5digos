@@ -5,14 +5,23 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../src/SAFA.c \
+../src/consola.c \
+../src/funcionesConsola.c \
+../src/funcionesSAFA.c \
 ../src/handlerConexiones.c 
 
 OBJS += \
 ./src/SAFA.o \
+./src/consola.o \
+./src/funcionesConsola.o \
+./src/funcionesSAFA.o \
 ./src/handlerConexiones.o 
 
 C_DEPS += \
 ./src/SAFA.d \
+./src/consola.d \
+./src/funcionesConsola.d \
+./src/funcionesSAFA.d \
 ./src/handlerConexiones.d 
 
 

@@ -38,6 +38,10 @@ typedef struct {
     uint16_t status;
 } t_blocked_keys;
 
+enum estadoSAFA {
+	Operativo = 0, Corrupto = 1
+};
+
 enum typeLIST {
     READY = 2001, BLOCKED = 2002, EXECUTING = 2003, FINISHED = 2004, BLOCKEDKEYS
 };
@@ -64,8 +68,9 @@ enum typeStatus {
 };
 
 enum command {
-    STOP = 1, PLAY, BLOCK, UNBLOCK, LIST, STATUS, KILL, DEADLOCK, CLEAR, MAN, EXIT, HELP, ESIS, KEYS
+    EJECUTAR = 1, STATUS, FINALIZAR, METRICAS, EXIT, HELP
 };
+//LIST, STATUS, KILL, DEADLOCK, CLEAR, MAN, ESIS, KEYS
 
 void freeEsiInstruction(void *esi);
 
