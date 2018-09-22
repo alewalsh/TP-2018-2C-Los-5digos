@@ -30,7 +30,6 @@ extern fd_set readset;
 // ------------------------------------------------------------------------------
 
 
-
 void manejarConexiones();
 
 #endif /* HANDLERCONEXIONES_H_ */

@@ -18,6 +18,7 @@
 
 extern int shouldExit;
 extern pthread_mutex_t mutexExit;
+
 //extern pthread_mutex_t mutexReadyExecute;
 //
 //extern sem_t sem_newEsi;
@@ -64,7 +65,6 @@ void consoleHelp();
 int getIdFunction(char *function);
 void parseCommand(char *line, char **command, char **args);
 void freeCommand(char *command, char *args);
-
 
 //--------------------------------------------------------------------------------------------------------------------------------------
 // FUNCIONES PARA LOS HILOS

@@ -12,12 +12,14 @@
 #include <grantp/configuracion.h>
 
 
+
 pthread_attr_t tattr;
 
 
 int main(int argc, char ** argv) {
 
 	//TODO: CREAR EL ESTADO CORRUPTO Y OPERATIVO DEL SAFA
+
     configFilePath = "/home/utnso/git/tp-2018-2c-Los-5digos/SAFA/config";
 
 	//Creo las Variables locales
@@ -27,6 +29,7 @@ int main(int argc, char ** argv) {
 
     //inicializacion de recursos y carga de configuracion
     inicializarRecursos();
+
 
     //Empiezo inotif para despues ver si hubo cambios sobre el archivo de configuracion
 	inotifyFd = inotify_init();
@@ -38,13 +41,11 @@ int main(int argc, char ** argv) {
     pthread_create(&threadConsola, &tattr, (void *) mainConsola, NULL);
 
     while(!getExit()){
-
     }
 
     liberarRecursos();
 	return EXIT_SUCCESS;
 }
-
 
 
 void inicializarRecursos(){
@@ -71,10 +72,12 @@ void inicializarRecursos(){
     FD_ZERO(&readset);
 
     shouldExit = 0;
+
 }
 
 
 void liberarRecursos(){
+
 
 //    list_destroy_and_destroy_elements(statusList, freeEsi);
 //    list_destroy_and_destroy_elements(blockedKeys, freeBlockedKey);
@@ -106,11 +109,14 @@ void initMutexs(){
 //	pthread_mutex_init(&mutexBlockedKeys, NULL);
 	pthread_mutex_init(&mutexReadset, NULL);
 //	pthread_mutex_init(&mutexTime, NULL);
+
 	pthread_mutex_init(&mutexExit, NULL);
+
 //	pthread_mutex_init(&mutexStop, NULL);
 //	pthread_mutex_init(&mutexReadyExecute, NULL);
 //	pthread_mutex_init(&mutexConsole, NULL);
 }
+
 
 
 void cambiosConfig(){

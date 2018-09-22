@@ -25,7 +25,6 @@
 #include <grantp/structCommons.h>
 
 //TODO:CHEKEAR LOS ORDENES DE LOS INCLUDE
-
 void mainConsola();
 void consolePrintHeader();
 

@@ -7,7 +7,6 @@
 
 #ifndef FUNCIONESSAFA_H_
 #define FUNCIONESSAFA_H_
-
 #include <grantp/structCommons.h>
 #include <stdio.h>
 #include <stdlib.h>

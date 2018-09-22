@@ -46,11 +46,11 @@ enum typeLIST {
     READY = 2001, BLOCKED = 2002, EXECUTING = 2003, FINISHED = 2004, BLOCKEDKEYS
 };
 
-enum typeScheduler {
+enum tipoPlanificacion {
     RR = 1, VRR, PROPIO
 };
 
-enum typeExceution {
+enum tipoEjecucion {
 	SEG = 1, TPI, SPA
 };
 

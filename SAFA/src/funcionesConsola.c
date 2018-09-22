@@ -73,8 +73,6 @@ const char *descriptions[] = {"Ejecutara el Script indicado.",
 //}
 //
 
-
-
 //void consoleBlock(char *args) {
 //
 //    if (args == NULL) {
@@ -427,7 +425,6 @@ const char *descriptions[] = {"Ejecutara el Script indicado.",
 //}
 
 
-
 void consoleHelp() {
     printf("*--------------------------------------------------------------------------*\n\n");
     int i;
@@ -436,7 +433,6 @@ void consoleHelp() {
     }
     printf("*--------------------------------------------------------------------------*\n\n");
 }
-
 
 //void consoleStatusAllESI() {
 //    printf("*--------------------------------------------------------------------------*\n\n");
@@ -515,7 +511,6 @@ void freeCommand(char *command, char *args) {
     if (args)
         free(args);
 }
-
 
 
 // ----------------------------------------------------------------------------------------------------------------------
