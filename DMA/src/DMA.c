@@ -52,9 +52,17 @@ void iniciarHilosDelDMA() {
 			exit_gracefully(1);
 	}
 
-	pthread_join(hiloSafa, NULL);
-	pthread_join(hiloMdj, NULL);
-	pthread_join(hiloFm9, NULL);
+	char *ret_thread_safa;
+	char *ret_thread_mdj;
+	char *ret_thread_fm9;
+
+	pthread_join(hiloSafa, (void **)&ret_thread_safa);
+	pthread_join(hiloMdj, (void **)&ret_thread_mdj);
+	pthread_join(hiloFm9, (void **)&ret_thread_fm9);
+
+	free(ret_thread_safa);
+	free(ret_thread_mdj);
+	free(ret_thread_fm9);
 
 	log_info(logger, "Los hilos finalizaron correctamente");
 
@@ -67,7 +75,10 @@ void * conectarseConSafa(){
 
 	conectAndHandskahe(configDMA->puertoSAFA,configDMA->ipSAFA,
 			socketSafa,SAFA_HSK,t_socketSafa);
-	return NULL;
+
+	char * ret = malloc(11);
+	strcpy(ret, "FINISH SAFA");
+	pthread_exit((void *)ret);
 }
 
 /*FUNCION DEL HILO MDJ
@@ -77,7 +88,10 @@ void * conectarseConMdj(){
 
 	conectAndHandskahe(configDMA->puertoMDJ,configDMA->ipMDJ,
 			socketMdj,MDJ_HSK,t_socketMdj);
-	return NULL;
+
+	char * ret = malloc(10);
+	strcpy(ret, "FINISH MDJ");
+	pthread_exit((void *)ret);
 }
 
 /*FUNCION DEL HILO FM9
@@ -87,7 +101,10 @@ void * conectarseConFm9(){
 
 	conectAndHandskahe(configDMA->puertoFM9,configDMA->ipFM9,
 			socketFm9,FM9_HSK,t_socketFm9);
-	return NULL;
+
+	char * ret = malloc(10);
+	strcpy(ret, "FINISH FM9");
+	pthread_exit((void *)ret);
 }
 
 void conectAndHandskahe(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket){
