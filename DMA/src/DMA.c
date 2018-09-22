@@ -3,71 +3,158 @@
  Name        : DMA.c
  Author      : Franco Lopez
  Version     :
- Copyright   : 
- Description : Hello World in C, Ansi-style
+ Copyright   : Your copyright notice
+ Description : Proyecto destinado al DMA
  ============================================================================
  */
 
 #include "DMA.h"
 
-int main(void) {
+int main(int argc, char ** argv) {
 	configure_logger();
 	cargarArchivoDeConfig();
-	//inicializarDMA();
+	iniciarHilosDelDMA();
 
 	exit_gracefully(0);
 	return EXIT_SUCCESS;
 }
 
-void cargarArchivoDeConfig(){
+void cargarArchivoDeConfig() {
 	configDMA = cargarConfiguracion("config.cfg", DAM, logger);
 	log_info(logger, "Archivo de configuraciones cargado correctamente");
 }
 
-void configure_logger(){
+void configure_logger() {
 	logger = log_create("DAM.log", "DAM", true, LOG_LEVEL_INFO);
 	log_info(logger, "Inicia proceso: Diego Armando Maradona (DAM)");
 }
 
-void inicializarDMA(){
-	//Conectarse con S-AFA, MDJ y FM9
-	//Crear hilo que mantenga la escucha con cada proceso
-	int socketSafa = connect_to_server(configDMA->ipSAFA, configDMA->puertoSAFA, "S-AFA");
-	int socketMdj = connect_to_server(configDMA->ipMDJ, configDMA->puertoMDJ, "MDJ");
-	int socketFm = connect_to_server(configDMA->ipFM9, configDMA->puertoFM9, "FM9");
+void iniciarHilosDelDMA() {
+	log_info(logger,"Creando sockets");
+
+	int res;
+	//TODO: Manejar conexiones con hilos
+	res = pthread_create(&hiloSafa,NULL,(void *)conectarseConSafa(), NULL);
+	if(res > 0){
+		log_error(logger, "Error al crear el hilo del S-Afa");
+		exit_gracefully(1);
+	}
+
+	res = pthread_create(&hiloMdj,NULL,(void *)conectarseConMdj(), NULL);
+	if(res > 0){
+			log_error(logger, "Error al crear el hilo del MDJ");
+			exit_gracefully(1);
+	}
+
+	res = pthread_create(&hiloFm9,NULL,(void *)conectarseConFm9(), NULL);
+	if(res > 0){
+			log_error(logger, "Error al crear el hilo del FM9");
+			exit_gracefully(1);
+	}
+
+	pthread_join(hiloSafa, NULL);
+	pthread_join(hiloMdj, NULL);
+	pthread_join(hiloFm9, NULL);
+
+	log_info(logger, "Los hilos finalizaron correctamente");
+
 }
 
-int connect_to_server(char * ip, char * port, char * servidor) {
-  struct addrinfo hints;
-  struct addrinfo *server_info;
+/*FUNCION DEL HILO MDJ
+ * Crea UN hilo que queda conectado y a la escucha del S-Afa
+ */
+void * conectarseConSafa(){
 
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_UNSPEC;    // Permite que la maquina se encargue de verificar si usamos IPv4 o IPv6
-  hints.ai_socktype = SOCK_STREAM;  // Indica que usaremos el protocolo TCP
-
-  getaddrinfo(ip, port, &hints, &server_info);  // Carga en server_info los datos de la conexion
-
-  //Socket
-  int server_socket = socket(server_info->ai_family, server_info->ai_socktype,server_info->ai_protocol);
-
-  //Me conecto al server a traves del socket
-  int retorno = connect(server_socket, server_info->ai_addr, server_info->ai_addrlen);
-
-  freeaddrinfo(server_info);  // No lo necesitamos mas
-  // chequeo el retorno
-  if(retorno < 0){
-	  log_error(logger, "Error al conectar");
-	  exit_gracefully(1);
-  }
-
-  log_info(logger, "Se conectó con exito a: (%c)", servidor);
-  return server_socket;
+	conectAndHandskahe(configDMA->puertoSAFA,configDMA->ipSAFA,
+			socketSafa,SAFA_HSK,t_socketSafa);
+	return NULL;
 }
+
+/*FUNCION DEL HILO MDJ
+ * Crea UN hilo que queda conectado al MDJ
+ */
+void * conectarseConMdj(){
+
+	conectAndHandskahe(configDMA->puertoMDJ,configDMA->ipMDJ,
+			socketMdj,MDJ_HSK,t_socketMdj);
+	return NULL;
+}
+
+/*FUNCION DEL HILO FM9
+ * Crea UN hilo que queda conectado al FM9
+ */
+void * conectarseConFm9(){
+
+	conectAndHandskahe(configDMA->puertoFM9,configDMA->ipFM9,
+			socketFm9,FM9_HSK,t_socketFm9);
+	return NULL;
+}
+
+void conectAndHandskahe(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket){
+	cargarSoket(puerto,ip,socket,logger);
+	if (socket != 0)
+	{
+		inicializarTSocket(*socket, logger);
+		enviarHandshake(TSocket->socket,DAM_HSK,handshakeProceso,logger);
+	}
+	else
+	{
+		log_error(logger, "Error al conectarse al %s", enumToProcess(handshakeProceso));
+		exit_gracefully(ERROR_SOCKET);
+	}
+}
+
+
+char * enumToProcess(int proceso)
+{
+	char * nombreProceso = "";
+	switch(proceso)
+	{
+		case FM9_HSK:
+			nombreProceso = "FM9";
+			break;
+		case MDJ_HSK:
+			nombreProceso = "MDJ";
+			break;
+		case SAFA_HSK:
+			nombreProceso = "SAFA";
+			break;
+		case DAM_HSK:
+			nombreProceso = "DMA";
+			break;
+		default:
+			log_error(logger, "Enum proceso error.");
+			break;
+	}
+	if (strcmp(nombreProceso,"") == 0)
+		exit_gracefully(-1);
+	return nombreProceso;
+}
+
+
 
 //Funcion para cerrar el programa
 void exit_gracefully(int return_nr) {
-	log_info(logger,"Fin del proceso: DAM");
+
+	bool returnCerrarSockets = cerrarSockets();
+	if(return_nr > 0 || returnCerrarSockets){
+		log_error(logger, "Fin del proceso: DAM");
+	}else{
+		log_info(logger, "Fin del proceso: DAM");
+	}
 
 	log_destroy(logger);
 	exit(return_nr);
+}
+
+
+bool cerrarSockets(){
+	free(t_socketSafa);
+	free(t_socketFm9);
+	free(t_socketMdj);
+	int ret1 = close(*socketSafa);
+	int ret2 = close(*socketFm9);
+	int ret3 = close(*socketMdj);
+
+	return ret1 < 0 || ret2 < 0 || ret3 < 0;
 }
