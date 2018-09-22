@@ -58,6 +58,7 @@ typedef struct {
 
 typedef struct {
     int puertoFM9;
+    char * ip_propia;
     uint16_t modoEjecucion;
     int tamMemoria;
     int tamMaxLinea;

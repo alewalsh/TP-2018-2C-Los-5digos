@@ -119,6 +119,7 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
 			}
             funesMemory = (configFM9 *) malloc(sizeof(configFM9));
             funesMemory->puertoFM9 = leerPuerto(configFile, "PUERTO", logger);
+            funesMemory->ip_propia = leerString(configFile, "IP_PROPIA", logger);
             char *modo = leerString(configFile, "MODO", logger);
             funesMemory->modoEjecucion = getModoEjecucion(modo);
             free(modo);
@@ -231,6 +232,7 @@ void freeConfig(void *conf, processType processType) {
                 break;
             case FM9:
             	funesMemory = (configFM9 *) conf;
+            	free(funesMemory->ip_propia);
                 free(funesMemory);
                 break;
             case MDJ:
