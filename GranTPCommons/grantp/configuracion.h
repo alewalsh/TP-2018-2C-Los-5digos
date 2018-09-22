@@ -47,6 +47,7 @@ typedef struct {
 
 typedef struct {
     int puertoDAM;
+    char *ipDAM;
     char *ipSAFA;
     int puertoSAFA;
     char *ipMDJ;

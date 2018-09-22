@@ -144,7 +144,7 @@ void manejarConexiones(){
                         log_error_mutex(logger, "No se pudo recibir el mensaje");
                         //handlerDisconnect(i);
                     } else {
-                        manejarSolicitud(pkg, i);
+                        //manejarSolicitud(pkg, i);
                     }
 
                 }
