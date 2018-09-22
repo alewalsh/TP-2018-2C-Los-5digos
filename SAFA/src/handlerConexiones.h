@@ -9,8 +9,8 @@
 #define HANDLERCONEXIONES_H_
 
 #include <stdint.h>
-#include <socket.h>
-#include <configuracion.h>
+#include <grantp/socket.h>
+#include <grantp/configuracion.h>
 #include "funcionesSAFA.h"
 #include <semaphore.h>
 //#include "handlerCoordinator.h"
@@ -23,6 +23,11 @@ extern fd_set master;
 extern fd_set readset;
 //extern sem_t sem_newEsi;
 //extern pthread_mutex_t mutexReadyExecute;
+
+
+// ------------------------------------------------------------------------------
+//	VARIABLES GLOBALES
+// ------------------------------------------------------------------------------
 
 
 void manejarConexiones();

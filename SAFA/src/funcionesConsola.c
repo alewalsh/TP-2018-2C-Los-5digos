@@ -7,38 +7,29 @@
 
 
 #include "funcionesConsola.h"
-#include <javaStrings.h>
-#include <structCommons.h>
-#include <mutex_log.h>
-#include <socket.h>
+#include <grantp/javaStrings.h>
+#include <grantp/structCommons.h>
+#include <grantp/mutex_log.h>
+#include <grantp/socket.h>
 //#include "executer.h"
-#include "compression.h"
+#include <grantp/compression.h>
 //#include "blockedKeyFunctions.h"
 
+// ----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 
-//int amountCommands = 14;
-//
-//const char *functions[] = {"PAUSAR", "CONTINUAR", "BLOQUEAR", "DESBLOQUEAR", "LISTAR", "ESTADOS", "KILL", "DEADLOCK",
-//                           "CLEAR", "MAN", "EXIT", "HELP", "ESIS", "KEYS"};
 
+int cantComandos = 6;
 const char *functions[] = {"EJECUTAR", "STATUS", "FINALIZAR", "METRICAS", "EXIT", "HELP"};
 
 
-//const char *descriptions[] = {"Pausa la planificacion",
-//                              "Continua planificacion",
-//                              "Bloquea un proceso ESI",
-//                              "Desbloquea el proceso ESI bloqueado",
-//                              "Lista los procesos encolados esperando recurso",
-//                              "Consulta informacion de instancias del sistema",
-//                              "Finaliza proceso",
-//                              "Muestra deadlock de procesos",
-//                              "Limpiar pantalla",
-//                              "Sintaxis de cada comando",
-//                              "Salir del planificador",
-//                              "Muestra todos los comandos disponibles",
-//                              "Muestro el estado de todos los esis",
-//                              "Muestro el estado de todas las keys"};
-//
+const char *descriptions[] = {"Ejecutara el Script indicado.",
+                              "Detallara los estados de las colas de planificacion.",
+                              "Se enviara el proceso indicado a la cola de EXIT, liberando lugar en READY.",
+                              "Se brindara informacion de las metricas solicitadas",
+                              "SE TE VA A CERRAR LA CONSOLA!",
+                              "I NEED SOMEBODY HELP, NOT JUST ANYBODY HELP, I NEED SOMEONE HEEEEELP!"};
+
 ////TODO: tiene que tener un man?
 //void consolePrintMan() {
 //    printf("Sintaxis de comandos que requieren parametros:\n");
@@ -69,13 +60,19 @@ const char *functions[] = {"EJECUTAR", "STATUS", "FINALIZAR", "METRICAS", "EXIT"
 //    log_info_mutex(logger, "La planificacion esta pausada");
 //}
 //
-//void consolePlay() {
+
+
+//void consolePlay(char *args) {
+//
+// ACA LE AGREGUE YO EL ARGS PORQUE LO VOY A NECESITAR
+//
 //    //sem_post(&sem_console);
 //    setPlay();
 //    pthread_mutex_unlock(&mutexStop);
 //    log_info_mutex(logger, "La planificacion esta en ejecucion");
 //}
 //
+
 //void consoleBlock(char *args) {
 //
 //    if (args == NULL) {
@@ -426,22 +423,17 @@ const char *functions[] = {"EJECUTAR", "STATUS", "FINALIZAR", "METRICAS", "EXIT"
 //
 //
 //}
-//
-//
-//void consoleExit() {
-//    setExit();
-//}
-//
-//void consoleHelp() {
-//    printf("*--------------------------------------------------------------------------*\n\n");
-//    int i;
-//    for (i = 0; i < amountCommands; ++i) {
-//        printf("%s - %s \n", functions[i], descriptions[i]);
-//    }
-//    printf("*--------------------------------------------------------------------------*\n\n");
-//}
-//
-//
+
+
+void consoleHelp() {
+    printf("*--------------------------------------------------------------------------*\n\n");
+    int i;
+    for (i = 0; i < cantComandos; ++i) {
+        printf("%s - %s \n", functions[i], descriptions[i]);
+    }
+    printf("*--------------------------------------------------------------------------*\n\n");
+}
+
 //void consoleStatusAllESI() {
 //    printf("*--------------------------------------------------------------------------*\n\n");
 //    int size = list_size(statusList);
@@ -494,13 +486,14 @@ const char *functions[] = {"EJECUTAR", "STATUS", "FINALIZAR", "METRICAS", "EXIT"
 //
 //
 
+void consoleExit() {
+    setExit();
+}
+
 int getIdFunction(char *function) {
     int i;
-    for (i = 0; (i < 6) && (strcmp(function, functions[i]) != 0); i++);
-    return (i <= 6 - 1) ? (i + 1) : -1;
-
-//    for (i = 0; (i < amountCommands) && (strcmp(function, functions[i]) != 0); i++);
-//    return (i <= amountCommands - 1) ? (i + 1) : -1;
+    for (i = 0; (i < cantComandos) && (strcmp(function, functions[i]) != 0); i++);
+    return (i <= cantComandos - 1) ? (i + 1) : -1;
 }
 
 void parseCommand(char *line, char **command, char **args) {
@@ -520,17 +513,16 @@ void freeCommand(char *command, char *args) {
 }
 
 
+// ----------------------------------------------------------------------------------------------------------------------
+//  FUNCIONES QUE USA EL THREAD
+// ----------------------------------------------------------------------------------------------------------------------
 
-////======================================================================================================================================
-////============================================FUNCIONES THREADS=========================================================================
-////======================================================================================================================================
-//
-//int getExit() {
-//    return shouldExit;
-//}
-//
-//void setExit() {
-//    pthread_mutex_lock(&mutexExit);
-//    shouldExit = 1;
-//    pthread_mutex_unlock(&mutexExit);
-//}
+int getExit() {
+    return shouldExit;
+}
+
+void setExit() {
+    pthread_mutex_lock(&mutexExit);
+    shouldExit = 1;
+    pthread_mutex_unlock(&mutexExit);
+}

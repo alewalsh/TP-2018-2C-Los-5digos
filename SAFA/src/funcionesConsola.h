@@ -17,7 +17,8 @@
 
 
 extern int shouldExit;
-//extern pthread_mutex_t mutexExit;
+extern pthread_mutex_t mutexExit;
+
 //extern pthread_mutex_t mutexReadyExecute;
 //
 //extern sem_t sem_newEsi;
@@ -43,10 +44,11 @@ extern int shouldExit;
 //
 //void consolePrintMan();
 //
-//void consoleExit();
-//
-//void consoleHelp();
-//
+
+void consoleExit();
+
+void consoleHelp();
+
 //void consoleStatusAllESI();
 //
 //void consoleClear();
@@ -64,12 +66,12 @@ int getIdFunction(char *function);
 void parseCommand(char *line, char **command, char **args);
 void freeCommand(char *command, char *args);
 
-////--------------------------------------------------------------------------------------------------------------------------------------
-//// FUNCIONES PARA LOS HILOS
-////--------------------------------------------------------------------------------------------------------------------------------------
-//int getExit();
-//
-//void setExit();
+//--------------------------------------------------------------------------------------------------------------------------------------
+// FUNCIONES PARA LOS HILOS
+//--------------------------------------------------------------------------------------------------------------------------------------
+int getExit();
+void setExit();
+
 
 
 #endif /* FUNCIONESCONSOLA_H_ */

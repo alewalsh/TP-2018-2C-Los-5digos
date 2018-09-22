@@ -16,14 +16,15 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "funcionesConsola.h"
-#include <javaStrings.h>
+#include <grantp/javaStrings.h>
 #include <commons/collections/list.h>
 
 //TODO: Verificar si este import esta bien o si esta mal, el cuatri pasado no lo puse aca
 // pero ahora si no lo pongo no me toma los case
 //TODO: Probar comentando el include este
-#include <structCommons.h>
+#include <grantp/structCommons.h>
 
+//TODO:CHEKEAR LOS ORDENES DE LOS INCLUDE
 void mainConsola();
 void consolePrintHeader();
 

@@ -7,16 +7,15 @@
 
 #ifndef FUNCIONESSAFA_H_
 #define FUNCIONESSAFA_H_
-
-#include <structCommons.h>
+#include <grantp/structCommons.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <commons/collections/list.h>
 #include <pthread.h>
 #include <commons/string.h>
-#include <configuracion.h>
-#include <mutex_log.h>
+#include <grantp/configuracion.h>
+#include <grantp/mutex_log.h>
 #include "stdbool.h"
 
 

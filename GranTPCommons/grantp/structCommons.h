@@ -38,7 +38,11 @@ typedef struct {
     uint16_t status;
 } t_blocked_keys;
 
-enum tipoLista {
+enum estadoSAFA {
+	Operativo = 0, Corrupto = 1
+};
+
+enum typeLIST {
     READY = 2001, BLOCKED = 2002, EXECUTING = 2003, FINISHED = 2004, BLOCKEDKEYS
 };
 

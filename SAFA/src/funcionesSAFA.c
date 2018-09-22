@@ -6,9 +6,8 @@
  */
 
 #include "funcionesSAFA.h"
-#include <structCommons.h>
-#include <configuracion.h>
-
+#include <grantp/structCommons.h>
+#include <grantp/configuracion.h>
 
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA EL MANEJO DEL SELECT

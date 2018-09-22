@@ -6,29 +6,111 @@
  */
 
 #include "handlerConexiones.h"
-#include <configuracion.h>
-#include <socket.h>
-#include <mutex_log.h>
-#include <structCommons.h>
+#include <grantp/configuracion.h>
+#include <grantp/socket.h>
+#include <grantp/mutex_log.h>
+#include <grantp/structCommons.h>
 #include "SAFA.h"
+
+
+
+//void manejarSolicitud(t_package pkg, int socketFD) {
+//
+//    switch (pkg.code) {
+//        case ESI_PLAN_CONNECT:
+//            if (esiConnection(socketFD, pkg, logger)) {
+//                log_error_mutex(logger, "Hubo un error en la conexion con el esi");
+//                break;
+//            }
+//            sem_post(&sem_newEsi);
+//            break;
+//        case COORD_PLAN_BLOCK:
+//            //log_info_mutex(logger, "El coordinador me pide que bloquee un recurso");
+//            if (blockKey(socketFD, pkg, logger)) {
+//                log_error_mutex(logger, "No se pudo completar la operacion de bloqueo");
+//            }
+//            break;
+//        case COORD_PLAN_STORE:
+//            //log_info_mutex(logger, "El coordinador me pide que desbloque un recurso");
+//            if (storeKey(socketFD, pkg, logger)) {
+//                log_error_mutex(logger, "No se pudo completar la operacion de desbloqueo");
+//            }
+//            break;
+//        case SOCKET_DISCONECT:
+//            handlerDisconnect(socketFD);
+//            close(socketFD);
+//            deleteSocketFromMaster(socketFD);
+//            break;
+//        default:
+//            log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
+//            log_warning_mutex(logger, "Ojo, estas recibiendo un mensaje que no esperabas.");
+//            break;
+//
+//    }
+//
+//    free(pkg.data);
+//
+//}
 
 
 void manejarConexiones(){
 
     int socketListen, i,nuevoFd;
     uint16_t handshake;
+    t_package pkg;
+
+    int estadoSAFA = Corrupto;
+	int CPUConectado, DAMConectado = 0;
+	log_trace_mutex(logger, "Se inicializa SAFA en estado Corrupto");
 
     //Creo el socket y me quedo escuchando
 	if (escuchar(conf->puerto, &socketListen, logger->logger)) {
 		liberarRecursos();
 		pthread_exit(NULL);
     }
-    log_trace_mutex(logger, "El socket de escucha de SAFA es: %d", socketListen);
+
+	log_trace_mutex(logger, "El socket de escucha de SAFA es: %d", socketListen);
+    log_info_mutex(logger, "El socket de escucha de SAFA es: %d", socketListen);
 
     addNewSocketToMaster(socketListen);
 
+    //TODO: Voy a tener que agregar que no se empiece a planificar hasta esto
+
+    while(estadoSAFA != Operativo){
+
+        if (acceptConnection(socketListen, &nuevoFd, SAFA_HSK, &handshake, logger->logger)) {
+            log_error_mutex(logger, "No se acepta la conexion");
+        }
+
+        switch (handshake) {
+            case DAM_HSK:
+            	log_trace_mutex(logger, "Se me conecto el DAM, socket: %d", nuevoFd);
+                addNewSocketToMaster(nuevoFd);
+            	DAMConectado++;
+                break;
+            case CPU_HSK:
+            	log_trace_mutex(logger, "Se me conecto un CPU, socket: %d", nuevoFd);
+                addNewSocketToMaster(nuevoFd);
+                CPUConectado++;
+                break;
+            default:
+                log_warning_mutex(logger, "Se me quizo conectar alguien que no espero");
+                close(nuevoFd);
+                break;
+        }
+
+        if ((CPUConectado != 0) && (DAMConectado != 0)){
+        	estadoSAFA = Operativo;
+        	//TODO: Aca podria mandar el dummy
+        }
+    }
+
+	log_trace_mutex(logger, "Se pasa a estado OPERATIVO");
+
+
     while (1) {
-        updateReadset();
+
+    	updateReadset();
 
         //Hago un select sobre el conjunto de sockets activo
         int result = select(getMaxfd() + 1, &readset, NULL, NULL, NULL);
@@ -38,7 +120,7 @@ void manejarConexiones(){
         }
 
         log_trace_mutex(logger, "El valor del select es: %d", result);
-//        log_trace_mutex(logger, "Arranco de nuevo con el select");
+
         log_trace_mutex(logger, "Analizo resultado del select para ver quien me hablo");
 
         for (i = 0; i <= getMaxfd(); i++) {
@@ -46,7 +128,8 @@ void manejarConexiones(){
         	if (isSetted(i)) { // ¡¡tenemos datos!!
 
         		if (i == socketListen) {
-                    // gestionar nuevas conexiones
+
+                    // CAMBIOS EN EL SOCKET QUE ESCUCHA, acepto las nuevas conexiones
                     log_trace_mutex(logger, "Cambios en Listener de SAFA, se gestionara la conexion correspondiente");
                     if (acceptConnection(socketListen, &nuevoFd, SAFA_HSK, &handshake, logger->logger)) {
                         log_error_mutex(logger, "No se acepto la nueva conexion solicitada");
@@ -56,13 +139,13 @@ void manejarConexiones(){
                         addNewSocketToMaster(nuevoFd);
                     }
                 } else {
-                    // gestionar datos de un cliente
-                    //if (recibir(i, &pkg, logger->logger)) {
-                    //    log_error_mutex(logger, "No se pudo recibir el mensaje");
-                    //    handlerDisconnect(i);
-                    //} else {
-                    //    manageRequest(pkg, i);
-                    //}
+                     //gestionar datos de un cliente
+                    if (recibir(i, &pkg, logger->logger)) {
+                        log_error_mutex(logger, "No se pudo recibir el mensaje");
+                        //handlerDisconnect(i);
+                    } else {
+                        manejarSolicitud(pkg, i);
+                    }
 
                 }
             }
