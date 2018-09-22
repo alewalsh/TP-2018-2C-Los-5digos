@@ -19,6 +19,7 @@
 t_socket* t_socketSafa;
 t_socket* t_socketMdj;
 t_socket* t_socketFm9;
+t_socket* t_socketEscucha;
 
 int * socketSafa;
 int * socketMdj;
@@ -32,6 +33,8 @@ pthread_attr_t tattr;
 pthread_t hiloSafa;
 pthread_t hiloMdj;
 pthread_t hiloFm9;
+pthread_t hiloCPU;
+
 
 //Errores
 enum codigosError
@@ -46,11 +49,12 @@ void cargarArchivoDeConfig();
 void configure_logger();
 void iniciarHilosDelDMA();
 void sig_handler(int signo);
-void conectAndHandskahe(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket);
+void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket);
 char * enumToProcess(int proceso);
 void * conectarseConSafa();
 void *conectarseConMdj();
 void *conectarseConFm9();
+void *conectarseConCPU();
 void exit_gracefully(int error);
 bool cerrarSockets();
 

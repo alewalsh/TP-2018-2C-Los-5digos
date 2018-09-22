@@ -34,13 +34,12 @@ void inicializarMDJ(char * pathConfig){
 
 void inicializarConexion(){
 	int * socketPropio;
-	int socket = cargarSoket(configuracion->puertoMDJ,configuracion->ip_propia, socketPropio, logger);
+	int socket = cargarSocket(configuracion->puertoMDJ,configuracion->ip_propia, socketPropio, logger);
 	socketEscucha = inicializarTSocket(socket, logger);
 	recibirHandshake(&socketEscucha->socket, MDJ_HSK, DAM_HSK, logger);
-	escuchar(configuracion->puertoMDJ, &socketEscucha->socket, logger);
-//	enviarHandshake(&socketEscucha->socket, MDJ_HSK, DAM_HSK, logger);
 
-    pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
+	printf("Se conecto el DAM");
+   // pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
 }
 
 void esperarInstruccionDAM(){

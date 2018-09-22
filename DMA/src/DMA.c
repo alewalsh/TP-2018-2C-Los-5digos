@@ -52,9 +52,16 @@ void iniciarHilosDelDMA() {
 			exit_gracefully(1);
 	}
 
+	res = pthread_create(&hiloFm9,NULL,(void *)conectarseConCPU(), NULL);
+		if(res > 0){
+				log_error(logger, "Error al crear el hilo del FM9");
+				exit_gracefully(1);
+	}
+
 	pthread_join(hiloSafa, NULL);
 	pthread_join(hiloMdj, NULL);
 	pthread_join(hiloFm9, NULL);
+	pthread_join(hiloCPU, NULL);
 
 	log_info(logger, "Los hilos finalizaron correctamente");
 
@@ -65,7 +72,7 @@ void iniciarHilosDelDMA() {
  */
 void * conectarseConSafa(){
 
-	conectAndHandskahe(configDMA->puertoSAFA,configDMA->ipSAFA,
+	conectarYenviarHandshake(configDMA->puertoSAFA,configDMA->ipSAFA,
 			socketSafa,SAFA_HSK,t_socketSafa);
 	return NULL;
 }
@@ -75,7 +82,7 @@ void * conectarseConSafa(){
  */
 void * conectarseConMdj(){
 
-	conectAndHandskahe(configDMA->puertoMDJ,configDMA->ipMDJ,
+	conectarYenviarHandshake(configDMA->puertoMDJ,configDMA->ipMDJ,
 			socketMdj,MDJ_HSK,t_socketMdj);
 	return NULL;
 }
@@ -85,13 +92,20 @@ void * conectarseConMdj(){
  */
 void * conectarseConFm9(){
 
-	conectAndHandskahe(configDMA->puertoFM9,configDMA->ipFM9,
+	conectarYenviarHandshake(configDMA->puertoFM9,configDMA->ipFM9,
 			socketFm9,FM9_HSK,t_socketFm9);
 	return NULL;
 }
 
-void conectAndHandskahe(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket){
-	cargarSoket(puerto,ip,socket,logger);
+void * conectarseConCPU(){
+
+	conectarYRecibirHandshake(configDMA->puertoDAM,configDMA->ipDAM,
+			socketFm9,CPU_HSK);
+	return NULL;
+}
+
+void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket){
+	cargarSocket(puerto,ip,socket,logger);
 	if (socket != 0)
 	{
 		inicializarTSocket(*socket, logger);
@@ -102,6 +116,16 @@ void conectAndHandskahe(int puerto, char *ip, int * socket, int handshakeProceso
 		log_error(logger, "Error al conectarse al %s", enumToProcess(handshakeProceso));
 		exit_gracefully(ERROR_SOCKET);
 	}
+}
+
+void conectarYRecibirHandshake(int puertoEscucha, char *ipPropia, int handshakeProceso){
+	int * socketPropio;
+	int socketCreado = cargarSocket(puertoEscucha,ipPropia, socketPropio, logger);
+	t_socketEscucha = inicializarTSocket(socketCreado, logger);
+	recibirHandshake(&t_socketEscucha->socket, DAM_HSK, handshakeProceso, logger);
+
+	printf("Se conecto el CPU");
+   // pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
 }
 
 
