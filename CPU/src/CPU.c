@@ -86,17 +86,17 @@ void inicializarCPU(char * pathConfig)
 
 void inicializarConexiones()
 {
-	conectarseAProceso(config->puertoDAM,config->ipDAM,socketDAM,DAM_HSK, t_socketDAM);
 	conectarseAProceso(config->puertoSAFA,config->ipSAFA,socketSAFA,SAFA_HSK, t_socketSAFA);
 	conectarseAProceso(config->puertoFM9,config->ipFM9,socketFM9,FM9_HSK, t_socketFM9);
+	conectarseAProceso(config->puertoDAM,config->ipDAM,socketDAM,DAM_HSK, t_socketDAM);
 }
 
 void conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket)
 {
-	cargarSocket(puerto,ip,socket,loggerCPU->logger);
+	cargarSocket(puerto,ip,&socket,loggerCPU->logger);
 	if (socket != 0)
 	{
-		inicializarTSocket(*socket, loggerCPU->logger);
+		TSocket = inicializarTSocket(socket, loggerCPU->logger);
 		enviarHandshake(TSocket->socket,CPU_HSK,handshakeProceso,loggerCPU->logger);
 	}
 	else

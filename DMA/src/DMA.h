@@ -24,6 +24,7 @@ t_socket* t_socketEscucha;
 int * socketSafa;
 int * socketMdj;
 int * socketFm9;
+int * socketCPU;
 
 t_log* logger;
 configDAM* configDMA;

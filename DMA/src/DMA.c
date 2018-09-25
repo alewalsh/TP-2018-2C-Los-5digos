@@ -33,35 +33,63 @@ void iniciarHilosDelDMA() {
 	log_info(logger,"Creando sockets");
 
 	int res;
-	//TODO: Manejar conexiones con hilos
-	res = pthread_create(&hiloSafa,NULL,(void *)conectarseConSafa(), NULL);
-	if(res > 0){
+	res = conectarseConSafa();
+	if (res > 0)
+	{
 		log_error(logger, "Error al crear el hilo del S-Afa");
 		exit_gracefully(1);
 	}
 
-	res = pthread_create(&hiloMdj,NULL,(void *)conectarseConMdj(), NULL);
-	if(res > 0){
-			log_error(logger, "Error al crear el hilo del MDJ");
-			exit_gracefully(1);
+	res = conectarseConMdj();
+	if (res > 0)
+	{
+		log_error(logger, "Error al crear el hilo del MDJ");
+		exit_gracefully(1);
 	}
 
-	res = pthread_create(&hiloFm9,NULL,(void *)conectarseConFm9(), NULL);
-	if(res > 0){
-			log_error(logger, "Error al crear el hilo del FM9");
-			exit_gracefully(1);
+	res = conectarseConFm9();
+	if (res > 0)
+	{
+		log_error(logger, "Error al crear el hilo del FM9");
+		exit_gracefully(1);
 	}
 
-	res = pthread_create(&hiloFm9,NULL,(void *)conectarseConCPU(), NULL);
-		if(res > 0){
-				log_error(logger, "Error al crear el hilo del FM9");
-				exit_gracefully(1);
+	res = conectarseConCPU();
+	if (res > 0)
+	{
+		log_error(logger, "Error al crear el hilo del CPU");
+		exit_gracefully(1);
 	}
 
-	pthread_join(hiloSafa, NULL);
-	pthread_join(hiloMdj, NULL);
-	pthread_join(hiloFm9, NULL);
-	pthread_join(hiloCPU, NULL);
+	//TODO: Manejar conexiones con hilos
+//	res = pthread_create(&hiloSafa,NULL,(void *)conectarseConSafa(), NULL);
+//	if(res > 0){
+//		log_error(logger, "Error al crear el hilo del S-Afa");
+//		exit_gracefully(1);
+//	}
+
+//	res = pthread_create(&hiloMdj,NULL,(void *)conectarseConMdj(), NULL);
+//	if(res > 0){
+//			log_error(logger, "Error al crear el hilo del MDJ");
+//			exit_gracefully(1);
+//	}
+
+//	res = pthread_create(&hiloFm9,NULL,(void *)conectarseConFm9(), NULL);
+//	if(res > 0){
+//			log_error(logger, "Error al crear el hilo del FM9");
+//			exit_gracefully(1);
+//	}
+
+//	res = pthread_create(&hiloFm9,NULL,(void *)conectarseConCPU(), NULL);
+//		if(res > 0){
+//				log_error(logger, "Error al crear el hilo del FM9");
+//				exit_gracefully(1);
+//	}
+
+//	pthread_join(hiloSafa, NULL);
+//	pthread_join(hiloMdj, NULL);
+//	pthread_join(hiloFm9, NULL);
+//	pthread_join(hiloCPU, NULL);
 
 	log_info(logger, "Los hilos finalizaron correctamente");
 
@@ -74,7 +102,7 @@ void * conectarseConSafa(){
 
 	conectarYenviarHandshake(configDMA->puertoSAFA,configDMA->ipSAFA,
 			socketSafa,SAFA_HSK,t_socketSafa);
-	return NULL;
+	return 0;
 }
 
 /*FUNCION DEL HILO MDJ
@@ -84,7 +112,7 @@ void * conectarseConMdj(){
 
 	conectarYenviarHandshake(configDMA->puertoMDJ,configDMA->ipMDJ,
 			socketMdj,MDJ_HSK,t_socketMdj);
-	return NULL;
+	return 0;
 }
 
 /*FUNCION DEL HILO FM9
@@ -94,21 +122,21 @@ void * conectarseConFm9(){
 
 	conectarYenviarHandshake(configDMA->puertoFM9,configDMA->ipFM9,
 			socketFm9,FM9_HSK,t_socketFm9);
-	return NULL;
+	return 0;
 }
 
 void * conectarseConCPU(){
 
 	conectarYRecibirHandshake(configDMA->puertoDAM,configDMA->ipDAM,
 			socketFm9,CPU_HSK);
-	return NULL;
+	return 0;
 }
 
 void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket){
-	cargarSocket(puerto,"",socket,logger);
+	cargarSocket(puerto,ip,&socket,logger);
 	if (socket != 0)
 	{
-		inicializarTSocket(*socket, logger);
+		TSocket = inicializarTSocket(socket, logger);
 		enviarHandshake(TSocket->socket,DAM_HSK,handshakeProceso,logger);
 	}
 	else
@@ -120,9 +148,19 @@ void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeP
 
 void conectarYRecibirHandshake(int puertoEscucha, char *ipPropia, int handshakeProceso){
 	int * socketPropio;
-	int socketCreado = cargarSocket(puertoEscucha,ipPropia, socketPropio, logger);
-	t_socketEscucha = inicializarTSocket(socketCreado, logger);
-	recibirHandshake(&t_socketEscucha->socket, DAM_HSK, handshakeProceso, logger);
+	uint16_t handshake;
+	if (escuchar(puertoEscucha, &socketPropio, logger)) {
+		exit_gracefully(1);
+	}
+	if (acceptConnection(socketPropio, &socketCPU, DAM_HSK, &handshake, logger)) {
+		log_error(logger, "No se acepta la conexion");
+		exit_gracefully(1);
+	}
+//	printf("Se conecto el DAM");
+//	int * socketPropio;
+//	int socketCreado = cargarSocket(puertoEscucha,ipPropia, &socketPropio, logger);
+//	t_socketEscucha = inicializarTSocket(socketCreado, logger);
+//	recibirHandshake(t_socketEscucha->socket, DAM_HSK, handshakeProceso, logger);
 
 	printf("Se conecto el CPU");
    // pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
