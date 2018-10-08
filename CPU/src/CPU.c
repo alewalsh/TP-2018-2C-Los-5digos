@@ -28,48 +28,97 @@ void recibirDTB()
         }
 		else
 		{
-			gestionarSolicitud(paquete);
+			manejarSolicitud(paquete, t_socketSAFA->socket);
 		}
 	}
 }
 
-void gestionarSolicitud(t_package paquete)
+void manejarSolicitud(t_package pkg, int socketFD) {
+
+    switch (pkg.code) {
+        case SAFA_CPU_NUEVO_DUMMY:
+        	if(nuevoDummy(pkg)){
+                log_error_mutex(loggerCPU, "Hubo un error en la inicializacion del dummy");
+                break;
+        	}
+//            sem_post(&sem_nuevoDummy);
+            break;
+        case SAFA_CPU_EJECUTAR:
+        	if(comenzarEjecucion(pkg))
+        	{
+        		log_error_mutex(loggerCPU, "Hubo un error en la ejecucion del Escriptorio");
+        		break;
+        	}
+        	//            sem_post(&sem_comienzaEjecucion);
+        	break;
+//        case COORD_PLAN_BLOCK:
+//            //log_info_mutex(logger, "El coordinador me pide que bloquee un recurso");
+//            if (blockKey(socketFD, pkg, logger)) {
+//                log_error_mutex(logger, "No se pudo completar la operacion de bloqueo");
+//            }
+//            break;
+//        case COORD_PLAN_STORE:
+//            //log_info_mutex(logger, "El coordinador me pide que desbloque un recurso");
+//            if (storeKey(socketFD, pkg, logger)) {
+//                log_error_mutex(logger, "No se pudo completar la operacion de desbloqueo");
+//            }
+//            break;
+        case SOCKET_DISCONECT:
+//            handlerDisconnect(socketFD);
+            close(socketFD);
+//            deleteSocketFromMaster(socketFD);
+            break;
+        default:
+            log_warning_mutex(loggerCPU, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
+            log_warning_mutex(loggerCPU, "Ojo, estas recibiendo un mensaje que no esperabas.");
+    		exit_gracefully(ERROR_DTB);
+            break;
+
+    }
+
+    free(pkg.data);
+
+}
+int nuevoDummy(t_package paquete)
 {
 	// Luego de recibirlo tengo que verificar su flag de inicializacion
-	t_dtb * DTB = transformarPaqueteADTB(paquete);
+	//	t_dtb * DTB = transformarPaqueteADTB(paquete);
 	// Si es 0, levanto un hilo y realizo  la operación Dummy - Iniciar G.DT
-	if (DTB->flagInicializado == 0)
-	{
-		// Solicitarle al DAM la busqueda del Escriptorio en el MDJ
-		paquete.code = CPU_DAM_BUSQUEDA_ESCRIPTORIO;
-		enviar(t_socketDAM->socket,paquete.code,paquete.data, paquete.size, loggerCPU->logger);
-		// Desalojar al DTB Dummy, avisando a SAFA que lo bloquee
-		paquete.code = CPU_SAFA_BLOQUEAR_DUMMMY;
-		enviar(t_socketSAFA->socket,paquete.code,paquete.data, paquete.size, loggerCPU->logger);
+	// Solicitarle al DAM la busqueda del Escriptorio en el MDJ
+	paquete.code = CPU_DAM_BUSQUEDA_ESCRIPTORIO;
+	if(enviar(t_socketDAM->socket,paquete.code,paquete.data, paquete.size, loggerCPU->logger))
+		return EXIT_FAILURE;
 
-	}
+	// Desalojar al DTB Dummy, avisando a SAFA que lo bloquee
+	paquete.code = CPU_SAFA_BLOQUEAR_DUMMMY;
+	if(enviar(t_socketSAFA->socket,paquete.code,paquete.data, paquete.size, loggerCPU->logger))
+		return EXIT_FAILURE;
+
+	return EXIT_SUCCESS;
+}
+
+int comenzarEjecucion(t_package paquete)
+{
+	// Luego de recibirlo tengo que verificar su flag de inicializacion
+	//	t_dtb * DTB = transformarPaqueteADTB(paquete);
 	// Si es 1, levanto un hilo y comienzo la ejecución de sentencias
-	else if (DTB->flagInicializado == 1)
-	{
-		// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
+	// if DTB->flagInicializado == 1
 
-		// Por cada unidad de tiempo de quantum, se ejecutara una linea del Escriptorio indicado en el DTB
+	// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
 
-		// Comunicarse con el FM9 en caso de ser necesario.
+	// Por cada unidad de tiempo de quantum, se ejecutara una linea del Escriptorio indicado en el DTB
 
-		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
-		// lo pase a la cola de Exit.
+	// Comunicarse con el FM9 en caso de ser necesario.
 
-	}
-	else
-	{
-		exit_gracefully(ERROR_DTB);
-	}
+	// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
+	// lo pase a la cola de Exit.
+	return EXIT_SUCCESS;
 }
 
 t_dtb * transformarPaqueteADTB(t_package paquete)
 {
 	t_dtb * dtb = malloc(sizeof(t_dtb));
+//	int tamanioTotal = paquete.size;
 	// Aca habria que realizar lo que sería una deserializacion de la info dentro de paquete->data
 	return dtb;
 }
@@ -150,9 +199,6 @@ char * enumToProcess(int proceso)
 
 void exit_gracefully(int error)
 {
-//	if (error != ERROR_PATH_CONFIG)
-//	{
-		free(config);
 //		if (error != ERROR_SOCKET_DAM)
 //		{
 			free(t_socketDAM);
@@ -163,7 +209,11 @@ void exit_gracefully(int error)
 				close(*socketSAFA);
 //			}
 //		}
-//	}
 	log_destroy_mutex(loggerCPU);
+	freeConfig(config, CPU);
 	exit(error);
 }
+
+//void initSems() {
+//    sem_init(&sem_nuevoDummy, 0, 0);
+//}

@@ -14,6 +14,7 @@
 #include <grantp/configuracion.h>
 #include <grantp/socket.h>
 #include <limits.h>
+//#include <semaphore.h>
 
 /*
  *  Ejemplo DTB: habria que ponerlo en GranTPCommons si utilizamos este.
@@ -36,6 +37,7 @@ configCPU * config;
  * Variables globales
  */
 t_log_mutex * loggerCPU;
+int quantum;
 
 /*
  * Sockets
@@ -60,6 +62,10 @@ enum codigosError
 };
 
 /*
+ * Semaforos
+ */
+//sem_t * sem_nuevoDummy;
+/*
  * Funciones
  */
 
@@ -79,7 +85,7 @@ void inicializarConexiones();
 
 /**
  * @NAME: exit_gracefully
- * @DESC: finaliza la ejecucion del programa, liberando los recursos que correspondan.
+ * @DESC: finaliza la ejecucion del program, liberando los recursos que correspondan.
  * @PARAMS: {int} error Indica un codigo para verificar si finaliza la ejecucion por error o por fin de ejecucion.
  */
 void exit_gracefully(int error);
@@ -88,6 +94,10 @@ void exit_gracefully(int error);
 char * enumToProcess(int proceso);
 
 t_socket *  conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso);
+
+void manejarSolicitud(t_package pkg, int socketFD);
+int nuevoDummy(t_package paquete);
+int comenzarEjecucion(t_package paquete);
 
 void recibirDTB();
 t_dtb * transformarPaqueteADTB(t_package paquete);
