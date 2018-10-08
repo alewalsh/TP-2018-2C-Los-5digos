@@ -21,40 +21,53 @@ void recibirDTB()
 	while(1)
 	{
 		// Aca habria que quedarse esperando por un DTB enviado por el SAFA.
-		t_package * paquete = malloc(sizeof(t_package));
-		recibir(t_socketSAFA->socket,paquete,loggerCPU->logger);
-		// Luego de recibirlo tengo que verificar su flag de inicializacion
-		t_dtb * DTB = transformarPaqueteADTB(paquete);
-		// Si es 0, levanto un hilo y realizo  la operación Dummy - Iniciar G.DT
-		if (DTB->flagInicializado == 0)
-		{
-			// Solicitarle al DAM la busqueda del Escriptorio en el MDJ
-
-			// Desalojar al DTB Dummy, avisando a SAFA que lo bloquee
-
-		}
-		// Si es 1, levanto un hilo y comienzo la ejecución de sentencias
-		else if (DTB->flagInicializado == 1)
-		{
-			// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
-
-			// Por cada unidad de tiempo de quantum, se ejecutara una linea del Escriptorio indicado en el DTB
-
-			// Comunicarse con el FM9 en caso de ser necesario.
-
-			// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
-			// lo pase a la cola de Exit.
-
-		}
+		t_package paquete;
+		if (recibir(t_socketSAFA->socket,&paquete,loggerCPU->logger)) {
+            log_error_mutex(loggerCPU, "No se pudo recibir el mensaje.");
+            //handlerDisconnect(i);
+        }
 		else
 		{
-			exit_gracefully(ERROR_DTB);
+			gestionarSolicitud(paquete);
 		}
-		free(paquete);
 	}
 }
 
-t_dtb * transformarPaqueteADTB(t_package * paquete)
+void gestionarSolicitud(t_package paquete)
+{
+	// Luego de recibirlo tengo que verificar su flag de inicializacion
+	t_dtb * DTB = transformarPaqueteADTB(paquete);
+	// Si es 0, levanto un hilo y realizo  la operación Dummy - Iniciar G.DT
+	if (DTB->flagInicializado == 0)
+	{
+		// Solicitarle al DAM la busqueda del Escriptorio en el MDJ
+		paquete.code = CPU_DAM_BUSQUEDA_ESCRIPTORIO;
+		enviar(t_socketDAM->socket,paquete.code,paquete.data, paquete.size, loggerCPU->logger);
+		// Desalojar al DTB Dummy, avisando a SAFA que lo bloquee
+		paquete.code = CPU_SAFA_BLOQUEAR_DUMMMY;
+		enviar(t_socketSAFA->socket,paquete.code,paquete.data, paquete.size, loggerCPU->logger);
+
+	}
+	// Si es 1, levanto un hilo y comienzo la ejecución de sentencias
+	else if (DTB->flagInicializado == 1)
+	{
+		// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
+
+		// Por cada unidad de tiempo de quantum, se ejecutara una linea del Escriptorio indicado en el DTB
+
+		// Comunicarse con el FM9 en caso de ser necesario.
+
+		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
+		// lo pase a la cola de Exit.
+
+	}
+	else
+	{
+		exit_gracefully(ERROR_DTB);
+	}
+}
+
+t_dtb * transformarPaqueteADTB(t_package paquete)
 {
 	t_dtb * dtb = malloc(sizeof(t_dtb));
 	// Aca habria que realizar lo que sería una deserializacion de la info dentro de paquete->data
@@ -86,17 +99,22 @@ void inicializarCPU(char * pathConfig)
 
 void inicializarConexiones()
 {
-	conectarseAProceso(config->puertoSAFA,config->ipSAFA,socketSAFA,SAFA_HSK, t_socketSAFA);
-	conectarseAProceso(config->puertoFM9,config->ipFM9,socketFM9,FM9_HSK, t_socketFM9);
-	conectarseAProceso(config->puertoDAM,config->ipDAM,socketDAM,DAM_HSK, t_socketDAM);
+	socketSAFA = malloc(sizeof(int));
+	t_socketSAFA = conectarseAProceso(config->puertoSAFA,config->ipSAFA,socketSAFA,SAFA_HSK);
+	socketFM9 = malloc(sizeof(int));
+	t_socketFM9 = conectarseAProceso(config->puertoFM9,config->ipFM9,socketFM9,FM9_HSK);
+	socketDAM = malloc(sizeof(int));
+	t_socketDAM = conectarseAProceso(config->puertoDAM,config->ipDAM,socketDAM,DAM_HSK);
 }
 
-void conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket)
+// Se cambió el método y ahora devuelve el t_socket debido a que pasandolo como referencia,
+// a veces no persistian los valores del socket.
+t_socket * conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso)
 {
-	cargarSocket(puerto,ip,&socket,loggerCPU->logger);
-	if (socket != 0)
+	t_socket * TSocket;
+	if(!cargarSocket(puerto,ip,socket,loggerCPU->logger))
 	{
-		TSocket = inicializarTSocket(socket, loggerCPU->logger);
+		TSocket = inicializarTSocket(*socket, loggerCPU->logger);
 		enviarHandshake(TSocket->socket,CPU_HSK,handshakeProceso,loggerCPU->logger);
 	}
 	else
@@ -104,6 +122,7 @@ void conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso
 		log_error_mutex(loggerCPU, "Error al conectarse al %s", enumToProcess(handshakeProceso));
 		exit_gracefully(ERROR_SOCKET);
 	}
+	return TSocket;
 }
 
 char * enumToProcess(int proceso)

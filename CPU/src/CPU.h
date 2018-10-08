@@ -87,10 +87,10 @@ void exit_gracefully(int error);
 
 char * enumToProcess(int proceso);
 
-void conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket);
+t_socket *  conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso);
 
 void recibirDTB();
-t_dtb * transformarPaqueteADTB(t_package * paquete);
-
+t_dtb * transformarPaqueteADTB(t_package paquete);
+void gestionarSolicitud(t_package paquete);
 
 #endif /* CPU_H_ */

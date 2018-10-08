@@ -15,8 +15,12 @@ int main(int argc, char ** argv) {
 	cargarArchivoDeConfig();
 	iniciarHilosDelDMA();
 
+	while(1)
+	{
+		// Aqui iría la funcionalidad
+	}
+
 	exit_gracefully(0);
-	return EXIT_SUCCESS;
 }
 
 void cargarArchivoDeConfig() {
@@ -100,6 +104,7 @@ void iniciarHilosDelDMA() {
  */
 void * conectarseConSafa(){
 
+	socketSafa = malloc(sizeof(int));
 	conectarYenviarHandshake(configDMA->puertoSAFA,configDMA->ipSAFA,
 			socketSafa,SAFA_HSK,t_socketSafa);
 	return 0;
@@ -110,6 +115,7 @@ void * conectarseConSafa(){
  */
 void * conectarseConMdj(){
 
+	socketMdj = malloc(sizeof(int));
 	conectarYenviarHandshake(configDMA->puertoMDJ,configDMA->ipMDJ,
 			socketMdj,MDJ_HSK,t_socketMdj);
 	return 0;
@@ -120,23 +126,22 @@ void * conectarseConMdj(){
  */
 void * conectarseConFm9(){
 
+	socketFm9 = malloc(sizeof(int));
 	conectarYenviarHandshake(configDMA->puertoFM9,configDMA->ipFM9,
 			socketFm9,FM9_HSK,t_socketFm9);
 	return 0;
 }
 
 void * conectarseConCPU(){
-
-	conectarYRecibirHandshake(configDMA->puertoDAM,configDMA->ipDAM,
-			socketFm9,CPU_HSK);
+	socketCPU = malloc(sizeof(int));
+	conectarYRecibirHandshake(configDMA->puertoDAM,configDMA->ipDAM,CPU_HSK);
 	return 0;
 }
 
 void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket){
-	cargarSocket(puerto,ip,&socket,logger);
-	if (socket != 0)
+	if (!cargarSocket(puerto,ip,socket,logger))
 	{
-		TSocket = inicializarTSocket(socket, logger);
+		TSocket = inicializarTSocket(*socket, logger);
 		enviarHandshake(TSocket->socket,DAM_HSK,handshakeProceso,logger);
 	}
 	else
@@ -147,12 +152,12 @@ void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeP
 }
 
 void conectarYRecibirHandshake(int puertoEscucha, char *ipPropia, int handshakeProceso){
-	int * socketPropio;
+	int * socketPropio = malloc(sizeof(int));
 	uint16_t handshake;
-	if (escuchar(puertoEscucha, &socketPropio, logger)) {
+	if (escuchar(puertoEscucha, socketPropio, logger)) {
 		exit_gracefully(1);
 	}
-	if (acceptConnection(socketPropio, &socketCPU, DAM_HSK, &handshake, logger)) {
+	if (acceptConnection(*socketPropio, &socketCPU, DAM_HSK, &handshake, logger)) {
 		log_error(logger, "No se acepta la conexion");
 		exit_gracefully(1);
 	}
