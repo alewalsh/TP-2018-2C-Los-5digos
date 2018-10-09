@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <commons/log.h>
+#include <grantp/mutex_log.h>
 #include <pthread.h>
 #include <grantp/socket.h>
 #include <grantp/configuracion.h>
@@ -40,7 +40,8 @@ int * socketMdj;
 int * socketFm9;
 int * socketCPU;
 
-t_log* logger;
+//t_log* logger;
+t_log_mutex * logger;
 configDAM* configDMA;
 
 //Hilos

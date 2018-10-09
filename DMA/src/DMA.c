@@ -77,7 +77,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         case CPU_FM9_CONNECT:
 			printf("Se ha conectado el CPU.");
 //            if (esiConnection(socketFD, pkg, logger)) {
-//                log_error_mutex(logger, "Hubo un error en la conexion con la CPU");
+//                log_error_mutex_mutex(logger, "Hubo un error en la conexion con la CPU");
 //                break;
 //            }
 //            sem_post(&sem_newEsi);
@@ -91,7 +91,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 		case DAM_FM9_CONNECT:
 			printf("Se ha conectado el DAM.");
 //			if (esiConnection(socketFD, pkg, logger)) {
-//				log_error_mutex(logger, "Hubo un error en la conexion con el DAM");
+//				log_error_mutex_mutex(logger, "Hubo un error en la conexion con el DAM");
 //				break;
 //			}
 //            sem_post(&sem_newEsi);
@@ -120,64 +120,76 @@ void initVariables() {
 
 void cargarArchivoDeConfig() {
 	configDMA = cargarConfiguracion("config.cfg", DAM, logger);
-	log_info(logger, "Archivo de configuraciones cargado correctamente");
+	log_info_mutex(logger, "Archivo de configuraciones cargado correctamente");
 }
 
 void configure_logger() {
-	logger = log_create("DAM.log", "DAM", true, LOG_LEVEL_INFO);
-	log_info(logger, "Inicia proceso: Diego Armando Maradona (DAM)");
+	//logger = log_create("DAM.log", "DAM", true, LOG_LEVEL_INFO);
+	logger = log_create_mutex("DAM.log", "DAM", true, LOG_LEVEL_INFO);
+	log_info_mutex(logger, "Inicia proceso: Diego Armando Maradona (DAM)");
 }
 
 void iniciarHilosDelDMA() {
-	log_info(logger, "Creando sockets");
+	log_info_mutex(logger, "Creando sockets");
 
 	int res;
 	res = conectarseConSafa();
 	if (res > 0) {
-		log_error(logger, "Error al crear el hilo del S-Afa");
+		log_error_mutex(logger, "Error al crear el hilo del S-Afa");
 		exit_gracefully(1);
+	}else{
+		log_info_mutex(logger, "Se realizó la conexion del S-Afa");
 	}
 
 	res = conectarseConMdj();
 	if (res > 0) {
-		log_error(logger, "Error al crear el hilo del MDJ");
+		log_error_mutex(logger, "Error al crear el hilo del MDJ");
 		exit_gracefully(1);
+	}else{
+		log_info_mutex(logger, "Se realizó la conexion del MDJ");
 	}
+
 
 	res = conectarseConFm9();
 	if (res > 0) {
-		log_error(logger, "Error al crear el hilo del FM9");
+		log_error_mutex(logger, "Error al crear el hilo del FM9");
 		exit_gracefully(1);
+	}else{
+		log_info_mutex(logger, "Se realizó la conexion del FM9");
 	}
+
 
 	res = conectarseConCPU();
 	if (res > 0) {
-		log_error(logger, "Error al crear el hilo del CPU");
+		log_error_mutex(logger, "Error al crear el hilo del CPU");
 		exit_gracefully(1);
+	}else{
+		log_info_mutex(logger, "Se realizó la conexion del CPU");
 	}
+
 
 	//TODO: Manejar conexiones con hilos
 //	res = pthread_create(&hiloSafa,NULL,(void *)conectarseConSafa(), NULL);
 //	if(res > 0){
-//		log_error(logger, "Error al crear el hilo del S-Afa");
+//		log_error_mutex(logger, "Error al crear el hilo del S-Afa");
 //		exit_gracefully(1);
 //	}
 
 //	res = pthread_create(&hiloMdj,NULL,(void *)conectarseConMdj(), NULL);
 //	if(res > 0){
-//			log_error(logger, "Error al crear el hilo del MDJ");
+//			log_error_mutex(logger, "Error al crear el hilo del MDJ");
 //			exit_gracefully(1);
 //	}
 
 //	res = pthread_create(&hiloFm9,NULL,(void *)conectarseConFm9(), NULL);
 //	if(res > 0){
-//			log_error(logger, "Error al crear el hilo del FM9");
+//			log_error_mutex(logger, "Error al crear el hilo del FM9");
 //			exit_gracefully(1);
 //	}
 
 //	res = pthread_create(&hiloFm9,NULL,(void *)conectarseConCPU(), NULL);
 //		if(res > 0){
-//				log_error(logger, "Error al crear el hilo del FM9");
+//				log_error_mutex(logger, "Error al crear el hilo del FM9");
 //				exit_gracefully(1);
 //	}
 
@@ -186,7 +198,7 @@ void iniciarHilosDelDMA() {
 //	pthread_join(hiloFm9, NULL);
 //	pthread_join(hiloCPU, NULL);
 
-	log_info(logger, "Los hilos finalizaron correctamente");
+	log_info_mutex(logger, "Los hilos finalizaron correctamente");
 
 }
 
@@ -235,7 +247,7 @@ void conectarYenviarHandshake(int puerto, char *ip, int * socket,
 		TSocket = inicializarTSocket(*socket, logger);
 		enviarHandshake(TSocket->socket, DAM_HSK, handshakeProceso, logger);
 	} else {
-		log_error(logger, "Error al conectarse al %s",
+		log_error_mutex(logger, "Error al conectarse al %s",
 				enumToProcess(handshakeProceso));
 		exit_gracefully(ERROR_SOCKET);
 	}
@@ -243,14 +255,14 @@ void conectarYenviarHandshake(int puerto, char *ip, int * socket,
 
 void conectarYRecibirHandshake(int puertoEscucha, char *ipPropia,
 		int handshakeProceso) {
-	socketCPU = malloc(sizeof(int));
+
 	uint16_t handshake;
-	if (escuchar(puertoEscucha, socketCPU, logger)) {
+	if (escuchar(puertoEscucha, &socketCPU, logger)) {
 		//liberar recursos/
 		exit_gracefully(1);
 	}
 	log_trace_mutex(logger, "El socket de escucha de FM9 es: %d", socketCPU);
-	log_info_mutex(logger, "El socket de escucha de FM9 es: %d", socketCPU);
+    log_info_mutex(logger, "El socket de escucha de FM9 es: %d", socketCPU);
 	addNewSocketToMaster(socketCPU);
 
 	printf("Se conecto el CPU");
@@ -273,7 +285,7 @@ char * enumToProcess(int proceso) {
 		nombreProceso = "DMA";
 		break;
 	default:
-		log_error(logger, "Enum proceso error.");
+		log_error_mutex(logger, "Enum proceso error.");
 		break;
 	}
 	if (strcmp(nombreProceso, "") == 0)
@@ -286,9 +298,9 @@ void exit_gracefully(int return_nr) {
 
 	bool returnCerrarSockets = cerrarSockets();
 	if (return_nr > 0 || returnCerrarSockets) {
-		log_error(logger, "Fin del proceso: DAM");
+		log_error_mutex(logger, "Fin del proceso: DAM");
 	} else {
-		log_info(logger, "Fin del proceso: DAM");
+		log_info_mutex(logger, "Fin del proceso: DAM");
 	}
 
 	log_destroy(logger);
