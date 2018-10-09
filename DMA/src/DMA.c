@@ -236,7 +236,6 @@ void * conectarseConFm9() {
 }
 
 void * conectarseConCPU() {
-	socketCPU = malloc(sizeof(int));
 	conectarYRecibirHandshake(configDMA->puertoDAM);
 	return 0;
 }

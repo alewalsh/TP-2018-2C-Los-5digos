@@ -20,21 +20,19 @@ int main(int argc, char ** argv) {
 
 	//TODO: CREAR EL ESTADO CORRUPTO Y OPERATIVO DEL SAFA
 
-    configFilePath = "/home/utnso/Git/tp-2018-2c-Los-5digos/SAFA/config.cfg";
-
 	//Creo las Variables locales
     pthread_t threadConsola;
     pthread_t threadConexiones;
     pthread_t threadCambioConfig;
 
     //inicializacion de recursos y carga de configuracion
-    inicializarRecursos();
+    inicializarRecursos(argv[1]);
 
     printf("Recursos incializados");
 
     //Empiezo inotif para despues ver si hubo cambios sobre el archivo de configuracion
 	inotifyFd = inotify_init();
-	inotifyWd = inotify_add_watch(inotifyFd,configFilePath,IN_CLOSE_WRITE);
+	inotifyWd = inotify_add_watch(inotifyFd,argv[1],IN_CLOSE_WRITE);
 
 	printf("Se crean los hilos de safa");
     //Inicializo la consola del Planificador y los threads correspondientes
@@ -51,12 +49,16 @@ int main(int argc, char ** argv) {
 }
 
 
-void inicializarRecursos(){
+void inicializarRecursos(char * pathConfig){
 
     logger = log_create_mutex("SAFA.log", "SAFA", 0, LOG_LEVEL_INFO);
-
+    if (strcmp(pathConfig,"")==0)
+    {
+        log_error_mutex(logger, "No existe el archivo indicado");
+        exit(1);
+    }
     //Cargo el archivo configuracion
-    conf = (configSAFA *) cargarConfiguracion(configFilePath, SAFA, logger->logger);
+    conf = (configSAFA *) cargarConfiguracion(pathConfig, SAFA, logger->logger);
 
     if(conf==NULL){
         log_error_mutex(logger, "No existe archivo configuracion");

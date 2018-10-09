@@ -63,12 +63,11 @@ int maxfd;
 int inotifyFd;
 int inotifyWd;
 char inotifyBuf[200];
-char* configFilePath;
 
 // ------------------------------------------------------------------------------
 //	METODOS
 // ------------------------------------------------------------------------------
-void inicializarRecursos();
+void inicializarRecursos(char * pathConfig);
 void liberarRecursos();
 void initMutexs();
 void cambiosConfig();

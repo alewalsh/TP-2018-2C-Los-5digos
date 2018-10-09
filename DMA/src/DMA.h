@@ -39,7 +39,7 @@ pthread_mutex_t mutexExit;
 int * socketSafa;
 int * socketMdj;
 int * socketFm9;
-int * socketCPU;
+
 int socketEscucha;
 //t_log* logger;
 t_log_mutex * logger;
