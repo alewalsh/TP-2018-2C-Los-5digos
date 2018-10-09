@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <commons/log.h>
 #include <grantp/configuracion.h>
+#include <grantp/compression.h>
 #include <grantp/socket.h>
 #include <limits.h>
 //#include <semaphore.h>
@@ -98,6 +99,7 @@ t_socket *  conectarseAProceso(int puerto, char *ip, int * socket, int handshake
 void manejarSolicitud(t_package pkg, int socketFD);
 int nuevoDummy(t_package paquete);
 int comenzarEjecucion(t_package paquete);
+int setQuantum(t_package paquete);
 
 void recibirDTB();
 t_dtb * transformarPaqueteADTB(t_package paquete);
