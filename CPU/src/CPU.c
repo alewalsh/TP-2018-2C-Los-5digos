@@ -10,6 +10,7 @@
 #include "CPU.h"
 
 int main(int argc, char ** argv) {
+	//t_cpu_operacion operacion = parse(" ", false);
 	inicializarCPU(argv[1]);
 	//Recibir DTB y verificar valor de flag de inicializacion
 	recibirDTB();

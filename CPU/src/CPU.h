@@ -13,6 +13,7 @@
 #include <commons/log.h>
 #include <grantp/configuracion.h>
 #include <grantp/compression.h>
+#include <grantp/parser.h>
 #include <grantp/socket.h>
 #include <limits.h>
 //#include <semaphore.h>
