@@ -64,7 +64,7 @@ enum codigosError
 //Declaracion de funciones
 void aceptarConexionesDelCpu();
 void initVariables();
-void cargarArchivoDeConfig();
+void cargarArchivoDeConfig(char * pathConfig);
 void configure_logger();
 void iniciarHilosDelDMA();
 void sig_handler(int signo);

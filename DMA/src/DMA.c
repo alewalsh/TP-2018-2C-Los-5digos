@@ -14,7 +14,7 @@ int main(int argc, char ** argv) {
 
 	initVariables();
 	configure_logger();
-	cargarArchivoDeConfig();
+	cargarArchivoDeConfig(argv[1]);
 	iniciarHilosDelDMA();
 
 	while (1) {
@@ -118,9 +118,22 @@ void initVariables() {
 	cpusConectadas = 0;
 }
 
-void cargarArchivoDeConfig() {
-	configDMA = cargarConfiguracion("config.cfg", DAM, logger->logger);
+void cargarArchivoDeConfig(char * pathConfig) {
+
 	log_info_mutex(logger, "Archivo de configuraciones cargado correctamente");
+
+	if (pathConfig != NULL){
+	configDMA = cargarConfiguracion(pathConfig, DAM, logger->logger);
+	}
+	else{
+		log_error(logger, "No hay un path correcto a un archivo de configuracion");
+		exit_gracefully(ERROR_PATH_CONFIG);
+	}
+	if (configDMA == NULL){
+		log_error(logger, "Error en el archivo de configuracion");
+		exit_gracefully(ERROR_CONFIG);
+	}
+
 }
 
 void configure_logger() {
