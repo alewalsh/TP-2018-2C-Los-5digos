@@ -25,6 +25,7 @@ int main(int argc, char ** argv) {
 }
 
 void aceptarConexionesDelCpu() {
+	t_package pkg;
 	// Recibo y acepto las conexiones del cpu
 	updateReadset();
 
@@ -36,19 +37,18 @@ void aceptarConexionesDelCpu() {
 	}
 
 	log_trace_mutex(logger, "El valor del select es: %d", result);
-	log_trace_mutex(logger,
-			"Analizo resultado del select para ver quien me hablo");
+	log_trace_mutex(logger, "Analizo resultado del select para ver quien me hablo");
 
 	for (int i = 0; i <= getMaxfd(); i++) {
 
 		if (isSetted(i)) { // ¡¡tenemos datos!!
 
-			if (i == socketCPU) {
+			if (i == socketEscucha) {
 				// CAMBIOS EN EL SOCKET QUE ESCUCHA, acepto las nuevas conexiones
 				log_trace_mutex(logger,
 						"Cambios en Listener de CPU, se gestionara la conexion correspondiente");
-				if (acceptConnection(socketCPU, &nuevoFd, DAM_HSK, &handshake,
-						logger)) {
+				if (acceptConnection(socketEscucha, &nuevoFd, DAM_HSK, &handshake,
+						logger->logger)) {
 					log_error_mutex(logger,
 							"No se acepto la nueva conexion solicitada");
 				} else {
@@ -59,7 +59,7 @@ void aceptarConexionesDelCpu() {
 				}
 			} else {
 				//gestionar datos de un cliente
-				if (recibir(i, &pkg, logger)) {
+				if (recibir(i, &pkg, logger->logger)) {
 					log_error_mutex(logger, "No se pudo recibir el mensaje");
 					//handlerDisconnect(i);
 				} else {
@@ -119,13 +119,13 @@ void initVariables() {
 }
 
 void cargarArchivoDeConfig() {
-	configDMA = cargarConfiguracion("config.cfg", DAM, logger);
+	configDMA = cargarConfiguracion("config.cfg", DAM, logger->logger);
 	log_info_mutex(logger, "Archivo de configuraciones cargado correctamente");
 }
 
 void configure_logger() {
 	//logger = log_create("DAM.log", "DAM", true, LOG_LEVEL_INFO);
-	logger = log_create_mutex("DAM.log", "DAM", true, LOG_LEVEL_INFO);
+	logger = log_create_mutex("DAM.log", "DAM", true, LOG_LEVEL_TRACE);
 	log_info_mutex(logger, "Inicia proceso: Diego Armando Maradona (DAM)");
 }
 
@@ -237,33 +237,30 @@ void * conectarseConFm9() {
 
 void * conectarseConCPU() {
 	socketCPU = malloc(sizeof(int));
-	conectarYRecibirHandshake(configDMA->puertoDAM, configDMA->ipDAM, CPU_HSK);
+	conectarYRecibirHandshake(configDMA->puertoDAM);
 	return 0;
 }
 
-void conectarYenviarHandshake(int puerto, char *ip, int * socket,
-		int handshakeProceso, t_socket* TSocket) {
-	if (!cargarSocket(puerto, ip, socket, logger)) {
-		TSocket = inicializarTSocket(*socket, logger);
-		enviarHandshake(TSocket->socket, DAM_HSK, handshakeProceso, logger);
+void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket) {
+	if (!cargarSocket(puerto, ip, socket, logger->logger)) {
+		TSocket = inicializarTSocket(*socket, logger->logger);
+		enviarHandshake(TSocket->socket, DAM_HSK, handshakeProceso, logger->logger);
 	} else {
-		log_error_mutex(logger, "Error al conectarse al %s",
-				enumToProcess(handshakeProceso));
+		log_error_mutex(logger, "Error al conectarse al %s", enumToProcess(handshakeProceso));
 		exit_gracefully(ERROR_SOCKET);
 	}
 }
 
-void conectarYRecibirHandshake(int puertoEscucha, char *ipPropia,
-		int handshakeProceso) {
+void conectarYRecibirHandshake(int puertoEscucha) {
 
-	uint16_t handshake;
-	if (escuchar(puertoEscucha, &socketCPU, logger)) {
+//	uint16_t handshake;
+	if (escuchar(puertoEscucha, &socketEscucha, logger->logger)) {
 		//liberar recursos/
 		exit_gracefully(1);
 	}
-	log_trace_mutex(logger, "El socket de escucha de FM9 es: %d", socketCPU);
-    log_info_mutex(logger, "El socket de escucha de FM9 es: %d", socketCPU);
-	addNewSocketToMaster(socketCPU);
+	log_trace_mutex(logger, "El socket de escucha del DMA es: %d", socketEscucha);
+    log_info_mutex(logger, "El socket de escucha de DMA es: %d", socketEscucha);
+	addNewSocketToMaster(socketEscucha);
 
 	printf("Se conecto el CPU");
 	// pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
@@ -303,7 +300,7 @@ void exit_gracefully(int return_nr) {
 		log_info_mutex(logger, "Fin del proceso: DAM");
 	}
 
-	log_destroy(logger);
+	log_destroy_mutex(logger);
 	exit(return_nr);
 }
 

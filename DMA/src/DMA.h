@@ -15,6 +15,7 @@
 #include <pthread.h>
 #include <grantp/socket.h>
 #include <grantp/configuracion.h>
+#include "funcionesDMA.h"
 
 int cpusConectadas;
 t_package pkg;
@@ -39,7 +40,7 @@ int * socketSafa;
 int * socketMdj;
 int * socketFm9;
 int * socketCPU;
-
+int socketEscucha;
 //t_log* logger;
 t_log_mutex * logger;
 configDAM* configDMA;
@@ -68,6 +69,7 @@ void configure_logger();
 void iniciarHilosDelDMA();
 void sig_handler(int signo);
 void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket);
+void conectarYRecibirHandshake(int puertoEscucha);
 char * enumToProcess(int proceso);
 void * conectarseConSafa();
 void *conectarseConMdj();
@@ -75,5 +77,6 @@ void *conectarseConFm9();
 void *conectarseConCPU();
 void exit_gracefully(int error);
 bool cerrarSockets();
+void manejarSolicitud(t_package pkg, int socketFD);
 
 #endif /* DMA_H_ */
