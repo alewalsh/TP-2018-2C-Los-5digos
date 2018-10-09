@@ -41,7 +41,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
                 log_error_mutex(loggerCPU, "Hubo un error en la inicializacion del dummy");
                 break;
         	}
-//            sem_post(&sem_nuevoDummy);
+        	//sem_post(&sem_nuevoDummy);
             break;
         case SAFA_CPU_EJECUTAR:
         	if(comenzarEjecucion(pkg))
@@ -49,7 +49,15 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         		log_error_mutex(loggerCPU, "Hubo un error en la ejecucion del Escriptorio");
         		break;
         	}
-        	//            sem_post(&sem_comienzaEjecucion);
+        	//sem_post(&sem_comienzaEjecucion);
+        	break;
+        case SAFA_CPU_QUANTUM:
+        	if(setQuantum(pkg))
+        	{
+        		log_error_mutex(loggerCPU, "Hubo un error en el seteo del nuevo quantum.");
+        		break;
+        	}
+        	//sem_post(&sem_nuevoQuantum);
         	break;
 //        case COORD_PLAN_BLOCK:
 //            //log_info_mutex(logger, "El coordinador me pide que bloquee un recurso");
@@ -115,10 +123,21 @@ int comenzarEjecucion(t_package paquete)
 	return EXIT_SUCCESS;
 }
 
+int setQuantum(t_package paquete)
+{
+	int quantum = copyIntFromBuffer(&paquete.data);
+	if (quantum > 0)
+	{
+		log_info_mutex(loggerCPU, "El valor del quantum es %d", quantum);
+		return EXIT_SUCCESS;
+	}
+	return EXIT_FAILURE;
+}
+
 t_dtb * transformarPaqueteADTB(t_package paquete)
 {
 	t_dtb * dtb = malloc(sizeof(t_dtb));
-//	int tamanioTotal = paquete.size;
+	//int tamanioTotal = paquete.size;
 	// Aca habria que realizar lo que sería una deserializacion de la info dentro de paquete->data
 	return dtb;
 }
