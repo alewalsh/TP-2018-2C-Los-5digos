@@ -11,16 +11,111 @@
 #include "DMA.h"
 
 int main(int argc, char ** argv) {
+
+	initVariables();
 	configure_logger();
 	cargarArchivoDeConfig();
 	iniciarHilosDelDMA();
 
-	while(1)
-	{
-		// Aqui iría la funcionalidad
+	while (1) {
+		aceptarConexionesDelCpu();
 	}
 
 	exit_gracefully(0);
+}
+
+void aceptarConexionesDelCpu() {
+	// Recibo y acepto las conexiones del cpu
+	updateReadset();
+
+	//Hago un select sobre el conjunto de sockets activo
+	int result = select(getMaxfd() + 1, &readset, NULL, NULL, NULL);
+	if (result == -1) {
+		log_error_mutex(logger, "Error en el select: %s", strerror(errno));
+		exit(1);
+	}
+
+	log_trace_mutex(logger, "El valor del select es: %d", result);
+	log_trace_mutex(logger,
+			"Analizo resultado del select para ver quien me hablo");
+
+	for (int i = 0; i <= getMaxfd(); i++) {
+
+		if (isSetted(i)) { // ¡¡tenemos datos!!
+
+			if (i == socketCPU) {
+				// CAMBIOS EN EL SOCKET QUE ESCUCHA, acepto las nuevas conexiones
+				log_trace_mutex(logger,
+						"Cambios en Listener de CPU, se gestionara la conexion correspondiente");
+				if (acceptConnection(socketCPU, &nuevoFd, DAM_HSK, &handshake,
+						logger)) {
+					log_error_mutex(logger,
+							"No se acepto la nueva conexion solicitada");
+				} else {
+					// añadir al conjunto maestro
+					log_trace_mutex(logger,
+							"Se acepto la nueva conexion solicitada en el SELECT");
+					addNewSocketToMaster(nuevoFd);
+				}
+			} else {
+				//gestionar datos de un cliente
+				if (recibir(i, &pkg, logger)) {
+					log_error_mutex(logger, "No se pudo recibir el mensaje");
+					//handlerDisconnect(i);
+				} else {
+					manejarSolicitud(pkg, i);
+				}
+
+			}
+		}
+	}
+}
+
+void manejarSolicitud(t_package pkg, int socketFD) {
+
+    switch (pkg.code) {
+        case CPU_FM9_CONNECT:
+			printf("Se ha conectado el CPU.");
+//            if (esiConnection(socketFD, pkg, logger)) {
+//                log_error_mutex(logger, "Hubo un error en la conexion con la CPU");
+//                break;
+//            }
+//            sem_post(&sem_newEsi);
+            break;
+
+        case CPU_DAM_BUSQUEDA_ESCRIPTORIO:
+        	printf("Se debe buscar un escriptorio en mdj y cargar en fm9");
+        	//TODO
+        	break;
+
+		case DAM_FM9_CONNECT:
+			printf("Se ha conectado el DAM.");
+//			if (esiConnection(socketFD, pkg, logger)) {
+//				log_error_mutex(logger, "Hubo un error en la conexion con el DAM");
+//				break;
+//			}
+//            sem_post(&sem_newEsi);
+			break;
+        case SOCKET_DISCONECT:
+//            handlerDisconnect(socketFD);
+            close(socketFD);
+            deleteSocketFromMaster(socketFD);
+            break;
+        default:
+            log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
+            log_warning_mutex(logger, "Ojo, estas recibiendo un mensaje que no esperabas.");
+            break;
+
+    }
+
+    free(pkg.data);
+
+}
+
+
+
+void initVariables() {
+	cpusConectadas = 0;
 }
 
 void cargarArchivoDeConfig() {
@@ -34,33 +129,29 @@ void configure_logger() {
 }
 
 void iniciarHilosDelDMA() {
-	log_info(logger,"Creando sockets");
+	log_info(logger, "Creando sockets");
 
 	int res;
 	res = conectarseConSafa();
-	if (res > 0)
-	{
+	if (res > 0) {
 		log_error(logger, "Error al crear el hilo del S-Afa");
 		exit_gracefully(1);
 	}
 
 	res = conectarseConMdj();
-	if (res > 0)
-	{
+	if (res > 0) {
 		log_error(logger, "Error al crear el hilo del MDJ");
 		exit_gracefully(1);
 	}
 
 	res = conectarseConFm9();
-	if (res > 0)
-	{
+	if (res > 0) {
 		log_error(logger, "Error al crear el hilo del FM9");
 		exit_gracefully(1);
 	}
 
 	res = conectarseConCPU();
-	if (res > 0)
-	{
+	if (res > 0) {
 		log_error(logger, "Error al crear el hilo del CPU");
 		exit_gracefully(1);
 	}
@@ -102,111 +193,101 @@ void iniciarHilosDelDMA() {
 /*FUNCION DEL HILO MDJ
  * Crea UN hilo que queda conectado y a la escucha del S-Afa
  */
-void * conectarseConSafa(){
+void * conectarseConSafa() {
 
 	socketSafa = malloc(sizeof(int));
-	conectarYenviarHandshake(configDMA->puertoSAFA,configDMA->ipSAFA,
-			socketSafa,SAFA_HSK,t_socketSafa);
+	conectarYenviarHandshake(configDMA->puertoSAFA, configDMA->ipSAFA,
+			socketSafa, SAFA_HSK, t_socketSafa);
 	return 0;
 }
 
 /*FUNCION DEL HILO MDJ
  * Crea UN hilo que queda conectado al MDJ
  */
-void * conectarseConMdj(){
+void * conectarseConMdj() {
 
 	socketMdj = malloc(sizeof(int));
-	conectarYenviarHandshake(configDMA->puertoMDJ,configDMA->ipMDJ,
-			socketMdj,MDJ_HSK,t_socketMdj);
+	conectarYenviarHandshake(configDMA->puertoMDJ, configDMA->ipMDJ, socketMdj,
+			MDJ_HSK, t_socketMdj);
 	return 0;
 }
 
 /*FUNCION DEL HILO FM9
  * Crea UN hilo que queda conectado al FM9
  */
-void * conectarseConFm9(){
+void * conectarseConFm9() {
 
 	socketFm9 = malloc(sizeof(int));
-	conectarYenviarHandshake(configDMA->puertoFM9,configDMA->ipFM9,
-			socketFm9,FM9_HSK,t_socketFm9);
+	conectarYenviarHandshake(configDMA->puertoFM9, configDMA->ipFM9, socketFm9,
+			FM9_HSK, t_socketFm9);
 	return 0;
 }
 
-void * conectarseConCPU(){
+void * conectarseConCPU() {
 	socketCPU = malloc(sizeof(int));
-	conectarYRecibirHandshake(configDMA->puertoDAM,configDMA->ipDAM,CPU_HSK);
+	conectarYRecibirHandshake(configDMA->puertoDAM, configDMA->ipDAM, CPU_HSK);
 	return 0;
 }
 
-void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket){
-	if (!cargarSocket(puerto,ip,socket,logger))
-	{
+void conectarYenviarHandshake(int puerto, char *ip, int * socket,
+		int handshakeProceso, t_socket* TSocket) {
+	if (!cargarSocket(puerto, ip, socket, logger)) {
 		TSocket = inicializarTSocket(*socket, logger);
-		enviarHandshake(TSocket->socket,DAM_HSK,handshakeProceso,logger);
-	}
-	else
-	{
-		log_error(logger, "Error al conectarse al %s", enumToProcess(handshakeProceso));
+		enviarHandshake(TSocket->socket, DAM_HSK, handshakeProceso, logger);
+	} else {
+		log_error(logger, "Error al conectarse al %s",
+				enumToProcess(handshakeProceso));
 		exit_gracefully(ERROR_SOCKET);
 	}
 }
 
-void conectarYRecibirHandshake(int puertoEscucha, char *ipPropia, int handshakeProceso){
-	int * socketPropio = malloc(sizeof(int));
+void conectarYRecibirHandshake(int puertoEscucha, char *ipPropia,
+		int handshakeProceso) {
+	socketCPU = malloc(sizeof(int));
 	uint16_t handshake;
-	if (escuchar(puertoEscucha, socketPropio, logger)) {
+	if (escuchar(puertoEscucha, socketCPU, logger)) {
+		//liberar recursos/
 		exit_gracefully(1);
 	}
-	if (acceptConnection(*socketPropio, &socketCPU, DAM_HSK, &handshake, logger)) {
-		log_error(logger, "No se acepta la conexion");
-		exit_gracefully(1);
-	}
-//	printf("Se conecto el DAM");
-//	int * socketPropio;
-//	int socketCreado = cargarSocket(puertoEscucha,ipPropia, &socketPropio, logger);
-//	t_socketEscucha = inicializarTSocket(socketCreado, logger);
-//	recibirHandshake(t_socketEscucha->socket, DAM_HSK, handshakeProceso, logger);
+	log_trace_mutex(logger, "El socket de escucha de FM9 es: %d", socketCPU);
+	log_info_mutex(logger, "El socket de escucha de FM9 es: %d", socketCPU);
+	addNewSocketToMaster(socketCPU);
 
 	printf("Se conecto el CPU");
-   // pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
+	// pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
 }
 
-
-char * enumToProcess(int proceso)
-{
+char * enumToProcess(int proceso) {
 	char * nombreProceso = "";
-	switch(proceso)
-	{
-		case FM9_HSK:
-			nombreProceso = "FM9";
-			break;
-		case MDJ_HSK:
-			nombreProceso = "MDJ";
-			break;
-		case SAFA_HSK:
-			nombreProceso = "SAFA";
-			break;
-		case DAM_HSK:
-			nombreProceso = "DMA";
-			break;
-		default:
-			log_error(logger, "Enum proceso error.");
-			break;
+	switch (proceso) {
+	case FM9_HSK:
+		nombreProceso = "FM9";
+		break;
+	case MDJ_HSK:
+		nombreProceso = "MDJ";
+		break;
+	case SAFA_HSK:
+		nombreProceso = "SAFA";
+		break;
+	case DAM_HSK:
+		nombreProceso = "DMA";
+		break;
+	default:
+		log_error(logger, "Enum proceso error.");
+		break;
 	}
-	if (strcmp(nombreProceso,"") == 0)
+	if (strcmp(nombreProceso, "") == 0)
 		exit_gracefully(-1);
 	return nombreProceso;
 }
-
-
 
 //Funcion para cerrar el programa
 void exit_gracefully(int return_nr) {
 
 	bool returnCerrarSockets = cerrarSockets();
-	if(return_nr > 0 || returnCerrarSockets){
+	if (return_nr > 0 || returnCerrarSockets) {
 		log_error(logger, "Fin del proceso: DAM");
-	}else{
+	} else {
 		log_info(logger, "Fin del proceso: DAM");
 	}
 
@@ -214,8 +295,7 @@ void exit_gracefully(int return_nr) {
 	exit(return_nr);
 }
 
-
-bool cerrarSockets(){
+bool cerrarSockets() {
 	free(t_socketSafa);
 	free(t_socketFm9);
 	free(t_socketMdj);

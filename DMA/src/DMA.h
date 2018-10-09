@@ -16,10 +16,24 @@
 #include <grantp/socket.h>
 #include <grantp/configuracion.h>
 
+int cpusConectadas;
+t_package pkg;
+uint16_t handshake;
+int nuevoFd;
+
 t_socket* t_socketSafa;
 t_socket* t_socketMdj;
 t_socket* t_socketFm9;
 t_socket* t_socketEscucha;
+
+fd_set master;
+fd_set readset;
+int maxfd;
+
+pthread_mutex_t mutexMaster;
+pthread_mutex_t mutexReadset;
+pthread_mutex_t mutexMaxfd;
+pthread_mutex_t mutexExit;
 
 int * socketSafa;
 int * socketMdj;
@@ -46,6 +60,8 @@ enum codigosError
 };
 
 //Declaracion de funciones
+void aceptarConexionesDelCpu();
+void initVariables();
 void cargarArchivoDeConfig();
 void configure_logger();
 void iniciarHilosDelDMA();
