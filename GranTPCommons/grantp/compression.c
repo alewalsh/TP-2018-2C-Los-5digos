@@ -84,3 +84,10 @@ char *copySizeToBuffer(char**buffer, char*data, int size) {
 	return (*buffer);
 }
 
+char *compressKey(char *key, int *size) {
+    *size = sizeof(int) + (strlen(key) * sizeof(char));
+    char *compress = (char *) malloc(*size);
+    char *p = compress;
+    copyStringToBuffer(&p, key);
+    return compress;
+}

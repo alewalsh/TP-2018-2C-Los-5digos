@@ -9,11 +9,15 @@
  */
 #include "CPU.h"
 
+pthread_attr_t tattr;
+
 int main(int argc, char ** argv) {
-	//t_cpu_operacion operacion = parse(" ", false);
+	// UTILIZAR ESTA LINEA PARA PROBAR EL MÉTODO Y QUE PUEDA ABRIR UN ESCRIPTORIO DE EJEMPLO
+	//t_list * lista = parseoInstrucciones(char * path, int cantidadLineas)
 	inicializarCPU(argv[1]);
+    pthread_t threadPrincipal;
 	//Recibir DTB y verificar valor de flag de inicializacion
-	recibirDTB();
+    pthread_create(&threadPrincipal, &tattr, (void *) recibirDTB, NULL);
 	exit_gracefully(EXIT_SUCCESS);
 }
 
@@ -91,55 +95,182 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 int nuevoDummy(t_package paquete)
 {
 	// Luego de recibirlo tengo que verificar su flag de inicializacion
-	//	t_dtb * DTB = transformarPaqueteADTB(paquete);
+	t_dtb * dtb = transformarPaqueteADTB(paquete);
 	// Si es 0, levanto un hilo y realizo  la operación Dummy - Iniciar G.DT
 	// Solicitarle al DAM la busqueda del Escriptorio en el MDJ
-	paquete.code = CPU_DAM_BUSQUEDA_ESCRIPTORIO;
-	if(enviar(t_socketDAM->socket,paquete.code,paquete.data, paquete.size, loggerCPU->logger))
+	int size;
+	char *keyCompress = compressKey(dtb->dirEscriptorio, &size);
+	if(enviar(t_socketDAM->socket,CPU_DAM_BUSQUEDA_ESCRIPTORIO,keyCompress, size, loggerCPU->logger))
+	{
+		log_error_mutex(loggerCPU, "No se pudo enviar la busqueda del escriptorio al DAM.");
+		free(keyCompress);
 		return EXIT_FAILURE;
+	}
+	free(keyCompress);
 
 	// Desalojar al DTB Dummy, avisando a SAFA que lo bloquee
-	paquete.code = CPU_SAFA_BLOQUEAR_DUMMMY;
-	if(enviar(t_socketSAFA->socket,paquete.code,paquete.data, paquete.size, loggerCPU->logger))
+	if(enviar(t_socketSAFA->socket,CPU_SAFA_BLOQUEAR_DUMMMY,paquete.data, paquete.size, loggerCPU->logger))
+	{
+		log_error_mutex(loggerCPU, "No se pudo enviar el bloqueo del Dummy al S-AFA.");
+		free(keyCompress);
 		return EXIT_FAILURE;
+	}
+	free(keyCompress);
 
 	return EXIT_SUCCESS;
 }
 
+t_list * parseoInstrucciones(char * path, int cantidadLineas)
+{
+	FILE * fp = fopen(path, "r");
+	char * line = NULL;
+	size_t len = 0;
+	ssize_t read;
+	if (fp == NULL){
+		log_error_mutex(loggerCPU, "Error al abrir el archivo: ");
+		exit_gracefully(EXIT_FAILURE);
+	}
+	t_list * listaInstrucciones = list_create();
+	int i = 1;
+	while ((read = getline(&line, &len, fp)) != -1)
+	{
+		bool ultimaLinea = (i == cantidadLineas);
+		t_cpu_operacion parsed = parse(line, ultimaLinea);
+		if(parsed.valido)
+		{
+			if(!parsed.esComentario)
+				list_add(listaInstrucciones, &parsed);
+
+			destruir_operacion(parsed);
+			// PRUEBA TEMPORAL PARA VERIFICAR QUE NO DESTRUYE LA REFERENCIA QUE SE AGREGÓ EN LISTA INSTRUCCIONES
+			t_cpu_operacion * operacion = list_get(listaInstrucciones, 0);
+			printf("Accion: %d", operacion->keyword);
+			printf("Argumento 1: %s", operacion->argumentos.ABRIR.path);
+		}
+		else
+		{
+			log_error_mutex(loggerCPU, "La linea <%d> no es valida\n", i);
+			exit_gracefully(EXIT_FAILURE);
+		}
+		i++;
+	}
+
+	fclose(fp);
+	if (line)
+		free(line);
+
+	return listaInstrucciones;
+
+}
 int comenzarEjecucion(t_package paquete)
 {
 	// Luego de recibirlo tengo que verificar su flag de inicializacion
-	//	t_dtb * DTB = transformarPaqueteADTB(paquete);
+	t_dtb * dtb = transformarPaqueteADTB(paquete);
 	// Si es 1, levanto un hilo y comienzo la ejecución de sentencias
 	// if DTB->flagInicializado == 1
-
+	t_list * listaInstrucciones = parseoInstrucciones(dtb->dirEscriptorio, dtb->cantidadLineas);
 	// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
-
 	// Por cada unidad de tiempo de quantum, se ejecutara una linea del Escriptorio indicado en el DTB
+    pthread_mutex_lock(&mutexQuantum);
+	while(dtb->programCounter < quantum)
+	{
+		// Comunicarse con el FM9 en caso de ser necesario.
+		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
+		// lo pase a la cola de Exit.
+		t_cpu_operacion * operacion = list_get(listaInstrucciones, dtb->programCounter);
+		switch(ejecutarOperacion(operacion, &dtb))
+		{
+			case EXIT_FAILURE:
+				log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
+				exit_gracefully(EXIT_FAILURE);
+				break;
+			case CONCENTRAR_EJECUTADO:
+				continue;
+				break;
+			default:
+				break;
+		}
+		dtb->programCounter++;
+	}
+    pthread_mutex_unlock(&mutexQuantum);
 
-	// Comunicarse con el FM9 en caso de ser necesario.
-
-	// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
-	// lo pase a la cola de Exit.
 	return EXIT_SUCCESS;
+}
+
+int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb)
+{
+	// Aca habría que diferenciar la ejecucion dependiendo de la accion que venga
+	switch(operacion->keyword)
+	{
+		case CONCENTRAR:
+			(*dtb)->programCounter++;
+			return CONCENTRAR_EJECUTADO;
+		case WAIT:
+			manejarRecursosSAFA(operacion->argumentos.WAIT.recurso, (*dtb)->idGDT, WAIT);
+			break;
+		case SIGNAL:
+			manejarRecursosSAFA(operacion->argumentos.SIGNAL.recurso, (*dtb)->idGDT, SIGNAL);
+			break;
+		default:
+			break;
+	}
+	return EXIT_SUCCESS;
+}
+
+void manejarRecursosSAFA(char * recurso, int idGDT, int accion)
+{
+	int code;
+	if (accion == WAIT)
+	{
+		code = CPU_SAFA_WAIT_RECURSO;
+	}
+	else if (accion == SIGNAL)
+	{
+		code = CPU_SAFA_SIGNAL_RECURSO;
+	}
+	else
+	{
+		code = GENERIC_ERROR;
+	}
+	// Enviar la informacion del recurso y del idGDT que lo bloquea (o desbloquea) al SAFA
+	int size = strlen(recurso) + sizeof(int);
+	char * buffer;
+	copyStringToBuffer(&buffer, recurso);
+	copyIntToBuffer(&buffer,idGDT);
+	size = strlen(buffer);
+	if(enviar(t_socketDAM->socket,code,buffer, size, loggerCPU->logger))
+	{
+		log_error_mutex(loggerCPU, "No se pudo enviar la busqueda del escriptorio al DAM.");
+		free(buffer);
+//		return EXIT_FAILURE;
+	}
+	free(buffer);
 }
 
 int setQuantum(t_package paquete)
 {
+    pthread_mutex_lock(&mutexQuantum);
 	int quantum = copyIntFromBuffer(&paquete.data);
 	if (quantum > 0)
 	{
 		log_info_mutex(loggerCPU, "El valor del quantum es %d", quantum);
 		return EXIT_SUCCESS;
 	}
+    pthread_mutex_unlock(&mutexQuantum);
 	return EXIT_FAILURE;
 }
 
 t_dtb * transformarPaqueteADTB(t_package paquete)
 {
+	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
 	t_dtb * dtb = malloc(sizeof(t_dtb));
-	//int tamanioTotal = paquete.size;
-	// Aca habria que realizar lo que sería una deserializacion de la info dentro de paquete->data
+	char *buffer = paquete.data;
+	dtb->idGDT = copyIntFromBuffer(&buffer);
+	dtb->dirEscriptorio = copyStringFromBuffer(&buffer);
+	dtb->programCounter = copyIntFromBuffer(&buffer);
+	dtb->flagInicializado = copyIntFromBuffer(&buffer);
+	dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
+	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
 	return dtb;
 }
 
@@ -232,6 +363,10 @@ void exit_gracefully(int error)
 	log_destroy_mutex(loggerCPU);
 	freeConfig(config, CPU);
 	exit(error);
+}
+
+void initMutexs(){
+	pthread_mutex_init(&mutexQuantum, NULL);
 }
 
 //void initSems() {

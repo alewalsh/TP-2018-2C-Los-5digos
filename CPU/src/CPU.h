@@ -11,24 +11,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/log.h>
+#include <commons/collections/list.h>
 #include <grantp/configuracion.h>
+#include <grantp/structCommons.h>
 #include <grantp/compression.h>
 #include <grantp/parser.h>
 #include <grantp/socket.h>
 #include <limits.h>
-//#include <semaphore.h>
-
-/*
- *  Ejemplo DTB: habria que ponerlo en GranTPCommons si utilizamos este.
- */
-
-typedef struct {
-	int idGDT;
-    char *dirEscriptorio;
-    int programCounter;
-    bool flagInicializado;
-    char *tablaDirecciones;
-} t_dtb;
+#include <pthread.h>
+#include <semaphore.h>
 
 /*
  * Config
@@ -63,10 +54,17 @@ enum codigosError
 	ERROR_DTB
 };
 
+enum accionEJecutada
+{
+	CONCENTRAR_EJECUTADO = 2
+};
+
 /*
  * Semaforos
  */
-//sem_t * sem_nuevoDummy;
+sem_t * sem_nuevoDummy;
+pthread_mutex_t mutexQuantum;
+
 /*
  * Funciones
  */
@@ -92,10 +90,14 @@ void inicializarConexiones();
  */
 void exit_gracefully(int error);
 
-
+/**
+ * @NAME: enumToProcess
+ * @DESC: devuelve el nombre del proceso en base al Handshake recibido.
+ * @PARAMS: {int} proceso Indica el proceso del cual se recibio el handshake.
+ */
 char * enumToProcess(int proceso);
 
-t_socket *  conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso);
+t_socket * conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso);
 
 void manejarSolicitud(t_package pkg, int socketFD);
 int nuevoDummy(t_package paquete);
@@ -104,6 +106,6 @@ int setQuantum(t_package paquete);
 
 void recibirDTB();
 t_dtb * transformarPaqueteADTB(t_package paquete);
-void gestionarSolicitud(t_package paquete);
-
+int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb);
+void manejarRecursosSAFA(char * recurso, int idGDT, int accion);
 #endif /* CPU_H_ */

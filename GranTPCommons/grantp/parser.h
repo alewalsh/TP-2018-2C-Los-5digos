@@ -16,6 +16,7 @@
 
 	typedef struct {
 		bool valido;
+		bool esComentario;
 		enum {
 			ABRIR,
 			CONCENTRAR,

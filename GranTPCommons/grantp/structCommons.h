@@ -10,6 +10,19 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
+
+/*
+ *  Ejemplo DTB: habria que ponerlo en GranTPCommons si utilizamos este.
+ */
+typedef struct {
+	int idGDT;
+    char *dirEscriptorio;
+    int programCounter;
+    bool flagInicializado;
+    char *tablaDirecciones;
+    int cantidadLineas;
+} t_dtb;
 
 typedef struct {
     char *operation;
