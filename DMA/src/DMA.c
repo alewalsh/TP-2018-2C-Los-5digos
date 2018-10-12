@@ -82,11 +82,18 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
             break;
 
         case CPU_DAM_BUSQUEDA_ESCRIPTORIO:
-        	printf("Se debe buscar un escriptorio en mdj y cargar en fm9");
-        	//TODO
+        	printf("Ehhh, voy a buscar [path] para [pid]");
+        	//TODO COMUNICARME CON EL FM9 Y TRANSFERIR LOS DATOS DEL ARCHIVO AL MDJ
+
+        	//TODO AVISARLE AL SAFA QUE EL ARCHIVO YA ESTA CARGADO EN MEMORIA
+        	//ENVIARLE LOS DATOS DE LA MEMORIA, EN EL DTB, PARA QUE PUEDA CONSULTARLOS
+
+        	//EN CASO DE ERROR AVISARLE AL SAFA QUE HUBO UN ERROR
         	break;
 
+        //Procedimiento para abrir un archivo (Escritura en el FM9)
         case CPU_DAM_ABRIR_ARCHIVO:
+        	//TODO: BUSCAR EL CONTENIDO DEL PATH RECIBIDO EN FM9 Y CARGARLO EN MDJ
         	printf("Abrir el archivo: ");
         	break;
 
@@ -94,8 +101,10 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         	printf("Asignar :");
         	break;
 
+        //Procedimiento para escribir en MDJ
         case CPU_DAM_FLUSH:
-        	print ("CPU -> Flush: ");
+        	//TODO: OBTENER LOS DATOS DEL FM9 Y GUARDARLO EN EL PATH RECIBIDO
+        	printf("CPU -> Flush: ");
         	break;
 
         case CPU_DAM_CREAR:
