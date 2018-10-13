@@ -20,7 +20,7 @@
 #include <limits.h>
 #include <pthread.h>
 #include <semaphore.h>
-
+#include "operaciones.h"
 /*
  * Config
  */
@@ -54,7 +54,7 @@ enum codigosError
 	ERROR_DTB
 };
 
-enum accionEJecutada
+enum accionEjecutada
 {
 	CONCENTRAR_EJECUTADO = 2
 };
@@ -98,14 +98,16 @@ void exit_gracefully(int error);
 char * enumToProcess(int proceso);
 
 t_socket * conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso);
+void recibirDTB();
 
 void manejarSolicitud(t_package pkg, int socketFD);
 int nuevoDummy(t_package paquete);
+
 int comenzarEjecucion(t_package paquete);
+int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb);
+int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int modulo);
+int manejarRecursosSAFA(char * recurso, int idGDT, int accion);
 int setQuantum(t_package paquete);
 
-void recibirDTB();
 t_dtb * transformarPaqueteADTB(t_package paquete);
-int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb);
-void manejarRecursosSAFA(char * recurso, int idGDT, int accion);
 #endif /* CPU_H_ */
