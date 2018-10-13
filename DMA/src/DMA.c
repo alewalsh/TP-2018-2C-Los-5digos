@@ -15,7 +15,7 @@ int main(int argc, char ** argv) {
 	initVariables();
 	configure_logger();
 	cargarArchivoDeConfig(argv[1]);
-	iniciarHilosDelDMA();
+	iniciarConexionesDelDMA();
 
 	while (1) {
 		aceptarConexionesDelCpu();
@@ -46,7 +46,7 @@ void aceptarConexionesDelCpu() {
 			if (i == socketEscucha) {
 				// CAMBIOS EN EL SOCKET QUE ESCUCHA, acepto las nuevas conexiones
 				log_trace_mutex(logger,
-						"Cambios en Listener de CPU, se gestionara la conexion correspondiente");
+						"Cambios en Listener del DMA, se gestionara la conexion correspondiente");
 				if (acceptConnection(socketEscucha, &nuevoFd, DAM_HSK, &handshake,
 						logger->logger)) {
 					log_error_mutex(logger,
@@ -60,10 +60,10 @@ void aceptarConexionesDelCpu() {
 			} else {
 				//gestionar datos de un cliente
 				if (recibir(i, &pkg, logger->logger)) {
-					log_error_mutex(logger, "No se pudo recibir el mensaje");
+					log_error_mutex(logger, "No se pudo recibir el mensaje del CPU");
 					//handlerDisconnect(i);
 				} else {
-					manejarSolicitud(pkg, i);
+					manejarSolicitudDelCPU(pkg, i);
 				}
 
 			}
@@ -71,31 +71,50 @@ void aceptarConexionesDelCpu() {
 	}
 }
 
-void manejarSolicitud(t_package pkg, int socketFD) {
+void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
+	//SE DETERMINA CUAL ES LA SOLICITUD DEL CPU Y SE REALIZA LA ACCION CORRESPONDIENTE
     switch (pkg.code) {
+
         case CPU_FM9_CONNECT:
-			printf("Se ha conectado el CPU.");
-//            if (esiConnection(socketFD, pkg, logger)) {
-//                log_error_mutex_mutex(logger, "Hubo un error en la conexion con la CPU");
-//                break;
-//            }
-//            sem_post(&sem_newEsi);
+        	cpusConectadas ++;
+			printf("Se ha conectado el CPU. CPU conectadas: %d", cpusConectadas);
             break;
 
         case CPU_DAM_BUSQUEDA_ESCRIPTORIO:
-        	printf("Se debe buscar un escriptorio en mdj y cargar en fm9");
-        	//TODO
+        	printf("Ehhh, voy a buscar [path] para [pid]");
+        	//TODO COMUNICARME CON EL FM9 Y TRANSFERIR LOS DATOS DEL ARCHIVO AL MDJ
+
+        	//TODO AVISARLE AL SAFA QUE EL ARCHIVO YA ESTA CARGADO EN MEMORIA
+        	//ENVIARLE LOS DATOS DE LA MEMORIA, EN EL DTB, PARA QUE PUEDA CONSULTARLOS
+
+        	//EN CASO DE ERROR AVISARLE AL SAFA QUE HUBO UN ERROR
         	break;
 
-		case DAM_FM9_CONNECT:
-			printf("Se ha conectado el DAM.");
-//			if (esiConnection(socketFD, pkg, logger)) {
-//				log_error_mutex_mutex(logger, "Hubo un error en la conexion con el DAM");
-//				break;
-//			}
-//            sem_post(&sem_newEsi);
-			break;
+        //Procedimiento para abrir un archivo (Escritura en el FM9)
+        case CPU_DAM_ABRIR_ARCHIVO:
+        	//TODO: BUSCAR EL CONTENIDO DEL PATH RECIBIDO EN FM9 Y CARGARLO EN MDJ
+        	printf("Abrir el archivo: ");
+        	break;
+
+        case CPU_DAM_ASIGNAR:
+        	printf("Asignar :");
+        	break;
+
+        //Procedimiento para escribir en MDJ
+        case CPU_DAM_FLUSH:
+        	//TODO: OBTENER LOS DATOS DEL FM9 Y GUARDARLO EN EL PATH RECIBIDO
+        	printf("CPU -> Flush: ");
+        	break;
+
+        case CPU_DAM_CREAR:
+        	printf("CPU -> Crear: ");
+        	break;
+
+        case CPU_DAM_BORRAR:
+        	printf("CPU -> Borrar: ");
+        	break;
+
         case SOCKET_DISCONECT:
 //            handlerDisconnect(socketFD);
             close(socketFD);
@@ -105,7 +124,6 @@ void manejarSolicitud(t_package pkg, int socketFD) {
             log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
             log_warning_mutex(logger, "Ojo, estas recibiendo un mensaje que no esperabas.");
             break;
-
     }
 
     free(pkg.data);
@@ -126,11 +144,11 @@ void cargarArchivoDeConfig(char * pathConfig) {
 	configDMA = cargarConfiguracion(pathConfig, DAM, logger->logger);
 	}
 	else{
-		log_error(logger, "No hay un path correcto a un archivo de configuracion");
+		log_error_mutex(logger, "No hay un path correcto a un archivo de configuracion");
 		exit_gracefully(ERROR_PATH_CONFIG);
 	}
 	if (configDMA == NULL){
-		log_error(logger, "Error en el archivo de configuracion");
+		log_error_mutex(logger, "Error en el archivo de configuracion");
 		exit_gracefully(ERROR_CONFIG);
 	}
 
@@ -142,7 +160,7 @@ void configure_logger() {
 	log_info_mutex(logger, "Inicia proceso: Diego Armando Maradona (DAM)");
 }
 
-void iniciarHilosDelDMA() {
+void iniciarConexionesDelDMA() {
 	log_info_mutex(logger, "Creando sockets");
 
 	int res;
@@ -180,37 +198,6 @@ void iniciarHilosDelDMA() {
 		log_info_mutex(logger, "Se realizó la conexion del CPU");
 	}
 
-
-	//TODO: Manejar conexiones con hilos
-//	res = pthread_create(&hiloSafa,NULL,(void *)conectarseConSafa(), NULL);
-//	if(res > 0){
-//		log_error_mutex(logger, "Error al crear el hilo del S-Afa");
-//		exit_gracefully(1);
-//	}
-
-//	res = pthread_create(&hiloMdj,NULL,(void *)conectarseConMdj(), NULL);
-//	if(res > 0){
-//			log_error_mutex(logger, "Error al crear el hilo del MDJ");
-//			exit_gracefully(1);
-//	}
-
-//	res = pthread_create(&hiloFm9,NULL,(void *)conectarseConFm9(), NULL);
-//	if(res > 0){
-//			log_error_mutex(logger, "Error al crear el hilo del FM9");
-//			exit_gracefully(1);
-//	}
-
-//	res = pthread_create(&hiloFm9,NULL,(void *)conectarseConCPU(), NULL);
-//		if(res > 0){
-//				log_error_mutex(logger, "Error al crear el hilo del FM9");
-//				exit_gracefully(1);
-//	}
-
-//	pthread_join(hiloSafa, NULL);
-//	pthread_join(hiloMdj, NULL);
-//	pthread_join(hiloFm9, NULL);
-//	pthread_join(hiloCPU, NULL);
-
 	log_info_mutex(logger, "Los hilos finalizaron correctamente");
 
 }
@@ -218,7 +205,7 @@ void iniciarHilosDelDMA() {
 /*FUNCION DEL HILO MDJ
  * Crea UN hilo que queda conectado y a la escucha del S-Afa
  */
-void * conectarseConSafa() {
+int conectarseConSafa() {
 
 	socketSafa = malloc(sizeof(int));
 	conectarYenviarHandshake(configDMA->puertoSAFA, configDMA->ipSAFA,
@@ -229,7 +216,7 @@ void * conectarseConSafa() {
 /*FUNCION DEL HILO MDJ
  * Crea UN hilo que queda conectado al MDJ
  */
-void * conectarseConMdj() {
+int conectarseConMdj() {
 
 	socketMdj = malloc(sizeof(int));
 	conectarYenviarHandshake(configDMA->puertoMDJ, configDMA->ipMDJ, socketMdj,
@@ -240,7 +227,7 @@ void * conectarseConMdj() {
 /*FUNCION DEL HILO FM9
  * Crea UN hilo que queda conectado al FM9
  */
-void * conectarseConFm9() {
+int conectarseConFm9() {
 
 	socketFm9 = malloc(sizeof(int));
 	conectarYenviarHandshake(configDMA->puertoFM9, configDMA->ipFM9, socketFm9,
@@ -248,7 +235,7 @@ void * conectarseConFm9() {
 	return 0;
 }
 
-void * conectarseConCPU() {
+int conectarseConCPU() {
 	conectarYRecibirHandshake(configDMA->puertoDAM);
 	return 0;
 }

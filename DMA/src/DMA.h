@@ -66,17 +66,17 @@ void aceptarConexionesDelCpu();
 void initVariables();
 void cargarArchivoDeConfig(char * pathConfig);
 void configure_logger();
-void iniciarHilosDelDMA();
+void iniciarConexionesDelDMA();
 void sig_handler(int signo);
 void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket);
 void conectarYRecibirHandshake(int puertoEscucha);
 char * enumToProcess(int proceso);
-void * conectarseConSafa();
-void *conectarseConMdj();
-void *conectarseConFm9();
-void *conectarseConCPU();
+int conectarseConSafa();
+int conectarseConMdj();
+int conectarseConFm9();
+int conectarseConCPU();
 void exit_gracefully(int error);
 bool cerrarSockets();
-void manejarSolicitud(t_package pkg, int socketFD);
+void manejarSolicitudDelCPU(t_package pkg, int socketFD);
 
 #endif /* DMA_H_ */
