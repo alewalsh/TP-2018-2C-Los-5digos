@@ -20,7 +20,7 @@
 #include <limits.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include "operaciones.h"
+
 /*
  * Config
  */
@@ -56,7 +56,8 @@ enum codigosError
 
 enum accionEjecutada
 {
-	CONCENTRAR_EJECUTADO = 2
+	CONCENTRAR_EJECUTADO = 2,
+	DTB_DESALOJADO
 };
 
 /*
@@ -64,6 +65,7 @@ enum accionEjecutada
  */
 sem_t * sem_nuevoDummy;
 pthread_mutex_t mutexQuantum;
+//pthread_mutex_t mutexDesalojo;
 
 /*
  * Funciones

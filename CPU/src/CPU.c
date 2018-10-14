@@ -9,6 +9,7 @@
  */
 #include "CPU.h"
 
+//int desalojado = 0;
 pthread_attr_t tattr;
 
 int main(int argc, char ** argv) {
@@ -184,7 +185,8 @@ int comenzarEjecucion(t_package paquete)
 		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
 		// lo pase a la cola de Exit.
 		t_cpu_operacion * operacion = list_get(listaInstrucciones, dtb->programCounter);
-		switch(ejecutarOperacion(operacion, &dtb))
+		int respuesta = ejecutarOperacion(operacion, &dtb);
+		switch(respuesta)
 		{
 			case EXIT_FAILURE:
 				log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
@@ -196,6 +198,12 @@ int comenzarEjecucion(t_package paquete)
 			default:
 				break;
 		}
+//		pthread_mutex_lock(&mutexAbrir);
+		if (respuesta == DTB_DESALOJADO)
+		{
+			break;
+		}
+//	    pthread_mutex_unlock(&mutexDesalojo);
 		dtb->programCounter++;
 	}
     pthread_mutex_unlock(&mutexQuantum);
@@ -205,6 +213,7 @@ int comenzarEjecucion(t_package paquete)
 
 int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb)
 {
+	int respuesta = 1;
 	// Aca habría que diferenciar la ejecucion dependiendo de la accion que venga
 	switch(operacion->keyword)
 	{
@@ -226,23 +235,47 @@ int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb)
 			}
 			break;
 		case ABRIR: case FLUSH: case CREAR: case BORRAR:
-			if(enviarAModulo(operacion, dtb, operacion->keyword, DAM))
+			respuesta = enviarAModulo(operacion, dtb, operacion->keyword, DAM);
+			if(respuesta)
 			{
 				log_error_mutex(loggerCPU, "No se pudo enviar al DAM la operacion indicada.");
 				break;
 			}
+			return respuesta;
 			break;
 		case ASIGNAR: case CLOSE:
-			if(enviarAModulo(operacion, dtb, operacion->keyword, FM9))
+			respuesta = enviarAModulo(operacion, dtb, operacion->keyword, FM9);
+			if(respuesta)
 			{
 				log_error_mutex(loggerCPU, "No se pudo enviar al FM9 la operacion indicada.");
 				break;
 			}
-			break;
+			return respuesta;
 		default:
 			log_error_mutex(loggerCPU, "Error: operacion desconocida.");
 			return EXIT_FAILURE;
 	}
+	return EXIT_SUCCESS;
+}
+
+int eventoSAFA(t_dtb ** dtb, int accion, int code)
+{
+//	int code = CPU_SAFA_BLOQUEAR_DTB;
+	char *buffer;
+	int size = sizeof(int);
+	copyIntToBuffer(&buffer, (*dtb)->idGDT);
+	if(enviar(t_socketSAFA->socket, code, buffer, size, loggerCPU->logger))
+	{
+		log_error_mutex(loggerCPU, "Hubo un error en el envío del paquete al SAFA");
+		return EXIT_FAILURE;
+	}
+//	if (accion == ABRIR)
+//	{
+//		pthread_mutex_lock(&mutexDesalojo);
+//		desalojado = 1;
+	//	pthread_mutex_unlock(&mutexAbrir);
+//	}
+	free(buffer);
 	return EXIT_SUCCESS;
 }
 
@@ -298,16 +331,47 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 	{
 		socket = t_socketFM9->socket;
 	}
-	if (code == 0 || strlen(buffer) == 0 || size < 1 || socket < 1)
+	if (code < 1 || strlen(buffer) < 1 || size < 1 || socket < 1)
 	{
 		log_error_mutex(loggerCPU, "Hubo un error al intentar crear el paquete para el envio al DAM.");
 		return EXIT_FAILURE;
 	}
 
+	// Aca se realiza el envío de la operacion que se está ejecutando actualmente
 	if(enviar(socket, code, buffer, size, loggerCPU->logger))
 	{
-		log_error_mutex(loggerCPU, "Hubo un error en el envío del paquete al DAM");
+		log_error_mutex(loggerCPU, "Hubo un error en el envío del paquete.");
 		return EXIT_FAILURE;
+	}
+
+	// Esta validacion es para que sólo se bloquee el GDT cuando la accion implica una llamada al DAM.
+	if (modulo == DAM)
+	{
+		if (eventoSAFA(dtb, accion, CPU_SAFA_BLOQUEAR_DTB))
+		{
+			log_error_mutex(loggerCPU, "Hubo un error en el envio de bloqueo del G.DT.");
+			return EXIT_FAILURE;
+		}
+		return DTB_DESALOJADO;
+	}
+	// Esta validacion es para esperar una respuesta del FM9 y verificar que no haya errores ni accesos inválidos.
+	if (modulo == FM9)
+	{
+		t_package package;
+		if(recibir(socket, &package, loggerCPU->logger))
+		{
+			log_error_mutex(loggerCPU, "Hubo un error al recibir la respuesta del FM9.");
+			return EXIT_FAILURE;
+		}
+		if(package.code == FM9_CPU_ACCESO_INVALIDO || package.code == FM9_CPU_ERROR)
+		{
+			if (eventoSAFA(dtb, accion, CPU_SAFA_ABORTAR_DTB))
+			{
+				log_error_mutex(loggerCPU, "Hubo un error en el envio de finalización del G.DT.");
+				return EXIT_FAILURE;
+			}
+			return DTB_DESALOJADO;
+		}
 	}
 	free(buffer);
 	return EXIT_SUCCESS;
@@ -464,6 +528,7 @@ void exit_gracefully(int error)
 
 void initMutexs(){
 	pthread_mutex_init(&mutexQuantum, NULL);
+//	pthread_mutex_init(&mutexDesalojo, NULL);
 }
 
 //void initSems() {
