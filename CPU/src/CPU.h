@@ -54,9 +54,10 @@ enum codigosError
 	ERROR_DTB
 };
 
-enum accionEJecutada
+enum accionEjecutada
 {
-	CONCENTRAR_EJECUTADO = 2
+	CONCENTRAR_EJECUTADO = 2,
+	DTB_DESALOJADO
 };
 
 /*
@@ -64,6 +65,7 @@ enum accionEJecutada
  */
 sem_t * sem_nuevoDummy;
 pthread_mutex_t mutexQuantum;
+//pthread_mutex_t mutexDesalojo;
 
 /*
  * Funciones
@@ -98,14 +100,16 @@ void exit_gracefully(int error);
 char * enumToProcess(int proceso);
 
 t_socket * conectarseAProceso(int puerto, char *ip, int * socket, int handshakeProceso);
+void recibirDTB();
 
 void manejarSolicitud(t_package pkg, int socketFD);
 int nuevoDummy(t_package paquete);
+
 int comenzarEjecucion(t_package paquete);
+int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb);
+int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int modulo);
+int manejarRecursosSAFA(char * recurso, int idGDT, int accion);
 int setQuantum(t_package paquete);
 
-void recibirDTB();
 t_dtb * transformarPaqueteADTB(t_package paquete);
-int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb);
-void manejarRecursosSAFA(char * recurso, int idGDT, int accion);
 #endif /* CPU_H_ */

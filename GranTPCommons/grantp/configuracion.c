@@ -222,6 +222,7 @@ void freeConfig(void *conf, processType processType) {
                 cpu = (configCPU *) conf;
                 free(cpu->ipDAM);
                 free(cpu->ipSAFA);
+                free(cpu->ipFM9);
                 free(cpu);
                 break;
             case DAM:

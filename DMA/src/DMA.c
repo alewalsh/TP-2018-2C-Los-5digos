@@ -97,10 +97,6 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         	printf("Abrir el archivo: ");
         	break;
 
-        case CPU_DAM_ASIGNAR:
-        	printf("Asignar :");
-        	break;
-
         //Procedimiento para escribir en MDJ
         case CPU_DAM_FLUSH:
         	//TODO: OBTENER LOS DATOS DEL FM9 Y GUARDARLO EN EL PATH RECIBIDO
