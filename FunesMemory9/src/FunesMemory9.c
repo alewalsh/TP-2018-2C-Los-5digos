@@ -13,8 +13,9 @@
 int main(int argc, char** argv) {
 	logger = log_create_mutex("FM9.log", "FM9", true, LOG_LEVEL_INFO);
 	config = cargarConfiguracion(argv[1], FM9, logger->logger);
-
+	storage = malloc(config->tamMemoria);
 	manejarConexiones();
+	free(storage);
 	return EXIT_SUCCESS;
 }
 
@@ -105,6 +106,9 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 //			}
 //            sem_post(&sem_newEsi);
 			break;
+		case DAM_FM9_GUARDARLINEA:
+			guardarLineaSegunEsquemaMemoria();
+			break;
 //        case COORD_PLAN_BLOCK:
 //            //log_info_mutex(logger, "El coordinador me pide que bloquee un recurso");
 //            if (blockKey(socketFD, pkg, logger)) {
@@ -131,4 +135,37 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 
     free(pkg.data);
 
+}
+
+void guardarLineaSegunEsquemaMemoria(){
+	switch (config->modoEjecucion){
+	case SEG:
+		ejecutarEsquemaSegmentacion();
+	    break;
+
+	case TPI:
+		ejecutarEsquemaTPI();
+	    break;
+
+	case SPA:
+		ejecutarEsquemaSegPag();
+	    break;
+
+	default:
+		log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas del G.DT");
+		break;
+
+	}
+}
+
+void ejecutarEsquemaSegmentacion(){
+	//logica de segmentacion pura
+}
+
+void ejecutarEsquemaTPI(){
+	//logica de tabla de paginas invertida
+}
+
+void ejecutarEsquemaSegPag(){
+	//logica de segmentacion paginada
 }

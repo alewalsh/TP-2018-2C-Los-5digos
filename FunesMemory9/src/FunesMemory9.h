@@ -22,6 +22,28 @@ configFM9 * config;
 fd_set master;
 fd_set readset;
 int maxfd;
+void * storage;
+
+typedef struct{
+	int nroSegmento;
+	int offset;
+}t_segmento;
+
+typedef struct{
+	t_dtb * dtb;
+	t_segmento segmentoGDT;
+}t_gdt;
+
+typedef struct{
+	int *idProceso;
+	int base;
+	int limite;
+}t_tablaSegmentos;
+
+typedef struct{
+	int base;
+	int offset;
+}t_bloqueMemoria;
 
 pthread_mutex_t mutexMaster;
 pthread_mutex_t mutexReadset;
@@ -31,5 +53,8 @@ pthread_mutex_t mutexExit;
 void manejarConexiones();
 void manejarSolicitud(t_package pkg, int socketFD);
 void liberarRecursos();
-
+void guardarLineaSegunEsquemaMemoria();
+void ejecutarEsquemaSegmentacion();
+void ejecutarEsquemaTPI();
+void ejecutarEsquemaSegPag();
 #endif /* FUNESMEMORY9_H_ */
