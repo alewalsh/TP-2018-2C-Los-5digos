@@ -62,6 +62,7 @@ enum codigosError
 };
 
 //Declaracion de funciones
+int leerEscriptorio(t_package paquete);
 void aceptarConexionesDelCpu();
 void initVariables();
 void cargarArchivoDeConfig(char * pathConfig);
@@ -75,6 +76,7 @@ int conectarseConSafa();
 int conectarseConMdj();
 int conectarseConFm9();
 int conectarseConCPU();
+void cargarEscriptorio();
 void exit_gracefully(int error);
 bool cerrarSockets();
 void manejarSolicitudDelCPU(t_package pkg, int socketFD);

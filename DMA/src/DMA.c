@@ -81,9 +81,15 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 			printf("Se ha conectado el CPU. CPU conectadas: %d", cpusConectadas);
             break;
 
+            //Se carga un escriptorio en memoria
+            //Params: path del archivo y pid del DTB
         case CPU_DAM_BUSQUEDA_ESCRIPTORIO:
-        	printf("Ehhh, voy a buscar [path] para [pid]");
         	//TODO COMUNICARME CON EL FM9 Y TRANSFERIR LOS DATOS DEL ARCHIVO AL MDJ
+        	if(leerEscriptorio(pkg,socketFD)){
+				log_error_mutex(logger, "Hubo un error en la inicializacion del escriptorio");
+				break;
+			}
+			break;
 
         	//TODO AVISARLE AL SAFA QUE EL ARCHIVO YA ESTA CARGADO EN MEMORIA
         	//ENVIARLE LOS DATOS DE LA MEMORIA, EN EL DTB, PARA QUE PUEDA CONSULTARLOS
@@ -92,12 +98,16 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         	break;
 
         //Procedimiento para abrir un archivo (Escritura en el FM9)
+        //Params: Path del archivo a cargar
         case CPU_DAM_ABRIR_ARCHIVO:
         	//TODO: BUSCAR EL CONTENIDO DEL PATH RECIBIDO EN FM9 Y CARGARLO EN MDJ
         	printf("Abrir el archivo: ");
         	break;
 
         //Procedimiento para escribir en MDJ
+        //Params:
+        //		path --> donde guardar los datos
+        //		posicion en memoria -> donde buscar los datos
         case CPU_DAM_FLUSH:
         	//TODO: OBTENER LOS DATOS DEL FM9 Y GUARDARLO EN EL PATH RECIBIDO
         	printf("CPU -> Flush: ");
@@ -126,6 +136,20 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
 }
 
+int leerEscriptorio(t_package paquete, int socketEnUso){
+	char *buffer = paquete.data;
+	char * path = copyStringFromBuffer(&buffer);
+
+	printf("Ehhh, voy a buscar [path] para [pid]");
+	//HACER LOGICA DE ENVIO A MDJ
+	return EXIT_SUCCESS;
+}
+
+void cargarEscriptorio(){
+	printf("Hilo Creado");
+	sleep(20);
+	return;
+}
 
 
 void initVariables() {
@@ -194,7 +218,7 @@ void iniciarConexionesDelDMA() {
 		log_info_mutex(logger, "Se realizó la conexion del CPU");
 	}
 
-	log_info_mutex(logger, "Los hilos finalizaron correctamente");
+	log_info_mutex(logger, "Se realizaron todas las conexiones correctamente");
 
 }
 
