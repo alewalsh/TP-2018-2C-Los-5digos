@@ -62,7 +62,8 @@ enum codigosError
 };
 
 //Declaracion de funciones
-int leerEscriptorio(t_package paquete);
+int leerEscriptorio(t_package paquete, int socketEnUso);
+void enviarPaqueteAFm9(char * buffer);
 void aceptarConexionesDelCpu();
 void initVariables();
 void cargarArchivoDeConfig(char * pathConfig);

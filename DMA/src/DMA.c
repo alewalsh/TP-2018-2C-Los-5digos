@@ -184,31 +184,44 @@ int leerEscriptorio(t_package paquete, int socketEnUso){
 			//TODO ver que hacer ante el error
 		}
 
+		//TODO RECIBIR RESPUESTA DEL FM9 SI PUEDE GUARDAR EL ARCHIVO EN MEMORIA
+	//	if(puedeGuardarArchivo){
+	//	se Solicita archivo y se manda --> se empezó a desarrollar abajo
+	//	}else{
+	// 	se envia mensaje a safa diciendo que no se pudo cargar archivo en memoria
+	//	}
+
 		//Ahora se reciben los paquetes y se envia a memoria
 		//TODO VER COMO SE RECIBEN LOS PAQUETES Y COMO SE ENVIAN
 		for(int i = 0; i<cantPart;i++){
-			char * bufferTransferSize;
+			//TODO VER SI SE RECIBEN PAQUETES DE 16 Y SE MANDA UNO POR UNO
+			//O SI RECIBO UN PAQUETE CON TODO EL ARCHIVO EN EL
+			t_package bufferTransferSize;
+			bufferTransferSize.size = 16;
+
 			if(recibir(t_socketMdj, &bufferTransferSize, logger->logger)){
 				log_error_mutex(logger, "Error al recibir el paquete %d",i);
 				//TODO ver que hacer ante el error
 			}else{
 				//Enviar paquete a memoria
-				enviarPaqueteAFm9(bufferTransferSize);
+				enviarPaqueteAFm9(&bufferTransferSize);
 			}
-			free(bufferTransferSize);
+			free(&bufferTransferSize);
 		}
 
 		log_info_mutex(logger,"Se enviaron los datos a memoria");
 
-		//Recibir
 	}
 
 
 	free(keyCompress);
 
-
-
 	return EXIT_SUCCESS;
+}
+
+void enviarPaqueteAFm9(char * buffer){
+
+	//enviar buffer a fm9
 }
 
 void initVariables() {
