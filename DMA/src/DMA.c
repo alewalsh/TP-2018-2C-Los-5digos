@@ -137,20 +137,79 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 }
 
 int leerEscriptorio(t_package paquete, int socketEnUso){
+
 	char *buffer = paquete.data;
+
+	int pid = copyIntFromBuffer(&buffer);
 	char * path = copyStringFromBuffer(&buffer);
 
-	printf("Ehhh, voy a buscar [path] para [pid]");
-	//HACER LOGICA DE ENVIO A MDJ
+	free(buffer);
+	printf("Ehhh, voy a buscar %s para %d", path, pid);
+
+	//Se envia el path del archivo al filesystem
+	int size;
+	char *keyCompress = compressKey(path, &size);
+
+	if(enviar(t_socketMdj->socket,DAM_MDJ_CARGAR_ESCRIPTORIO,keyCompress, size, logger->logger))
+	{
+		log_error_mutex(logger, "No se pudo enviar la busqueda del escriptorio al MDJ");
+		free(keyCompress);
+		return EXIT_FAILURE;
+	}
+
+	//Se recibe el archivo desde filesystem
+	int sizeOfFile;
+
+	if(recibir(t_socketMdj, &sizeOfFile, logger->logger)){
+		log_error_mutex(logger, "No se pudo recibir el mensaje del CPU");
+	}else{
+
+		//Recibo el tamaño del archivo a cargar
+		double num = sizeOfFile / configDMA->transferSize;
+
+		double p_entera;
+		double p_decimal;
+		//Separo la parte entera
+		p_decimal = modf(sizeOfFile, &p_entera);
+		//Calculo la cantidad de paquetes
+		int cantPart = p_entera + 1;
+		log_info_mutex(logger, "Se recibiran %d paquetes", cantPart);
+
+		//Se envia cantidad de paquetes a enviar a memoria
+		char *buffer;
+		int size = sizeof(int);
+		copyIntToBuffer(&buffer, cantPart);
+		if(enviar(t_socketFm9->socket,CPU_FM9_CARGAR_ESCRIPTORIO,buffer,size,logger->logger)){
+			log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
+			//TODO ver que hacer ante el error
+		}
+
+		//Ahora se reciben los paquetes y se envia a memoria
+		//TODO VER COMO SE RECIBEN LOS PAQUETES Y COMO SE ENVIAN
+		for(int i = 0; i<cantPart;i++){
+			char * bufferTransferSize;
+			if(recibir(t_socketMdj, &bufferTransferSize, logger->logger)){
+				log_error_mutex(logger, "Error al recibir el paquete %d",i);
+				//TODO ver que hacer ante el error
+			}else{
+				//Enviar paquete a memoria
+				enviarPaqueteAFm9(bufferTransferSize);
+			}
+			free(bufferTransferSize);
+		}
+
+		log_info_mutex(logger,"Se enviaron los datos a memoria");
+
+		//Recibir
+	}
+
+
+	free(keyCompress);
+
+
+
 	return EXIT_SUCCESS;
 }
-
-void cargarEscriptorio(){
-	printf("Hilo Creado");
-	sleep(20);
-	return;
-}
-
 
 void initVariables() {
 	cpusConectadas = 0;
