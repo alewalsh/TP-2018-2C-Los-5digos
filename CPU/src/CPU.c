@@ -99,25 +99,27 @@ int nuevoDummy(t_package paquete)
 	t_dtb * dtb = transformarPaqueteADTB(paquete);
 	// Si es 0, levanto un hilo y realizo  la operación Dummy - Iniciar G.DT
 	// Solicitarle al DAM la busqueda del Escriptorio en el MDJ
-	int size;
-	char *keyCompress = compressKey(dtb->dirEscriptorio, &size);
-	if(enviar(t_socketDAM->socket,CPU_DAM_BUSQUEDA_ESCRIPTORIO,keyCompress, size, loggerCPU->logger))
+	char *buffer;
+	int size = sizeof(int) + strlen(dtb->dirEscriptorio);
+	copyIntToBuffer(&buffer, dtb->idGDT);
+	copyStringToBuffer(&buffer, dtb->dirEscriptorio);
+	if(enviar(t_socketDAM->socket,CPU_DAM_BUSQUEDA_ESCRIPTORIO,buffer, size, loggerCPU->logger))
 	{
 		log_error_mutex(loggerCPU, "No se pudo enviar la busqueda del escriptorio al DAM.");
-		free(keyCompress);
+		free(buffer);
 		return EXIT_FAILURE;
 	}
-	free(keyCompress);
+	free(buffer);
 
 	// Desalojar al DTB Dummy, avisando a SAFA que lo bloquee
 	if(enviar(t_socketSAFA->socket,CPU_SAFA_BLOQUEAR_DUMMMY,paquete.data, paquete.size, loggerCPU->logger))
 	{
 		log_error_mutex(loggerCPU, "No se pudo enviar el bloqueo del Dummy al S-AFA.");
-		free(keyCompress);
+		free(buffer);
 		return EXIT_FAILURE;
 	}
-	free(keyCompress);
-
+	free(buffer);
+	free(dtb);
 	return EXIT_SUCCESS;
 }
 
@@ -207,7 +209,7 @@ int comenzarEjecucion(t_package paquete)
 		dtb->programCounter++;
 	}
     pthread_mutex_unlock(&mutexQuantum);
-
+    free(dtb);
 	return EXIT_SUCCESS;
 }
 
@@ -462,10 +464,13 @@ void inicializarConexiones()
 {
 	socketSAFA = malloc(sizeof(int));
 	t_socketSAFA = conectarseAProceso(config->puertoSAFA,config->ipSAFA,socketSAFA,SAFA_HSK);
+	free(socketSAFA);
 	socketFM9 = malloc(sizeof(int));
 	t_socketFM9 = conectarseAProceso(config->puertoFM9,config->ipFM9,socketFM9,FM9_HSK);
+	free(socketFM9);
 	socketDAM = malloc(sizeof(int));
 	t_socketDAM = conectarseAProceso(config->puertoDAM,config->ipDAM,socketDAM,DAM_HSK);
+	free(socketDAM);
 }
 
 // Se cambió el método y ahora devuelve el t_socket debido a que pasandolo como referencia,
@@ -513,14 +518,17 @@ void exit_gracefully(int error)
 {
 //		if (error != ERROR_SOCKET_DAM)
 //		{
-			free(t_socketDAM);
-			close(*socketDAM);
+	close(t_socketDAM->socket);
+	free(t_socketDAM);
 //			if (error != ERROR_SOCKET_SAFA)
 //			{
-				free(t_socketSAFA);
-				close(*socketSAFA);
+	close(t_socketSAFA->socket);
+	free(t_socketSAFA);
 //			}
 //		}
+
+	close(t_socketFM9->socket);
+	free(t_socketFM9);
 	log_destroy_mutex(loggerCPU);
 	freeConfig(config, CPU);
 	exit(error);
