@@ -82,9 +82,13 @@ void exit_gracefully(int error);
 bool cerrarSockets();
 void manejarSolicitudDelCPU(t_package pkg, int socketFD);
 int recibirDatosMemoria();
-void enviarConfirmacionASafa(int pid,int itsLoaded, int base);
+void enviarMsjASafaPidCargado(int pid,int itsLoaded, int base);
+void enviarMsjASafaArchivoGuardado(int pid,int itsFlushed, char* path);
 int leerEscriptorio(t_package paquete, int socketEnUso);
+int abrirArchivo(t_package paquete, int socketEnUso);
+int hacerFlush(t_package paquete, int socketEnUso);
 void enviarPaqueteAFm9(char * buffer);
 int enviarPkgDeMdjAFm9(int pid);
+int enviarPkgDeFm9AMdj(int pid);
 
 #endif /* DMA_H_ */
