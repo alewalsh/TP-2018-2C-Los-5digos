@@ -9,11 +9,13 @@
 #define DMA_H_
 
 #include <stdio.h>
+#include<math.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <grantp/mutex_log.h>
 #include <pthread.h>
 #include <grantp/socket.h>
+#include <grantp/compression.h>
 #include <grantp/configuracion.h>
 #include "funcionesDMA.h"
 
@@ -62,8 +64,6 @@ enum codigosError
 };
 
 //Declaracion de funciones
-int leerEscriptorio(t_package paquete, int socketEnUso);
-void enviarPaqueteAFm9(char * buffer);
 void aceptarConexionesDelCpu();
 void initVariables();
 void cargarArchivoDeConfig(char * pathConfig);
@@ -81,5 +81,9 @@ void cargarEscriptorio();
 void exit_gracefully(int error);
 bool cerrarSockets();
 void manejarSolicitudDelCPU(t_package pkg, int socketFD);
+int recibirDatosMemoria();
+void enviarConfirmacionASafa(int pid,int itsLoaded, int base);
+int leerEscriptorio(t_package paquete, int socketEnUso);
+void enviarPaqueteAFm9(char * buffer);
 
 #endif /* DMA_H_ */

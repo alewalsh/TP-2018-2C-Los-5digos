@@ -138,8 +138,11 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
 int leerEscriptorio(t_package paquete, int socketEnUso){
 
-	char *buffer = paquete.data;
+	//Datos para el safa
+	int baseMemoriaDeEscriptorio = -1;
 
+	//Datos recibidos del cpu
+	char *buffer = paquete.data;
 	int pid = copyIntFromBuffer(&buffer);
 	char * path = copyStringFromBuffer(&buffer);
 
@@ -158,19 +161,20 @@ int leerEscriptorio(t_package paquete, int socketEnUso){
 	}
 
 	//Se recibe el archivo desde filesystem
-	int sizeOfFile;
+	t_package package;
 
-	if(recibir(t_socketMdj, &sizeOfFile, logger->logger)){
+	if(recibir(t_socketMdj->socket, &package, logger->logger)){
 		log_error_mutex(logger, "No se pudo recibir el mensaje del CPU");
 	}else{
 
+		int sizeOfFile = (int) package.data;
 		//Recibo el tamaño del archivo a cargar
 		double num = sizeOfFile / configDMA->transferSize;
 
 		double p_entera;
 		double p_decimal;
 		//Separo la parte entera
-		p_decimal = modf(sizeOfFile, &p_entera);
+		p_decimal = modf(num, &p_entera);
 		//Calculo la cantidad de paquetes
 		int cantPart = p_entera + 1;
 		log_info_mutex(logger, "Se recibiran %d paquetes", cantPart);
@@ -179,7 +183,7 @@ int leerEscriptorio(t_package paquete, int socketEnUso){
 		char *buffer;
 		int size = sizeof(int);
 		copyIntToBuffer(&buffer, cantPart);
-		if(enviar(t_socketFm9->socket,CPU_FM9_CARGAR_ESCRIPTORIO,buffer,size,logger->logger)){
+		if(enviar(t_socketFm9->socket,DAM_FM9_CARGAR_ESCRIPTORIO,buffer,size,logger->logger)){
 			log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
 			//TODO ver que hacer ante el error
 		}
@@ -196,32 +200,76 @@ int leerEscriptorio(t_package paquete, int socketEnUso){
 		for(int i = 0; i<cantPart;i++){
 			//TODO VER SI SE RECIBEN PAQUETES DE 16 Y SE MANDA UNO POR UNO
 			//O SI RECIBO UN PAQUETE CON TODO EL ARCHIVO EN EL
-			t_package bufferTransferSize;
-			bufferTransferSize.size = 16;
+			t_package pkgTransferSize;
+			//bufferTransferSize.size = 16; TODO: ver si setea un maximo
 
-			if(recibir(t_socketMdj, &bufferTransferSize, logger->logger)){
+			if(recibir(t_socketMdj->socket, &pkgTransferSize, logger->logger)){
 				log_error_mutex(logger, "Error al recibir el paquete %d",i);
-				//TODO ver que hacer ante el error
+				//SE ENVIA UN FALLO AL SAFA PARA EL PROCESO [pid
+				enviarConfirmacionASafa(pid,0,baseMemoriaDeEscriptorio);
 			}else{
 				//Enviar paquete a memoria
-				enviarPaqueteAFm9(&bufferTransferSize);
+				char * buffer;
+				copyStringToBuffer(&buffer, pkgTransferSize.data);
+				int sizeOfBuffer = strlen(buffer);
+				if(enviar(t_socketMdj->socket,DAM_FM9_GUARDARLINEA,buffer, sizeOfBuffer,logger->logger)){
+					log_error_mutex(logger, "Error al enviar el paquete %d", i);
+				}
+
 			}
-			free(&bufferTransferSize);
+		}
+		log_info_mutex(logger,"Se enviaron todos los datos a memoria del proceso: %d",pid);
+
+		//Se recibe los datos de la posicion en memoria
+		baseMemoriaDeEscriptorio = recibirDatosMemoria();
+
+		if(baseMemoriaDeEscriptorio >= 0){
+			//Se envia la confirmacion a SAFA del proceso y la posicion en memoria
+			enviarConfirmacionASafa(pid,1,baseMemoriaDeEscriptorio);
+		}else{
+			//Comunicarle un error al safa
+			enviarConfirmacionASafa(pid,0,baseMemoriaDeEscriptorio);
 		}
 
-		log_info_mutex(logger,"Se enviaron los datos a memoria");
-
 	}
-
 
 	free(keyCompress);
 
 	return EXIT_SUCCESS;
 }
 
-void enviarPaqueteAFm9(char * buffer){
+int recibirDatosMemoria(){
 
-	//enviar buffer a fm9
+	t_package package;
+	int datosBaseMemoria;
+
+	if(recibir(t_socketFm9->socket,&package,logger->logger)){
+		log_error_mutex(logger, "Error al recibir los datos de memoria asociados al proceso");
+		datosBaseMemoria = -1;
+	}else{
+		datosBaseMemoria = (int) package.data;
+	}
+
+	return datosBaseMemoria;
+}
+
+void enviarConfirmacionASafa(int pid,int itsLoaded, int base){
+
+	//Está cargado(ItsLoaded)--> 1: Exito, 0: Fallo.
+	//Se envía a S-afa un mensaje diciendo que el proceso ya esta cargado en memoria
+	char *buffer;
+	int size = sizeof(pid) + sizeof(itsLoaded) + sizeof(base) ;
+	copyIntToBuffer(&buffer, pid);
+	copyIntToBuffer(&buffer, itsLoaded);
+	copyIntToBuffer(&buffer, base);
+
+	if(enviar(t_socketSafa->socket,DAM_SAFA_CONFIRMACION_PID_CARGADO,buffer, size, logger->logger))
+	{
+		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
+		free(buffer);
+	}
+	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
+	free(buffer);
 }
 
 void initVariables() {
