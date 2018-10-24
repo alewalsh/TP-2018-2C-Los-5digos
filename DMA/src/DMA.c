@@ -138,9 +138,6 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
 int leerEscriptorio(t_package paquete, int socketEnUso){
 
-	//Datos para el safa
-	int baseMemoriaDeEscriptorio = -1;
-
 	//Datos recibidos del cpu
 	char *buffer = paquete.data;
 	int pid = copyIntFromBuffer(&buffer);
@@ -160,15 +157,38 @@ int leerEscriptorio(t_package paquete, int socketEnUso){
 		return EXIT_FAILURE;
 	}
 
+	//Se reciben los paquetes del mdj y se envian al fm9
+	int baseMemoriaDeEscriptorio = enviarPkgDeMdjAFm9(pid);
+
+	if(baseMemoriaDeEscriptorio >= 0){
+		//Se envia la confirmacion a SAFA del proceso y la posicion en memoria
+		enviarConfirmacionASafa(pid,1,baseMemoriaDeEscriptorio);
+	}else{
+		//Comunicarle un error al safa
+		enviarConfirmacionASafa(pid,0,baseMemoriaDeEscriptorio);
+	}
+
+	free(keyCompress);
+
+	return EXIT_SUCCESS;
+}
+
+
+//Se recibe uno o varios paquetes del MDJ y se envian al FM9
+//Return: Base en memoria de los paquetes guardados.
+int enviarPkgDeMdjAFm9(int pid){
 	//Se recibe el archivo desde filesystem
 	t_package package;
+	int baseMemoriaDeEscriptorio = -1;
 
+	//Recibo un primer mensaje para saber cuanto pesa el archivo
 	if(recibir(t_socketMdj->socket, &package, logger->logger)){
-		log_error_mutex(logger, "No se pudo recibir el mensaje del CPU");
+		log_error_mutex(logger, "No se pudo recibir el mensaje del MDJ");
 	}else{
-
-		int sizeOfFile = (int) package.data;
 		//Recibo el tamaño del archivo a cargar
+		int sizeOfFile = (int) package.data;
+
+		//Lo divido por mi transfer Size y me quedo con la parte entera + 1
 		double num = sizeOfFile / configDMA->transferSize;
 
 		double p_entera;
@@ -183,7 +203,7 @@ int leerEscriptorio(t_package paquete, int socketEnUso){
 		char *buffer;
 		int size = sizeof(int);
 		copyIntToBuffer(&buffer, cantPart);
-		if(enviar(t_socketFm9->socket,DAM_FM9_CARGAR_ESCRIPTORIO,buffer,size,logger->logger)){
+		if(enviar(t_socketFm9->socket,DAM_FM9_AVISO_CANT_ENVIOS,buffer,size,logger->logger)){
 			log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
 			//TODO ver que hacer ante el error
 		}
@@ -199,7 +219,7 @@ int leerEscriptorio(t_package paquete, int socketEnUso){
 		//TODO VER COMO SE RECIBEN LOS PAQUETES Y COMO SE ENVIAN
 		for(int i = 0; i<cantPart;i++){
 			//TODO VER SI SE RECIBEN PAQUETES DE 16 Y SE MANDA UNO POR UNO
-			//O SI RECIBO UN PAQUETE CON TODO EL ARCHIVO EN EL
+			//O SI RECIBO UN PAQUETE CON TODO EL ARCHIVO EN EL  <------------------------ACA SE PENSO COMO QUE RECIBO VARIOS PAQUETES DE 16 BYTES
 			t_package pkgTransferSize;
 			//bufferTransferSize.size = 16; TODO: ver si setea un maximo
 
@@ -222,20 +242,8 @@ int leerEscriptorio(t_package paquete, int socketEnUso){
 
 		//Se recibe los datos de la posicion en memoria
 		baseMemoriaDeEscriptorio = recibirDatosMemoria();
-
-		if(baseMemoriaDeEscriptorio >= 0){
-			//Se envia la confirmacion a SAFA del proceso y la posicion en memoria
-			enviarConfirmacionASafa(pid,1,baseMemoriaDeEscriptorio);
-		}else{
-			//Comunicarle un error al safa
-			enviarConfirmacionASafa(pid,0,baseMemoriaDeEscriptorio);
-		}
-
 	}
-
-	free(keyCompress);
-
-	return EXIT_SUCCESS;
+	return baseMemoriaDeEscriptorio;
 }
 
 int recibirDatosMemoria(){

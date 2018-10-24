@@ -85,5 +85,6 @@ int recibirDatosMemoria();
 void enviarConfirmacionASafa(int pid,int itsLoaded, int base);
 int leerEscriptorio(t_package paquete, int socketEnUso);
 void enviarPaqueteAFm9(char * buffer);
+int enviarPkgDeMdjAFm9(int pid);
 
 #endif /* DMA_H_ */
