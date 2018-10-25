@@ -122,7 +122,6 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         *
         */
         case CPU_DAM_FLUSH:
-        	//TODO: OBTENER LOS DATOS DEL FM9 Y GUARDARLO EN EL PATH RECIBIDO
         	if(hacerFlush(pkg,socketFD)){
 				log_error_mutex(logger, "Hubo un error al abrir el archivo: %s",
 						pkg.data);

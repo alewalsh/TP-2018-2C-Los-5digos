@@ -137,27 +137,21 @@ int enviarPkgDeMdjAFm9(int pid){
 
 		//Se envia cantidad de paquetes a enviar a memoria
 		char *buffer;
-		int size = sizeof(int);
 		copyIntToBuffer(&buffer, cantPart);
-		if(enviar(t_socketFm9->socket,DAM_FM9_AVISO_CANT_ENVIOS,buffer,size,logger->logger)){
-			log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
-			//TODO ver que hacer ante el error
-		}
+		copyIntToBuffer(&buffer,configDMA->transferSize);
+		int size = sizeof(int) * 2;
 
-		//TODO RECIBIR RESPUESTA DEL FM9 SI PUEDE GUARDAR EL ARCHIVO EN MEMORIA
-	//	if(puedeGuardarArchivo){
-	//	se Solicita archivo y se manda --> se empezó a desarrollar abajo
-	//	}else{
-	// 	se envia mensaje a safa diciendo que no se pudo cargar archivo en memoria
-	//	}
+		if(enviar(t_socketFm9->socket,DAM_FM9_CARGAR_ESCRIPTORIO,buffer,size,logger->logger)){
+			log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
+			free(buffer);
+			return EXIT_FAILURE;
+		}
+		free(buffer);
 
 		//Ahora se reciben los paquetes y se envia a memoria
-		//TODO VER COMO SE RECIBEN LOS PAQUETES Y COMO SE ENVIAN
+		//SE RECIBE UN SOLO ENVIO Y LO VOY RECIBIENDO DE A PARTES DE 16BYTES
 		for(int i = 0; i<cantPart;i++){
-			//TODO VER SI SE RECIBEN PAQUETES DE 16 Y SE MANDA UNO POR UNO
-			//O SI RECIBO UN PAQUETE CON TODO EL ARCHIVO EN EL  <------------------------ACA SE PENSO COMO QUE RECIBO VARIOS PAQUETES DE 16 BYTES
-			t_package pkgTransferSize;
-			//bufferTransferSize.size = 16; TODO: ver si setea un maximo
+			t_package pkgTransferSize = malloc(configDMA->transferSize);
 
 			if(recibir(t_socketMdj->socket, &pkgTransferSize, logger->logger)){
 				log_error_mutex(logger, "Error al recibir el paquete %d",i);
@@ -166,12 +160,15 @@ int enviarPkgDeMdjAFm9(int pid){
 				char * buffer;
 				copyStringToBuffer(&buffer, pkgTransferSize.data);
 				int sizeOfBuffer = strlen(buffer);
-				if(enviar(t_socketMdj->socket,DAM_FM9_GUARDARLINEA,buffer, sizeOfBuffer,logger->logger)){
+				if(enviar(t_socketMdj->socket,DAM_FM9_ENVIO_PKG,buffer, sizeOfBuffer,logger->logger)){
 					log_error_mutex(logger, "Error al enviar el paquete %d", i);
 				}
 
 			}
 		}
+
+
+
 		log_info_mutex(logger,"Se enviaron todos los datos a memoria del proceso: %d",pid);
 
 		//Se recibe los datos de la posicion en memoria

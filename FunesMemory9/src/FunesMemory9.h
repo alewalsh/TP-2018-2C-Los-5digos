@@ -14,6 +14,7 @@
 #include <grantp/socket.h>
 #include <grantp/mutex_log.h>
 #include <grantp/structCommons.h>
+#include <grantp/compression.h>
 #include "funcionesFM9.h"
 
 t_log_mutex * logger;
@@ -57,9 +58,9 @@ int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 void ejecutarEsquemaTPI(t_package pkg, int socketSolicitud, int accion);
 void ejecutarEsquemaSegPag(t_package pkg, int socketSolicitud, int accion);
-int ejecutarCargarEsquemaSegmentacion(t_package pkg);
-int ejecutarCargarEsquemaTPI(t_package pkg);
-int ejecutarCargarEsquemaSegPag(t_package pkg);
+int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud);
+int ejecutarCargarEsquemaTPI(t_package pkg, int socketSolicitud);
+int ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud);
 int ejecutarGuardarEsquemaSegmentacion(t_package pkg);
 int ejecutarGuardarEsquemaTPI(t_package pkg);
 int ejecutarGuardarEsquemaSegPag(t_package pkg);

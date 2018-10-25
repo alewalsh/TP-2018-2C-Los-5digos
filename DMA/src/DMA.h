@@ -9,7 +9,7 @@
 #define DMA_H_
 
 #include <stdio.h>
-#include<math.h>
+#include <math.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <grantp/mutex_log.h>

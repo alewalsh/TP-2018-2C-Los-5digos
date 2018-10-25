@@ -187,35 +187,76 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg){
 int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
 	switch (config->modoEjecucion){
 	case SEG:
-		ejecutarCargarEsquemaSegmentacion(pkg);
+		ejecutarCargarEsquemaSegmentacion(pkg,socketSolicitud);
 	    break;
 
 	case TPI:
-		ejecutarCargarEsquemaTPI(pkg);
+		ejecutarCargarEsquemaTPI(pkg,socketSolicitud);
 	    break;
 
 	case SPA:
-		ejecutarCargarEsquemaSegPag(pkg);
+		ejecutarCargarEsquemaSegPag(pkg,socketSolicitud);
 	    break;
 
 	default:
 		log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas");
 		return EXIT_FAILURE;
 	}
+
 	return EXIT_SUCCESS;
 }
 
-int ejecutarCargarEsquemaSegmentacion(t_package pkg){
+int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 	//logica de segmentacion pura
+
+	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
+	char * buffer= pkg.data;
+	int cantPaquetes = copyIntFromBuffer(&buffer);
+	int tamanioPaquetes = copyIntFromBuffer(&buffer);
+	free(buffer);
+
+	//ACA SE DEBERIA DEFINIR SI TENGO LA MEMORIA SUFICIENTE PARA ALMACENAR EN MEMORIA LOS DATOS
+	//EN CASO QUE SI RESERVAR UN SEGMENTO
+	//int segmento = reservarSegmento();
+	//actualizar tabla de segmentos
+
+	//CON EL TAMAÑO PUEDO CALCULAR CUANTOS PAQUETES PUEDEN ENTRAR EN 1 LINEA DE MEMORIA
+	//Calcular la parte entera
+	int paquetesXLinea = config->tamMaxLinea / tamanioPaquetes;
+
+	char * bufferConcatenado = malloc(config->tamMaxLinea);
+
+	for(int i = 0; i < cantPaquetes; i++){
+		t_package paquete;
+		if(recibir(socketSolicitud,&paquete,logger->logger)){
+			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
+		}else{
+
+			if(i<paquetesXLinea){
+				//si no supere los paquetes por linea lo sumo al bufferConcatenado
+				copyStringToBuffer(&bufferConcatenado,paquete.data);
+			}else{
+				//si llego a los paquetes máximos -> Guardo la linea
+				copyStringToBuffer(&bufferConcatenado,paquete.data);
+				//TODO GUARDAR LINEA EN SEGMENTO
+				//guardarlinea(bufferConcatenado,segmento);
+				//Descarto el buffer y lo creo de nuevo para la nueva linea
+				free(bufferConcatenado);
+				bufferConcatenado = malloc(config->tamMaxLinea);
+			}
+
+		}
+	}
+
 	return EXIT_SUCCESS;
 }
 
-int ejecutarCargarEsquemaTPI(t_package pkg){
+int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){
 	//logica de tabla de paginas invertida
 	return EXIT_SUCCESS;
 }
 
-int ejecutarCargarEsquemaSegPag(t_package pkg){
+int ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud){
 	//logica de segmentacion paginada
 	return EXIT_SUCCESS;
 }
