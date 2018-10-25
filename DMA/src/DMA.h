@@ -90,5 +90,8 @@ int hacerFlush(t_package paquete, int socketEnUso);
 void enviarPaqueteAFm9(char * buffer);
 int enviarPkgDeMdjAFm9(int pid);
 int enviarPkgDeFm9AMdj(int pid);
-
+int crearArchivo(t_package paquete, int socketEnUso);
+int borrarArchivo(t_package paquete, int socketEnUso);
+void enviarMsjASafaArchivoCreado(int pid,int itsCreated, char * path);
+void enviarMsjASafaArchivoBorrado(int pid,int itsDeleted char * path)
 #endif /* DMA_H_ */

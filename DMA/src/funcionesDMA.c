@@ -214,28 +214,8 @@ void enviarMsjASafaPidCargado(int pid,int itsLoaded, int base){
 	free(buffer);
 }
 
-void enviarMsjASafaArchivoGuardado(int pid,int itsFlushed, char * path){
-
-	//Está cargado(ItsLoaded)--> 1: Exito, 0: Fallo.
-	//Se envía a S-afa un mensaje diciendo que el proceso ya esta cargado en memoria
-	char *buffer;
-
-	copyIntToBuffer(&buffer, pid);
-	copyIntToBuffer(&buffer, itsFlushed);
-	copyStringToBuffer(&buffer, path);
-
-	int size = sizeof(buffer);
-
-	if(enviar(t_socketSafa->socket,DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS,buffer, size, logger->logger))
-	{
-		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
-		free(buffer);
-	}
-	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
-	free(buffer);
-}
-
 //--------------------ABRIR ARCHIVO ------------------------------------------------
+
 int abrirArchivo(t_package paquete, int socketEnUso){
 
 	//Datos recibidos del cpu
@@ -279,6 +259,7 @@ int abrirArchivo(t_package paquete, int socketEnUso){
 }
 
 //--------------------------HACER FLUSH DE DATOS EN MEMORIA---------------------
+
 int hacerFlush(t_package paquete, int socketEnUso){
 
 	//Datos recibidos del cpu
@@ -370,14 +351,128 @@ int enviarPkgDeFm9AMdj(int pid){
 
 }
 
+void enviarMsjASafaArchivoGuardado(int pid,int itsFlushed, char * path){
 
+	//Está cargado(ItsLoaded)--> 1: Exito, 0: Fallo.
+	//Se envía a S-afa un mensaje diciendo que el proceso ya esta cargado en memoria
+	char *buffer;
 
+	copyIntToBuffer(&buffer, pid);
+	copyIntToBuffer(&buffer, itsFlushed);
+	copyStringToBuffer(&buffer, path);
+
+	int size = sizeof(buffer);
+
+	if(enviar(t_socketSafa->socket,DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS,buffer, size, logger->logger))
+	{
+		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
+		free(buffer);
+	}
+	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
+	free(buffer);
+}
+
+//-------------------------CREAR ARCHIVO ---------------------------------------------
+
+/*
+ * Funcion para solicitar al MDJ la creacion de un archivo
+ * params: pid,path,cantidad de lineas
+ * return: 1 -> Fail
+ * 		   0 -> Success
+ */
+int crearArchivo(t_package paquete, int socketEnUso){
+
+	//Datos recibidos del cpu
+	char *buffer = paquete.data;
+
+	int pid = copyIntFromBuffer(&buffer);
+	char * path = copyStringFromBuffer(&buffer);
+
+	int size = sizeof(buffer);
+
+	//SE ENVIA EL PAQEUTE CON LOS DATOS A MDJ PARA CREAR ARCHIVO
+	if(enviar(t_socketMdj->socket,DAM_MDJ_CREAR_ARCHIVO,buffer,size,logger->logger)){
+		log_error_mutex(logger, "Error al crear el archivo: %s",path);
+		free(buffer);
+		enviarMsjASafaArchivoCreado(pid,0,path);
+		return EXIT_FAILURE;
+	}
+
+	//SE ENVIA CONFIRMACION A SAFA
+	enviarMsjASafaArchivoCreado(pid,1,path);
+	free(buffer);
+	return EXIT_SUCCESS;
+}
+
+void enviarMsjASafaArchivoCreado(int pid,int itsCreated, char * path){
+
+	//Está creado(itsCreated)--> 1: Exito, 0: Fallo.
+	//Se envía a S-afa un mensaje diciendo que el proceso ya esta cargado en memoria
+	char *buffer;
+
+	copyIntToBuffer(&buffer, pid);
+	copyIntToBuffer(&buffer, itsCreated);
+	copyStringToBuffer(&buffer, path);
+
+	int size = sizeof(buffer);
+
+	if(enviar(t_socketSafa->socket,DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO,buffer, size, logger->logger))
+	{
+		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
+		free(buffer);
+	}
+	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
+	free(buffer);
+}
+
+//--------------------------BORRAR ARCHIVO ------------------------------------------
+
+int borrarArchivo(t_package paquete, int socketEnUso){
+
+	//Datos recibidos del cpu
+	char *buffer = paquete.data;
+	int pid = copyIntFromBuffer(&buffer);
+	char * path = copyStringFromBuffer(&buffer);
+
+	int size = sizeof(buffer);
+	//SE ENVIA EL PATH DEL ARCHIVO AL MDJ PARA BORRAR EL MISMO
+	if(enviar(t_socketMdj->socket,DAM_MDJ_BORRAR_ARCHIVO,buffer,size,logger->logger)){
+		log_error_mutex(logger, "Error al enviar el path al MDJ del archivo a borrar");
+		free(buffer);
+		enviarMsjASafaArchivoBorrado(pid,0,path);
+		return EXIT_FAILURE;
+	}
+
+	free(buffer);
+	//SE ENVIA LA CONFIRMACION A SAFA
+	enviarMsjASafaArchivoBorrado(pid,1,path);
+	return EXIT_SUCCESS;
+}
+
+void enviarMsjASafaArchivoBorrado(int pid,int itsDeleted, char * path){
+
+	//Está creado(itsCreated)--> 1: Exito, 0: Fallo.
+	//Se envía a S-afa un mensaje diciendo que el proceso ya esta cargado en memoria
+	char *buffer;
+
+	copyIntToBuffer(&buffer, pid);
+	copyIntToBuffer(&buffer, itsDeleted);
+	copyStringToBuffer(&buffer, path);
+
+	int size = sizeof(buffer);
+
+	if(enviar(t_socketSafa->socket,DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO,buffer, size, logger->logger))
+	{
+		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
+		free(buffer);
+	}
+	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
+	free(buffer);
+}
 
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA CONEXIONES INICIALES Y HANDSHAKE
 //------------------------------------------------------------------------------------------------------------------
-
-
 
 void iniciarConexionesDelDMA() {
 	log_info_mutex(logger, "Creando sockets");

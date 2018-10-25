@@ -107,12 +107,11 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 		 */
         case CPU_DAM_ABRIR_ARCHIVO:
         	//Recibe un pkg con el path de archivo a abrir
-			printf("Abrir el archivo: ");
         	if(abrirArchivo(pkg,socketFD)){
         		log_error_mutex(logger, "Hubo un error al abrir el archivo: %s", pkg.data);
 				break;
         	}
-
+        	log_info_mutex(logger, "Se abrió el archivo correctamente");
         	break;
 
         /*
@@ -124,22 +123,33 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         */
         case CPU_DAM_FLUSH:
         	//TODO: OBTENER LOS DATOS DEL FM9 Y GUARDARLO EN EL PATH RECIBIDO
-        	printf("CPU -> Flush: ");
         	if(hacerFlush(pkg,socketFD)){
 				log_error_mutex(logger, "Hubo un error al abrir el archivo: %s",
 						pkg.data);
 				break;
         	}
+        	log_info_mutex(logger, "Se realizó el flush correctamente");
         	break;
 
 
-      //???????
         case CPU_DAM_CREAR:
-        	printf("CPU -> Crear: ");
+        	if(crearArchivo(pkg,socketFD)){
+				log_error_mutex(logger, "Hubo un error al abrir el archivo: %s",
+						pkg.data);
+				break;
+			}
+
+        	log_info_mutex(logger, "Se creó el archivo correctamente");
         	break;
 
         case CPU_DAM_BORRAR:
-        	printf("CPU -> Borrar: ");
+        	if(borrarArchivo(pkg,socketFD)){
+				log_error_mutex(logger, "Hubo un error al abrir el archivo: %s",
+						pkg.data);
+				break;
+			}
+
+        	log_info_mutex(logger, "Se borró el archivo correctamente");
         	break;
 
         case SOCKET_DISCONECT:
