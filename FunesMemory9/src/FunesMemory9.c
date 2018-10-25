@@ -211,6 +211,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 
 	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
 	char * buffer= pkg.data;
+	int pid = copyIntFromBuffer(&buffer);
 	int cantPaquetes = copyIntFromBuffer(&buffer);
 	int tamanioPaquetes = copyIntFromBuffer(&buffer);
 	free(buffer);
@@ -219,6 +220,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 	//EN CASO QUE SI RESERVAR UN SEGMENTO
 	//int segmento = reservarSegmento();
 	//actualizar tabla de segmentos
+	//actualizarTablaDeSegmentos(pid,segmento);
 
 	//CON EL TAMAÑO PUEDO CALCULAR CUANTOS PAQUETES PUEDEN ENTRAR EN 1 LINEA DE MEMORIA
 	//Calcular la parte entera
@@ -230,6 +232,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 		t_package paquete;
 		if(recibir(socketSolicitud,&paquete,logger->logger)){
 			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
+			return EXIT_FAILURE;
 		}else{
 
 			if(i<paquetesXLinea){
@@ -248,6 +251,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 		}
 	}
 
+	free(bufferConcatenado);
 	return EXIT_SUCCESS;
 }
 

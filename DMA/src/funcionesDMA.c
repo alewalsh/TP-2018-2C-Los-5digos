@@ -137,6 +137,7 @@ int enviarPkgDeMdjAFm9(int pid){
 
 		//Se envia cantidad de paquetes a enviar a memoria
 		char *buffer;
+		copyIntToBuffer(&buffer, pid);
 		copyIntToBuffer(&buffer, cantPart);
 		copyIntToBuffer(&buffer,configDMA->transferSize);
 		int size = sizeof(int) * 2;
