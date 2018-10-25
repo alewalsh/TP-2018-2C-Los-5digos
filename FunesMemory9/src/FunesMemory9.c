@@ -92,37 +92,28 @@ void manejarSolicitud(t_package pkg, int socketFD) {
     switch (pkg.code) {
         case CPU_FM9_CONNECT:
 			printf("Se ha conectado el CPU.");
-//            if (esiConnection(socketFD, pkg, logger)) {
-//                log_error_mutex(logger, "Hubo un error en la conexion con la CPU");
-//                break;
-//            }
-//            sem_post(&sem_newEsi);
             break;
 		case DAM_FM9_CONNECT:
 			printf("Se ha conectado el DAM.");
-//			if (esiConnection(socketFD, pkg, logger)) {
-//				log_error_mutex(logger, "Hubo un error en la conexion con el DAM");
-//				break;
-//			}
-//            sem_post(&sem_newEsi);
 			break;
-		case DAM_FM9_GUARDARLINEA:
-			guardarLineaSegunEsquemaMemoria();
+		case DAM_FM9_CARGAR_ESCRIPTORIO:
+			if(cargarEscriptorioSegunEsquemaMemoria(pkg,socketFD)){
+				log_error_mutex(logger,"Error al cargar el escriptorio en la memoria");
+			}
 			break;
-//        case COORD_PLAN_BLOCK:
-//            //log_info_mutex(logger, "El coordinador me pide que bloquee un recurso");
-//            if (blockKey(socketFD, pkg, logger)) {
-//                log_error_mutex(logger, "No se pudo completar la operacion de bloqueo");
-//            }
-//            break;
-//        case COORD_PLAN_STORE:
-//            //log_info_mutex(logger, "El coordinador me pide que desbloque un recurso");
-//            if (storeKey(socketFD, pkg, logger)) {
-//                log_error_mutex(logger, "No se pudo completar la operacion de desbloqueo");
-//            }
-//            break;
+
+        case DAM_FM9_GUARDARLINEA:
+        	if(guardarLineaSegunEsquemaMemoria(pkg,socketFD)){
+				log_error_mutex(logger,"Error al guardar la data recibida en memoria");
+			}
+			break;
+
+        case DAM_FM9_RETORNARlINEA:
+        	if(retornarLineaSolicitada(pkg,socketFD)){
+				log_error_mutex(logger,"Error al retornar la memoria solicitada");
+			}
+			break;
         case SOCKET_DISCONECT:
-//            handlerDisconnect(socketFD);
             close(socketFD);
             deleteSocketFromMaster(socketFD);
             break;
@@ -136,36 +127,104 @@ void manejarSolicitud(t_package pkg, int socketFD) {
     free(pkg.data);
 
 }
+//--------------------------------------GUARDAR DATOS EN MEMORIA SEGUN ESQUEMA ELEGIDO
 
-void guardarLineaSegunEsquemaMemoria(){
+int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
 	switch (config->modoEjecucion){
 	case SEG:
-		ejecutarEsquemaSegmentacion();
+
+		if(ejecutarGuardarEsquemaSegmentacion(pkg)){
+			log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: SEG");
+			//ENVIAR ERROR AL DMA (socketSolicitud)
+		}else{
+			log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
+		}
 	    break;
 
 	case TPI:
-		ejecutarEsquemaTPI();
+		if(ejecutarGuardarEsquemaTPI(pkg)){
+			log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: TPI");
+			//ENVIAR ERROR AL DMA (socketSolicitud)
+		}else{
+			log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
+		}
 	    break;
 
 	case SPA:
-		ejecutarEsquemaSegPag();
+		if(ejecutarGuardarEsquemaSegPag(pkg)){
+			log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: SPA");
+			//ENVIAR ERROR AL DMA (socketSolicitud)
+		}else{
+			log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
+		}
 	    break;
 
 	default:
-		log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas del G.DT");
-		break;
-
+		log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas");
+		return EXIT_FAILURE;
 	}
+	return EXIT_SUCCESS;
 }
 
-void ejecutarEsquemaSegmentacion(){
+
+int ejecutarGuardarEsquemaSegmentacion(t_package pkg){
 	//logica de segmentacion pura
+	return EXIT_SUCCESS;
+
 }
 
-void ejecutarEsquemaTPI(){
+int ejecutarGuardarEsquemaTPI(t_package pkg){
 	//logica de tabla de paginas invertida
+	return EXIT_SUCCESS;
 }
 
-void ejecutarEsquemaSegPag(){
+int ejecutarGuardarEsquemaSegPag(t_package pkg){
 	//logica de segmentacion paginada
+	return EXIT_SUCCESS;
 }
+
+//------------------------------CARGAR ESCRIPTORIO EN MEMORIA SEGUN ESQUEMA ELEGIDO
+int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
+	switch (config->modoEjecucion){
+	case SEG:
+		ejecutarCargarEsquemaSegmentacion(pkg);
+	    break;
+
+	case TPI:
+		ejecutarCargarEsquemaTPI(pkg);
+	    break;
+
+	case SPA:
+		ejecutarCargarEsquemaSegPag(pkg);
+	    break;
+
+	default:
+		log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas");
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+int ejecutarCargarEsquemaSegmentacion(t_package pkg){
+	//logica de segmentacion pura
+	return EXIT_SUCCESS;
+}
+
+int ejecutarCargarEsquemaTPI(t_package pkg){
+	//logica de tabla de paginas invertida
+	return EXIT_SUCCESS;
+}
+
+int ejecutarCargarEsquemaSegPag(t_package pkg){
+	//logica de segmentacion paginada
+	return EXIT_SUCCESS;
+}
+
+//--------------------------------------------------RETORNAR DATOS DE MEMORIA
+
+int retornarLineaSolicitada(t_package pkg, int socketSolicitud){
+
+	//logica para retornar una linea pedida
+	return EXIT_SUCCESS;
+}
+
