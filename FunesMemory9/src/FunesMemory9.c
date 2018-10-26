@@ -194,29 +194,14 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg){
 int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
 	switch (config->modoEjecucion){
 	case SEG:
-		if(ejecutarCargarEsquemaSegmentacion(pkg,socketSolicitud)){
-			log_error_mutex(logger,"Error al cargar el escriptorio en memoria");
-		}else{
-			//SE CARGO CORRECTAMENTE EN MEMORIA
-
-		}
+		ejecutarCargarEsquemaSegmentacion(pkg,socketSolicitud);
 	    break;
 
 	case TPI:
-	    if(ejecutarCargarEsquemaTPI(pkg,socketSolicitud)){
-			log_error_mutex(logger,"Error al cargar el escriptorio en memoria");
-		}else{
-			//SE CARGO CORRECTAMENTE EN MEMORIA
-
-		}
+	    ejecutarCargarEsquemaTPI(pkg,socketSolicitud);
 		break;
 	case SPA:
-		 if(ejecutarCargarEsquemaSegPag(pkg,socketSolicitud)){
-			log_error_mutex(logger,"Error al cargar el escriptorio en memoria");
-		}else{
-			//SE CARGO CORRECTAMENTE EN MEMORIA
-
-		}
+		ejecutarCargarEsquemaSegPag(pkg,socketSolicitud);
 		break;
 
 	default:
@@ -243,7 +228,7 @@ int tengoMemoriaDisponible(int cantidadACargarBytes){
 	return EXIT_SUCCESS;
 }
 
-int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
+void ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 	//logica de segmentacion pura
 
 	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
@@ -258,7 +243,6 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 	if(tengoMemoriaDisponible(cantidadACargar) == 1){
 		//fallo
 		//avisarle al socket que no hay memoria disponible
-		return EXIT_FAILURE;
 	}
 
 	//ACA HAY QUE FIJARSE EN LA TABLA SEGMENTOS SI TENGO UN SEGMENTO CONTIGUO PARA ALMACENAR LOS DATOS
@@ -277,8 +261,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 		t_package paquete;
 		if(recibir(socketSolicitud,&paquete,logger->logger)){
 			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
-			enviarErrorAlDam();
-			return EXIT_FAILURE;
+			//enviarErrorAlDam();
 		}else{
 
 			if((i+1) < paquetesXLinea){
@@ -303,10 +286,10 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 	free(bufferConcatenado);
 
 
-	return EXIT_SUCCESS;
+	//ENVIAR MSJ DE EXITO A DAM
 }
 
-int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){
+void ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){
 	//logica de tabla de paginas invertida
 	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
 	char * buffer= pkg.data;
@@ -320,7 +303,7 @@ int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){
 	if(tengoMemoriaDisponible(cantidadACargar) == 1){
 		//fallo
 		//avisarle al socket que no hay memoria disponible
-		return EXIT_FAILURE;
+		//enviarMsjErrorAlDam()
 	}
 
 	//ACA HAY QUE FIJARSE EN LA TABLA INVERTIDA SI TENGO UNA PAGINA SIN PID ASOCIADO PARA ALMACENAR LOS DATOS
@@ -339,8 +322,7 @@ int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){
 		t_package paquete;
 		if(recibir(socketSolicitud,&paquete,logger->logger)){
 			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
-			enviarErrorAlDam();
-			return EXIT_FAILURE;
+			//enviarErrorAlDam();
 		}else{
 
 			if((i+1) < paquetesXLinea){
@@ -365,10 +347,10 @@ int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){
 	free(bufferConcatenado);
 
 
-	return EXIT_SUCCESS;
+	//Enviar msj de confirmacion al dam
 }
 
-int ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud){
+void ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud){
 	//logica de segmentacion paginada
 	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
 	char * buffer= pkg.data;
@@ -382,7 +364,7 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud){
 	if(tengoMemoriaDisponible(cantidadACargar) == 1){
 		//fallo
 		//avisarle al socket que no hay memoria disponible
-		return EXIT_FAILURE;
+		//enviarErrorAlDam();
 	}
 
 	//ACA HAY QUE FIJARSE EN LAS TABLAS SI TENGO UNA PAGINA ASOCIADA A UN SEGMENTE LIBRE PARA ALMACENAR LOS DATOS
@@ -402,8 +384,7 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud){
 		t_package paquete;
 		if(recibir(socketSolicitud,&paquete,logger->logger)){
 			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
-			enviarErrorAlDam();
-			return EXIT_FAILURE;
+			//enviarErrorAlDam();
 		}else{
 
 			if((i+1) < paquetesXLinea){
@@ -428,7 +409,7 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud){
 	free(bufferConcatenado);
 
 
-	return EXIT_SUCCESS;
+	//Enviar msj confirmacion al dam
 }
 
 //--------------------------------------------------RETORNAR DATOS DE MEMORIA
