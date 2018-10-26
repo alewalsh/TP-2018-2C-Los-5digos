@@ -13,12 +13,17 @@
 int main(int argc, char** argv) {
 	logger = log_create_mutex("FM9.log", "FM9", true, LOG_LEVEL_INFO);
 	config = cargarConfiguracion(argv[1], FM9, logger->logger);
+	inicializarContadores();
 	storage = malloc(config->tamMemoria);
 	manejarConexiones();
 	free(storage);
 	return EXIT_SUCCESS;
 }
 
+void inicializarContadores(){
+	contLineasUsadas = 0;
+	cantLineas = config->tamMemoria / config->tamMaxLinea;
+}
 void manejarConexiones(){
 	int socketListen, i,nuevoFd;
 	uint16_t handshake;
@@ -169,6 +174,8 @@ int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
 
 int ejecutarGuardarEsquemaSegmentacion(t_package pkg){
 	//logica de segmentacion pura
+
+
 	return EXIT_SUCCESS;
 
 }
@@ -187,19 +194,49 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg){
 int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
 	switch (config->modoEjecucion){
 	case SEG:
-		ejecutarCargarEsquemaSegmentacion(pkg,socketSolicitud);
+		if(ejecutarCargarEsquemaSegmentacion(pkg,socketSolicitud)){
+			log_error_mutex(logger,"Error al cargar el escriptorio en memoria");
+		}else{
+			//SE CARGO CORRECTAMENTE EN MEMORIA
+
+		}
 	    break;
 
 	case TPI:
-		ejecutarCargarEsquemaTPI(pkg,socketSolicitud);
-	    break;
+	    if(ejecutarCargarEsquemaTPI(pkg,socketSolicitud)){
+			log_error_mutex(logger,"Error al cargar el escriptorio en memoria");
+		}else{
+			//SE CARGO CORRECTAMENTE EN MEMORIA
 
+		}
+		break;
 	case SPA:
-		ejecutarCargarEsquemaSegPag(pkg,socketSolicitud);
-	    break;
+		 if(ejecutarCargarEsquemaSegPag(pkg,socketSolicitud)){
+			log_error_mutex(logger,"Error al cargar el escriptorio en memoria");
+		}else{
+			//SE CARGO CORRECTAMENTE EN MEMORIA
+
+		}
+		break;
 
 	default:
 		log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas");
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
+}
+
+int tengoMemoriaDisponible(int cantidadACargarBytes){
+
+	int cantACargarEnLineas = cantidadACargarBytes / config->tamMaxLinea;
+	int memoriaDisponible = cantLineas - contLineasUsadas;
+
+	if(memoriaDisponible > cantACargarEnLineas){
+		//Tengo espacio disponible.
+		return EXIT_SUCCESS;
+	}else{
+		//No tengo espacio disponible.
 		return EXIT_FAILURE;
 	}
 
@@ -216,7 +253,15 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 	int tamanioPaquetes = copyIntFromBuffer(&buffer);
 	free(buffer);
 
-	//ACA SE DEBERIA DEFINIR SI TENGO LA MEMORIA SUFICIENTE PARA ALMACENAR EN MEMORIA LOS DATOS
+	int cantidadACargar = cantPaquetes * tamanioPaquetes;
+
+	if(tengoMemoriaDisponible(cantidadACargar) == 1){
+		//fallo
+		//avisarle al socket que no hay memoria disponible
+		return EXIT_FAILURE;
+	}
+
+	//ACA HAY QUE FIJARSE EN LA TABLA SEGMENTOS SI TENGO UN SEGMENTO CONTIGUO PARA ALMACENAR LOS DATOS
 	//EN CASO QUE SI RESERVAR UN SEGMENTO
 	//int segmento = reservarSegmento();
 	//actualizar tabla de segmentos
@@ -232,36 +277,157 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 		t_package paquete;
 		if(recibir(socketSolicitud,&paquete,logger->logger)){
 			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
+			enviarErrorAlDam();
 			return EXIT_FAILURE;
 		}else{
 
-			if(i<paquetesXLinea){
+			if((i+1) < paquetesXLinea){
 				//si no supere los paquetes por linea lo sumo al bufferConcatenado
 				copyStringToBuffer(&bufferConcatenado,paquete.data);
 			}else{
 				//si llego a los paquetes máximos -> Guardo la linea
 				copyStringToBuffer(&bufferConcatenado,paquete.data);
+
 				//TODO GUARDAR LINEA EN SEGMENTO
 				//guardarlinea(bufferConcatenado,segmento);
+
 				//Descarto el buffer y lo creo de nuevo para la nueva linea
 				free(bufferConcatenado);
 				bufferConcatenado = malloc(config->tamMaxLinea);
 			}
-
 		}
 	}
 
+	//TODO GUARDAR LINEA EN SEGMENTO
+	//guardarlinea(bufferConcatenado,segmento);
 	free(bufferConcatenado);
+
+
 	return EXIT_SUCCESS;
 }
 
 int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){
 	//logica de tabla de paginas invertida
+	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
+	char * buffer= pkg.data;
+	int pid = copyIntFromBuffer(&buffer);
+	int cantPaquetes = copyIntFromBuffer(&buffer);
+	int tamanioPaquetes = copyIntFromBuffer(&buffer);
+	free(buffer);
+
+	int cantidadACargar = cantPaquetes * tamanioPaquetes;
+
+	if(tengoMemoriaDisponible(cantidadACargar) == 1){
+		//fallo
+		//avisarle al socket que no hay memoria disponible
+		return EXIT_FAILURE;
+	}
+
+	//ACA HAY QUE FIJARSE EN LA TABLA INVERTIDA SI TENGO UNA PAGINA SIN PID ASOCIADO PARA ALMACENAR LOS DATOS
+	//EN CASO QUE SI RESERVAR DICHA PAGINA
+	//int pagina = reservarPagina();
+	//actualizar tabla invertida
+	//actualizarTablaInvertida(pid,pagina);
+
+	//CON EL TAMAÑO PUEDO CALCULAR CUANTOS PAQUETES PUEDEN ENTRAR EN 1 LINEA DE MEMORIA
+	//Calcular la parte entera
+	int paquetesXLinea = config->tamMaxLinea / tamanioPaquetes;
+
+	char * bufferConcatenado = malloc(config->tamMaxLinea);
+
+	for(int i = 0; i < cantPaquetes; i++){
+		t_package paquete;
+		if(recibir(socketSolicitud,&paquete,logger->logger)){
+			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
+			enviarErrorAlDam();
+			return EXIT_FAILURE;
+		}else{
+
+			if((i+1) < paquetesXLinea){
+				//si no supere los paquetes por linea lo sumo al bufferConcatenado
+				copyStringToBuffer(&bufferConcatenado,paquete.data);
+			}else{
+				//si llego a los paquetes máximos -> Guardo la linea
+				copyStringToBuffer(&bufferConcatenado,paquete.data);
+
+				//TODO GUARDAR LINEA EN PAGINA
+				//guardarlineaEsquemaTPI(bufferConcatenado,segmento);
+
+				//Descarto el buffer y lo creo de nuevo para la nueva linea
+				free(bufferConcatenado);
+				bufferConcatenado = malloc(config->tamMaxLinea);
+			}
+		}
+	}
+
+	//TODO GUARDAR LINEA EN PAGINA
+	//guardarlinea(bufferConcatenado,segmento);
+	free(bufferConcatenado);
+
+
 	return EXIT_SUCCESS;
 }
 
 int ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud){
 	//logica de segmentacion paginada
+	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
+	char * buffer= pkg.data;
+	int pid = copyIntFromBuffer(&buffer);
+	int cantPaquetes = copyIntFromBuffer(&buffer);
+	int tamanioPaquetes = copyIntFromBuffer(&buffer);
+	free(buffer);
+
+	int cantidadACargar = cantPaquetes * tamanioPaquetes;
+
+	if(tengoMemoriaDisponible(cantidadACargar) == 1){
+		//fallo
+		//avisarle al socket que no hay memoria disponible
+		return EXIT_FAILURE;
+	}
+
+	//ACA HAY QUE FIJARSE EN LAS TABLAS SI TENGO UNA PAGINA ASOCIADA A UN SEGMENTE LIBRE PARA ALMACENAR LOS DATOS
+	//EN CASO QUE SI RESERVAR DICHA PAGINA
+	//int pagina = reservarPagina();
+	//actualizar las tablas
+	//actualizarTablaSegmento(pid,segmento);
+	//actualizarTablaPaginas(pid,pagina);
+
+	//CON EL TAMAÑO PUEDO CALCULAR CUANTOS PAQUETES PUEDEN ENTRAR EN 1 LINEA DE MEMORIA
+	//Calcular la parte entera
+	int paquetesXLinea = config->tamMaxLinea / tamanioPaquetes;
+
+	char * bufferConcatenado = malloc(config->tamMaxLinea);
+
+	for(int i = 0; i < cantPaquetes; i++){
+		t_package paquete;
+		if(recibir(socketSolicitud,&paquete,logger->logger)){
+			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
+			enviarErrorAlDam();
+			return EXIT_FAILURE;
+		}else{
+
+			if((i+1) < paquetesXLinea){
+				//si no supere los paquetes por linea lo sumo al bufferConcatenado
+				copyStringToBuffer(&bufferConcatenado,paquete.data);
+			}else{
+				//si llego a los paquetes máximos -> Guardo la linea
+				copyStringToBuffer(&bufferConcatenado,paquete.data);
+
+				//TODO GUARDAR LINEA EN PAGINA
+				//guardarlineaEsquemaSPA(bufferConcatenado,segmento);
+
+				//Descarto el buffer y lo creo de nuevo para la nueva linea
+				free(bufferConcatenado);
+				bufferConcatenado = malloc(config->tamMaxLinea);
+			}
+		}
+	}
+
+	//TODO GUARDAR LINEA EN PAGINA
+	//guardarlineaEsquemaSPA(bufferConcatenado,segmento);
+	free(bufferConcatenado);
+
+
 	return EXIT_SUCCESS;
 }
 

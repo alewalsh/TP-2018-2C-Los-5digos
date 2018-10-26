@@ -17,6 +17,9 @@
 #include <grantp/compression.h>
 #include "funcionesFM9.h"
 
+int contLineasUsadas;
+int cantLineas;
+
 t_log_mutex * logger;
 configFM9 * config;
 
@@ -51,6 +54,7 @@ pthread_mutex_t mutexReadset;
 pthread_mutex_t mutexMaxfd;
 pthread_mutex_t mutexExit;
 
+void incializarContador();
 void manejarConexiones();
 void manejarSolicitud(t_package pkg, int socketFD);
 void liberarRecursos();

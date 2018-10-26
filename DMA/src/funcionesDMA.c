@@ -152,7 +152,8 @@ int enviarPkgDeMdjAFm9(int pid){
 		//Ahora se reciben los paquetes y se envia a memoria
 		//SE RECIBE UN SOLO ENVIO Y LO VOY RECIBIENDO DE A PARTES DE 16BYTES
 		for(int i = 0; i<cantPart;i++){
-			t_package pkgTransferSize = malloc(configDMA->transferSize);
+			t_package pkgTransferSize;
+			pkgTransferSize.size = configDMA->transferSize;
 
 			if(recibir(t_socketMdj->socket, &pkgTransferSize, logger->logger)){
 				log_error_mutex(logger, "Error al recibir el paquete %d",i);
@@ -163,6 +164,7 @@ int enviarPkgDeMdjAFm9(int pid){
 				int sizeOfBuffer = strlen(buffer);
 				if(enviar(t_socketMdj->socket,DAM_FM9_ENVIO_PKG,buffer, sizeOfBuffer,logger->logger)){
 					log_error_mutex(logger, "Error al enviar el paquete %d", i);
+					return EXIT_FAILURE;
 				}
 
 			}
