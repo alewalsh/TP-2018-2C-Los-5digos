@@ -1,6 +1,7 @@
 #include "FileSystem.h"
 
 int main(int argc, char ** argv) {
+
 	fileSystemAvtivo = 1;
 	inicializarMDJ(argv[1]);
 	crearFifa();
@@ -169,7 +170,6 @@ void inicializarConexion(){
 
 void esperarInstruccionDAM(){
 	while(!getExit()){
-
 		//TODO socketEscucha no tiene nada asignado(?
 		t_package paquete;
 		if (recibir(socketEscucha->socket,&paquete,logger)) {

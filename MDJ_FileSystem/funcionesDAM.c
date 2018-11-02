@@ -1,6 +1,4 @@
 #include "FileSystem.h"
-
-
 //atender peticion de manera concurrente?? al mismo tiempo.
 //todo semaforos para todos.
 

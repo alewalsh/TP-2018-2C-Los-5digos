@@ -3,7 +3,7 @@
 	<name>CPU</name>
 	<comment></comment>
 	<projects>
-		<project>GranTP-Commons</project>
+		<project>GranTPCommons</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
