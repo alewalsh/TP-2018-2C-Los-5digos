@@ -63,9 +63,7 @@ enum accionEjecutada
 /*
  * Semaforos
  */
-sem_t * sem_nuevoDummy;
 pthread_mutex_t mutexQuantum;
-//pthread_mutex_t mutexDesalojo;
 
 /*
  * Funciones
