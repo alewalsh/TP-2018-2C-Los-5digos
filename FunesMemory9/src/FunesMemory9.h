@@ -28,26 +28,28 @@ fd_set readset;
 int maxfd;
 void * storage;
 
+
 typedef struct{
 	int nroSegmento;
 	int offset;
 }t_segmento;
 
 typedef struct{
-	t_dtb * dtb;
+	int dtb;
 	t_segmento segmentoGDT;
-}t_gdt;
+} t_gdt;
 
 typedef struct{
 	int *idProceso;
 	int base;
 	int limite;
-}t_tablaSegmentos;
+} t_tablaSegmentos;
+t_tablaSegmentos * tablaSegmentos;
 
 typedef struct{
 	int base;
 	int offset;
-}t_bloqueMemoria;
+} t_bloqueMemoria;
 
 pthread_mutex_t mutexMaster;
 pthread_mutex_t mutexReadset;

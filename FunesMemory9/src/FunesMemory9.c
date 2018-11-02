@@ -228,8 +228,19 @@ int tengoMemoriaDisponible(int cantidadACargarBytes){
 	return EXIT_SUCCESS;
 }
 
+
+int reservarSegmento()
+{
+	int memoriaDisponible;
+	return 0;
+}
+void actualizarTablaDeSegmentos(int pid, int segmento)
+{
+
+}
+
+// Lógica de segmentacion pura
 void ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
-	//logica de segmentacion pura
 
 	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
 	char * buffer= pkg.data;
@@ -241,15 +252,20 @@ void ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 	int cantidadACargar = cantPaquetes * tamanioPaquetes;
 
 	if(tengoMemoriaDisponible(cantidadACargar) == 1){
-		//fallo
-		//avisarle al socket que no hay memoria disponible
+		// Avisarle al socket que no hay memoria disponible
+		log_error_mutex(logger, "No hay memoria disponible para cargar el Escriptorio.");
+		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
+			exit(-1);
+		}
 	}
 
 	//ACA HAY QUE FIJARSE EN LA TABLA SEGMENTOS SI TENGO UN SEGMENTO CONTIGUO PARA ALMACENAR LOS DATOS
 	//EN CASO QUE SI RESERVAR UN SEGMENTO
-	//int segmento = reservarSegmento();
-	//actualizar tabla de segmentos
-	//actualizarTablaDeSegmentos(pid,segmento);
+	int segmento = reservarSegmento(cantidadACargar);
+//	actualizar tabla de segmentos
+	actualizarTablaDeSegmentos(pid,segmento);
 
 	//CON EL TAMAÑO PUEDO CALCULAR CUANTOS PAQUETES PUEDEN ENTRAR EN 1 LINEA DE MEMORIA
 	//Calcular la parte entera
