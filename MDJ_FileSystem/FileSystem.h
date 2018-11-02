@@ -11,6 +11,7 @@
 #include <grantp/configuracion.h>
 #include <grantp/socket.h>
 #include <pthread.h>
+#include "funcionesConsola.h"
 
 
 pthread_t threadDAM;
@@ -19,6 +20,8 @@ t_socket* socketEscucha;
 
 t_log* logger;
 configMDJ* configuracion;
+
+int * socketDAM;
 
 enum codigosError
 {

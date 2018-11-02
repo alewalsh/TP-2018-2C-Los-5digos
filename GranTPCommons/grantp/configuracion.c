@@ -61,16 +61,16 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             }
             safa = (configSAFA *) malloc(sizeof(configSAFA));
             safa->puerto = leerPuerto(configFile, "PUERTO", logger);
-            char *algorithm = leerString(configFile, "ALGORITMO", logger);
-            safa->algoritmo = getAlgorithm(algorithm);
-            free(algorithm);
+            char *algor = leerString(configFile, "ALGORITMO", logger);
+            safa->algoritmo = getAlgorithm(algor);
+            free(algor);
             safa->quantum = leerInt(configFile, "QUANTUM", logger);
             safa->grado_mp = leerInt(configFile, "MULTIPROGRAMACION", logger);
             safa->retardo = leerInt(configFile, "RETARDO", logger);
             ret = safa;
             break;
         case CPU:
-            if (checkAmountOfParams(configFile, 5, logger)) {
+            if (checkAmountOfParams(configFile, 7, logger)) {
                 ret = NULL;
                 break;
             }
@@ -79,6 +79,8 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             cpu->puertoSAFA = leerPuerto(configFile, "PUERTO_SAFA", logger);
             cpu->ipDAM = leerIP(configFile, "IP_DAM", logger);
             cpu->puertoDAM = leerPuerto(configFile, "PUERTO_DAM", logger);
+            cpu->ipFM9 = leerIP(configFile, "IP_FM9", logger);
+            cpu->puertoFM9 = leerPuerto(configFile, "PUERTO_FM9", logger);
             cpu->retardo = leerInt(configFile, "RETARDO", logger);
             ret = cpu;
             break;
@@ -105,24 +107,26 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             }
             mdj = (configMDJ *) malloc(sizeof(configMDJ));
             mdj->puertoMDJ = leerPuerto(configFile, "PUERTO", logger);
-            mdj->ip_propia = leerString(configFile, "IP_PROPIA", logger);
+            mdj->ip_propia = leerIP(configFile, "IP_PROPIA", logger);
             mdj->puntoMontaje = leerString(configFile, "PUNTO_MONTAJE", logger);
             mdj->retardo = leerInt(configFile, "RETARDO", logger);
             ret = mdj;
             break;
         case FM9:
-        	if (checkAmountOfParams(configFile, 5, logger)) {
+        	if (checkAmountOfParams(configFile, 6, logger)) {
 				ret = NULL;
 				break;
 			}
             funesMemory = (configFM9 *) malloc(sizeof(configFM9));
             funesMemory->puertoFM9 = leerPuerto(configFile, "PUERTO", logger);
+            funesMemory->ip_propia = leerIP(configFile, "IP_PROPIA", logger);
             char *modo = leerString(configFile, "MODO", logger);
             funesMemory->modoEjecucion = getModoEjecucion(modo);
             free(modo);
             funesMemory->tamMemoria = leerInt(configFile, "TAMANIO", logger);
             funesMemory->tamMaxLinea = leerInt(configFile, "MAX_LINEA", logger);
             funesMemory->tamPagina = leerInt(configFile, "TAM_PAGINA", logger);
+            ret = funesMemory;
         	break;
         default:
             ret = NULL;
@@ -204,16 +208,21 @@ void freeConfig(void *conf, processType processType) {
 	configFM9 *funesMemory;
 	configMDJ *mdj;
 
+
+	//TODO: Verificar porque hay que hacer mas free de los que esta, faltan algunas cosas
+
     if (conf != NULL) {
         switch (processType) {
             case SAFA:
             	safa = (configSAFA *) conf;
+            	//TODO: Juan revisara las cosas que se tienen que liberar enSAFA(ver planif)
                 free(safa);
                 break;
             case CPU:
                 cpu = (configCPU *) conf;
                 free(cpu->ipDAM);
                 free(cpu->ipSAFA);
+                free(cpu->ipFM9);
                 free(cpu);
                 break;
             case DAM:
@@ -225,6 +234,7 @@ void freeConfig(void *conf, processType processType) {
                 break;
             case FM9:
             	funesMemory = (configFM9 *) conf;
+            	free(funesMemory->ip_propia);
                 free(funesMemory);
                 break;
             case MDJ:

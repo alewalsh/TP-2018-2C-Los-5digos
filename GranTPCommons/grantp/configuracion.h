@@ -40,11 +40,14 @@ typedef struct {
     int puertoSAFA;
     char *ipDAM;
     int puertoDAM;
+    char *ipFM9;
+    int puertoFM9;
     int retardo;
 } configCPU;
 
 typedef struct {
     int puertoDAM;
+    char *ipDAM;
     char *ipSAFA;
     int puertoSAFA;
     char *ipMDJ;
@@ -56,6 +59,7 @@ typedef struct {
 
 typedef struct {
     int puertoFM9;
+    char * ip_propia;
     uint16_t modoEjecucion;
     int tamMemoria;
     int tamMaxLinea;

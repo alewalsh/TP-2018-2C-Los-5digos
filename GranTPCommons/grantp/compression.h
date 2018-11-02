@@ -26,5 +26,5 @@ long copyLongFromBuffer (char** buffer);
 char* copyLongToBuffer (char** buffer, long value);
 char *copySizeFromBuffer(char**buffer, int size);
 char *copySizeToBuffer(char**buffer, char*data, int size);
-
+char *compressKey(char *key, int *size);
 #endif /* COMANDOS_H_ */

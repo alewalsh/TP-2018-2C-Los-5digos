@@ -12,7 +12,7 @@
 *.ko
 *.obj
 *.elf
-
+*.xml
 # Linker output
 *.ilk
 *.map
@@ -67,9 +67,9 @@ tmp/
 *.swp
 *~.nib
 local.properties
-.settings/
-.loadpath
-.recommenders
+*.settings/
+*.loadpath
+*.recommenders
 
 # External tool builders
 .externalToolBuilders/
@@ -81,7 +81,7 @@ local.properties
 *.pydevproject
 
 # CDT-specific (C/C++ Development Tooling)
-.cproject
+*.cproject
 
 # CDT- autotools
 .autotools
@@ -127,7 +127,5 @@ local.properties
 
 .sts4-cache/
 
-
-*.xml
 
 # End of https://www.gitignore.io/api/c,eclipse

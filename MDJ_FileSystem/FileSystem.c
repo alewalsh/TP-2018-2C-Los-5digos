@@ -6,6 +6,8 @@ int main(int argc, char ** argv) {
 	inicializarConexion();
 	//inincializarConsola()
 
+	esperarInstruccionDAM();
+
 	exit_gracefully(FIN_EXITOSO);
 }
 
@@ -33,22 +35,26 @@ void inicializarMDJ(char * pathConfig){
 }
 
 void inicializarConexion(){
-	int * socketPropio;
-	int socket = cargarSoket(configuracion->puertoMDJ,configuracion->ip_propia, socketPropio, logger);
-	socketEscucha = inicializarTSocket(socket, logger);
-	recibirHandshake(&socketEscucha->socket, MDJ_HSK, DAM_HSK, logger);
-	escuchar(configuracion->puertoMDJ, &socketEscucha->socket, logger);
-//	enviarHandshake(&socketEscucha->socket, MDJ_HSK, DAM_HSK, logger);
-
-    pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
+	int * socketPropio = malloc(sizeof(int));
+    uint16_t handshake;
+	if (escuchar(configuracion->puertoMDJ, socketPropio, logger)) {
+		exit_gracefully(1);
+	}
+	socketDAM = malloc(sizeof(int));
+	if (acceptConnection(*socketPropio, socketDAM, MDJ_HSK, &handshake, logger)) {
+		log_error(logger, "No se acepta la conexion");
+	}
+	printf("Se conecto el DAM");
+   // pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
 }
 
 void esperarInstruccionDAM(){
-	while(1){
+	while(!getExit()){
 
 //		recibir(socketEscucha, /*package*/,logger);
 
 		responderDAM();
+
 	}
 }
 

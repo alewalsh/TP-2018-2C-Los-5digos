@@ -39,10 +39,10 @@ enum codigoID {
 
 	//HANDSHAKES
 	SAFA_HSK = 1001,
-	CPU_HSK,
-	FM9_HSK,
-	DAM_HSK,
-	MDJ_HSK,
+	CPU_HSK = 1002,
+	FM9_HSK = 1003,
+	DAM_HSK = 1004,
+	MDJ_HSK = 1005,
 
 	//SAFA-CPU
 	SAFA_CPU_CONNECT,// = 1005,
@@ -57,21 +57,75 @@ enum codigoID {
 //	SAFA_CPU_COMPACT_OK,// = 1014,
 //	SAFA_CPU_BEGIN_COMPACT,// = 1015,
 	SAFA_CPU_DISCONNECT,
+	SAFA_CPU_NUEVO_DUMMY,
+	SAFA_CPU_EJECUTAR,
+	SAFA_CPU_QUANTUM,
 
-//    //SAFA-COORDINADOR
-//    SAFA_COORD_CONNECT,// = 1005,
-//    SAFA_COORD_OK,// = 1006,
-//    SAFA_COORD_FAIL,// = 1007,
-//    SAFA_COORD_GET_FAIL,// = 1008,
-//    SAFA_COORD_SET_FAIL,// = 1009,
-//    SAFA_COORD_STORE_FAIL,// = 1010,
-//    SAFA_COORD_GET_OK,// = 1011,
-//    SAFA_COORD_SET_OK,// = 1012,
-//    SAFA_COORD_STORE_OK,// = 1013,
-//    SAFA_COORD_COMPACT_OK,// = 1014,
-//    SAFA_COORD_BEGIN_COMPACT,// = 1015,
-//    SAFA_COORD_DISCONNECT,
-//
+    //DAM-FM9
+    DAM_FM9_CONNECT,
+    DAM_FM9_OK,
+    DAM_FM9_FAIL,
+    DAM_FM9_DISCONNECT,
+	DAM_FM9_GUARDARLINEA,
+	DAM_FM9_CARGAR_ESCRIPTORIO,
+	DAM_FM9_ENVIO_PKG,
+	DAM_FM9_RETORNARlINEA,
+
+	//DAM-MDJ
+	DAM_MDJ_CONNECT,
+	DAM_MDJ_OK,
+	DAM_MDJ_FAIL,
+	DAM_MDJ_DISCONNECT,
+	DAM_MDJ_CARGAR_ESCRIPTORIO,
+	DAM_MDJ_GUARDAR_DATOS,
+	DAM_MDJ_CREAR_ARCHIVO,
+	DAM_MDJ_BORRAR_ARCHIVO,
+
+	//DAM-SAFA
+	DAM_SAFA_CONNECT,
+	DAM_SAFA_OK,
+	DAM_SAFA_FAIL,
+	DAM_SAFA_DISCONNECT,
+	DAM_SAFA_CONFIRMACION_PID_CARGADO,
+	DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS,
+	DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO,
+	DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO,
+
+	//CPU-FM9
+	CPU_FM9_CONNECT,
+	CPU_FM9_OK,
+	CPU_FM9_FAIL,
+	CPU_FM9_DISCONNECT,
+	CPU_FM9_CERRAR_ARCHIVO,
+	CPU_FM9_ASIGNAR,
+	CPU_FM9_CARGAR_ESCRIPTORIO,
+
+	//CPU-DAM
+	CPU_DAM_CONNECT,
+	CPU_DAM_OK,
+	CPU_DAM_FAIL,
+	CPU_DAM_DISCONNECT,
+	CPU_DAM_BUSQUEDA_ESCRIPTORIO,
+	CPU_DAM_ABRIR_ARCHIVO,
+	CPU_DAM_FLUSH,
+	CPU_DAM_CREAR,
+	CPU_DAM_BORRAR,
+
+	//CPU-SAFA
+	CPU_SAFA_BLOQUEAR_DUMMMY,
+	CPU_SAFA_WAIT_RECURSO,
+	CPU_SAFA_SIGNAL_RECURSO,
+	CPU_SAFA_BLOQUEAR_DTB,
+	CPU_SAFA_ABORTAR_DTB,
+
+	//FM9-CPU
+	FM9_CPU_ACCESO_INVALIDO,
+	FM9_CPU_ERROR,
+
+	//FM9
+	GUARDAR_LINEA,
+	CARGAR_ESCRIPTORIO,
+	RETORNAR_LINEA,
 //    //COORDINADOR-SAFA
 //    COORD_SAFA_WELCOME,// = 1016,
 //    COORD_SAFA_OK,// = 1017,
@@ -119,10 +173,11 @@ enum codigoID {
 //    PLAN_CORRD_STATUS,// = 1046,
 //
     GENERIC_ERROR,
-//
+
     SOCKET_DISCONECT,// = 1048
     PING,//=1049
     PING_OK//1050
+
 };
 
 typedef struct {
@@ -164,7 +219,7 @@ int escuchar(int puerto, int *socket, t_log *logger);
 int aceptar(int socket, int *newSocket, t_log *logger);
 
 /**
- * @NAME: cargarSoket
+ * @NAME: cargarSocket
  * @DESC: Crea un socket que se puede usar tanto para listen, si no se le pasa la ip, como para connect,
  * 		  si le paso la ip a la que me quiero conectar. La memoria de la variables puntero debe estar previamente asignada.
  * @PARAMS: {int} 	iPuerto puesto que se le asigna al socket.
@@ -172,7 +227,7 @@ int aceptar(int socket, int *newSocket, t_log *logger);
  * 			{int*}	pSocket Socket creado dentro de la funcion.
  * 			{t_log*} Logger.
  */
-int cargarSoket(int iPuerto, const char *ip, int *pSocket, t_log *logger);
+int cargarSocket(int iPuerto, const char *ip, int *pSocket, t_log *logger);
 
 /**
  * @NAME: enviarHandshake

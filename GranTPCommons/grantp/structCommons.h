@@ -10,6 +10,19 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
+
+/*
+ *  Ejemplo DTB: habria que ponerlo en GranTPCommons si utilizamos este.
+ */
+typedef struct {
+	int idGDT;
+    char *dirEscriptorio;
+    int programCounter;
+    bool flagInicializado;
+    char *tablaDirecciones;
+    int cantidadLineas;
+} t_dtb;
 
 typedef struct {
     char *operation;
@@ -38,15 +51,19 @@ typedef struct {
     uint16_t status;
 } t_blocked_keys;
 
+enum estadoSAFA {
+	Operativo = 0, Corrupto = 1
+};
+
 enum typeLIST {
     READY = 2001, BLOCKED = 2002, EXECUTING = 2003, FINISHED = 2004, BLOCKEDKEYS
 };
 
-enum typeScheduler {
+enum tipoPlanificacion {
     RR = 1, VRR, PROPIO
 };
 
-enum typeExceution {
+enum tipoEjecucion {
 	SEG = 1, TPI, SPA
 };
 
@@ -64,8 +81,9 @@ enum typeStatus {
 };
 
 enum command {
-    STOP = 1, PLAY, BLOCK, UNBLOCK, LIST, STATUS, KILL, DEADLOCK, CLEAR, MAN, EXIT, HELP, ESIS, KEYS
+    EJECUTAR = 1, STATUS, FINALIZAR, METRICAS, EXIT, HELP
 };
+//LIST, STATUS, KILL, DEADLOCK, CLEAR, MAN, ESIS, KEYS
 
 void freeEsiInstruction(void *esi);
 
