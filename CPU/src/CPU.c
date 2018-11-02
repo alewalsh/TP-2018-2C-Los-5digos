@@ -289,7 +289,6 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 	switch(accion)
 	{
 		case ABRIR:
-			// VERIFICAR QUE EL ARCHIVO ESTÉ ABIERTO
 			code = CPU_DAM_ABRIR_ARCHIVO;
 			size = strlen(operacion->argumentos.ABRIR.path);
 			copyStringToBuffer(&buffer, operacion->argumentos.ABRIR.path);
@@ -324,6 +323,11 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 			break;
 		default:
 			return EXIT_FAILURE;
+	}
+	if (accion == ABRIR && strstr((*dtb)->tablaDirecciones, operacion->argumentos.ABRIR.path) != NULL)
+	{
+		log_info_mutex(loggerCPU, "El archivo %s ya está abierto por el proceso %d.", operacion->argumentos.ABRIR.path, (*dtb)->idGDT);
+		return EXIT_SUCCESS;
 	}
 	if (modulo == DAM)
 	{
@@ -526,9 +530,9 @@ void exit_gracefully(int error)
 	free(t_socketSAFA);
 //			}
 //		}
-
 	close(t_socketFM9->socket);
 	free(t_socketFM9);
+	pthread_mutex_destroy(mutexQuantum);
 	log_destroy_mutex(loggerCPU);
 	freeConfig(config, CPU);
 	exit(error);
