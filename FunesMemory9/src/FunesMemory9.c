@@ -23,7 +23,43 @@ int main(int argc, char** argv) {
 void inicializarContadores(){
 	contLineasUsadas = 0;
 	cantLineas = config->tamMemoria / config->tamMaxLinea;
+	tablaProcesos = dictionary_create();
+	inicializarBitmapLineas();
 }
+
+void exit_gracefully(int error)
+{
+	liberarRecursos();
+	exit(error);
+}
+
+void inicializarBitmapLineas()
+{
+	int tamBitarray = cantLineas/8;
+	if(cantLineas % 8 != 0){
+		tamBitarray++;
+	}
+	char* data=malloc(tamBitarray);
+	estadoLineas = bitarray_create_with_mode(data,tamBitarray,LSB_FIRST); // if create falla error.
+
+	int bit;
+	bit = 0;
+	while(bit <= cantLineas){
+		bitarray_clean_bit(estadoLineas, bit);
+		bit ++;
+	}
+}
+
+t_segmento * nuevoSegmento(int nroSegmento, int cantidadLineas, char * archivo, int base)
+{
+	t_segmento * segmento;
+	segmento->nroSegmento = nroSegmento;
+	segmento->limite = cantidadLineas;
+	segmento->archivo = archivo;
+	segmento->base = base;
+	return segmento;
+}
+
 void manejarConexiones(){
 	int socketListen, i,nuevoFd;
 	uint16_t handshake;
@@ -49,7 +85,7 @@ void manejarConexiones(){
 		int result = select(getMaxfd() + 1, &readset, NULL, NULL, NULL);
 		if (result == -1) {
 			log_error_mutex(logger, "Error en el select: %s", strerror(errno));
-			exit(1);
+			exit_gracefully(1);
 		}
 
 		log_trace_mutex(logger, "El valor del select es: %d", result);
@@ -86,6 +122,7 @@ void manejarConexiones(){
 
 void liberarRecursos()
 {
+	bitarray_destroy(estadoLineas);
 	pthread_mutex_destroy(&mutexMaster);
 	pthread_mutex_destroy(&mutexReadset);
 	log_destroy_mutex(logger);
@@ -229,26 +266,56 @@ int tengoMemoriaDisponible(int cantidadACargarBytes){
 }
 
 
-int reservarSegmento()
+t_segmento * reservarSegmento(int lineasEsperadas, int nroSegmento)
 {
-	int memoriaDisponible;
-	return 0;
-}
-void actualizarTablaDeSegmentos(int pid, int segmento)
-{
+	t_segmento * segmento;
+	int lineasLibresContiguas = 0, i = 0, base;
+	while(i < cantLineas)
+	{
+		if(bitarray_test_bit(estadoLineas,i) == 0)
+		{
+			base = i;
+			lineasLibresContiguas++;
+			if (lineasLibresContiguas == lineasEsperadas)
+			{
+				break;
+			}
+		}
+		else
+		{
+			lineasLibresContiguas = 0;
+		}
+		i++;
+	}
+	segmento->base = base;
+	segmento->limite = lineasEsperadas;
+	segmento->nroSegmento = nroSegmento;
+	// TERMINAR ESTO, ES IMPORTANTE PARA YA GUARDAR UN SEGMENTO
+//	segmento = nuevoSegmento(nroSegmento, lineasEsperadas,)
+	return segmento;
 
 }
+void crearProceso(int pid, t_segmento * segmento)
+{
+	t_dictionary * tablaSegmentos = dictionary_create();
+	dictionary_put(tablaSegmentos,segmento->nroSegmento,segmento);
+	dictionary_put(tablaProcesos,pid,tablaSegmentos);
+}
 
+t_dictionary * buscarTablaSegmentos(int pid)
+{
+	t_dictionary * tablaSegmentos = dictionary_get(tablaProcesos,pid);
+	return tablaSegmentos;
+}
 // Lógica de segmentacion pura
-void ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
-
+void ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
+{
 	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
 	char * buffer= pkg.data;
 	int pid = copyIntFromBuffer(&buffer);
 	int cantPaquetes = copyIntFromBuffer(&buffer);
 	int tamanioPaquetes = copyIntFromBuffer(&buffer);
 	free(buffer);
-
 	int cantidadACargar = cantPaquetes * tamanioPaquetes;
 
 	if(tengoMemoriaDisponible(cantidadACargar) == 1){
@@ -257,13 +324,15 @@ void ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
 		{
 			log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
-			exit(-1);
+			exit_gracefully(-1);
 		}
 	}
 
-	//ACA HAY QUE FIJARSE EN LA TABLA SEGMENTOS SI TENGO UN SEGMENTO CONTIGUO PARA ALMACENAR LOS DATOS
+	//ACA HAY QUE FIJARSE EN EL STORAGE SI TENGO UN SEGMENTO CONTIGUO PARA ALMACENAR LOS DATOS
 	//EN CASO QUE SI RESERVAR UN SEGMENTO
-	int segmento = reservarSegmento(cantidadACargar);
+
+	buscarMemoriaContigua(cantidadACargar)
+	t_segmento * segmento = reservarSegmento(cantidadACargar);
 //	actualizar tabla de segmentos
 	actualizarTablaDeSegmentos(pid,segmento);
 
@@ -303,6 +372,13 @@ void ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
 
 
 	//ENVIAR MSJ DE EXITO A DAM
+}
+
+int direccion(int base, int desplazamiento)
+{
+	// Usar la base del Storage, y desde la base que llega como parametro, sumar el desplazamiento.
+	int direccion = storage + base + desplazamiento;
+	return direccion;
 }
 
 void ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){

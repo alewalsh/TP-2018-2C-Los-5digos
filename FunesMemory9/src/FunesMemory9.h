@@ -15,14 +15,17 @@
 #include <grantp/mutex_log.h>
 #include <grantp/structCommons.h>
 #include <grantp/compression.h>
+#include <commons/bitarray.h>
 #include "funcionesFM9.h"
 
 int contLineasUsadas;
 int cantLineas;
+int nroSegmentoActual;
 
 t_log_mutex * logger;
 configFM9 * config;
-
+t_dictionary * tablaProcesos;
+t_bitarray * estadoLineas;
 fd_set master;
 fd_set readset;
 int maxfd;
@@ -31,20 +34,15 @@ void * storage;
 
 typedef struct{
 	int nroSegmento;
-	int offset;
-}t_segmento;
+	int base;
+	int limite;
+	char * archivo;
+} t_segmento;
 
 typedef struct{
 	int dtb;
-	t_segmento segmentoGDT;
+	t_list * tablaSegmentos;
 } t_gdt;
-
-typedef struct{
-	int *idProceso;
-	int base;
-	int limite;
-} t_tablaSegmentos;
-t_tablaSegmentos * tablaSegmentos;
 
 typedef struct{
 	int base;

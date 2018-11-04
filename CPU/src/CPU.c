@@ -17,11 +17,19 @@ int main(int argc, char ** argv) {
 	//t_list * lista = parseoInstrucciones(char * path, int cantidadLineas)
 	inicializarCPU(argv[1]);
     pthread_t threadPrincipal;
+    sig_handler(SIGINT);
 	//Recibir DTB y verificar valor de flag de inicializacion
     pthread_create(&threadPrincipal, &tattr, (void *) recibirDTB, NULL);
 	exit_gracefully(EXIT_SUCCESS);
 }
 
+void sig_handler(int signal)
+{
+	if (signal == SIGINT)
+	{
+		exit_gracefully(signal);
+	}
+}
 void recibirDTB()
 {
 	while(1)
