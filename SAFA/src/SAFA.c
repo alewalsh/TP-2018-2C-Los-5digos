@@ -26,6 +26,7 @@ int main(int argc, char ** argv) {
     pthread_t threadCambioConfig;
 
     //inicializacion de recursos y carga de configuracion
+    // /home/utnso/git/tp-2018-2c-Los-5digos/SAFA/config"
     inicializarRecursos(argv[1]);
 
     printf("Recursos incializados");
