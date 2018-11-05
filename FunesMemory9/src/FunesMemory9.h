@@ -24,13 +24,14 @@ int nroSegmentoActual;
 
 t_log_mutex * logger;
 configFM9 * config;
-t_dictionary * tablaProcesos;
+t_list * tablaProcesos;
 t_bitarray * estadoLineas;
+t_bitarray * estadoPAginas;
+char * storage;
+
 fd_set master;
 fd_set readset;
 int maxfd;
-void * storage;
-
 
 typedef struct{
 	int nroSegmento;
@@ -40,8 +41,7 @@ typedef struct{
 } t_segmento;
 
 typedef struct{
-	int dtb;
-	t_list * tablaSegmentos;
+	t_dictionary * tablaSegmentos;
 } t_gdt;
 
 typedef struct{
