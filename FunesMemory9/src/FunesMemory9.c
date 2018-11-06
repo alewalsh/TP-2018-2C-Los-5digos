@@ -50,16 +50,6 @@ void inicializarBitmapLineas()
 	}
 }
 
-t_segmento * nuevoSegmento(int nroSegmento, int cantidadLineas, char * archivo, int base)
-{
-	t_segmento * segmento;
-	segmento->nroSegmento = nroSegmento;
-	segmento->limite = cantidadLineas;
-	segmento->archivo = archivo;
-	segmento->base = base;
-	return segmento;
-}
-
 void manejarConexiones(){
 	int socketListen, i,nuevoFd;
 	uint16_t handshake;
@@ -143,13 +133,16 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 				log_error_mutex(logger,"Error al cargar el escriptorio en la memoria");
 			}
 			break;
-
-        case DAM_FM9_GUARDARLINEA:
+        case CPU_FM9_ASIGNAR:
         	if(guardarLineaSegunEsquemaMemoria(pkg,socketFD)){
 				log_error_mutex(logger,"Error al guardar la data recibida en memoria");
 			}
 			break;
-
+        case CPU_FM9_CERRAR_ARCHIVO:
+			if(cerrarArchivoSegunEsquemaMemoria(pkg,socketFD)){
+				log_error_mutex(logger,"Error al guardar la data recibida en memoria");
+			}
+			break;
         case DAM_FM9_RETORNARlINEA:
         	if(retornarLineaSolicitada(pkg,socketFD)){
 				log_error_mutex(logger,"Error al retornar la memoria solicitada");
@@ -172,47 +165,89 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 //--------------------------------------GUARDAR DATOS EN MEMORIA SEGUN ESQUEMA ELEGIDO
 
 int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
-	switch (config->modoEjecucion){
-	case SEG:
-
-		if(ejecutarGuardarEsquemaSegmentacion(pkg)){
-			log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: SEG");
-			//ENVIAR ERROR AL DMA (socketSolicitud)
-		}else{
-			log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
-		}
-	    break;
-
-	case TPI:
-		if(ejecutarGuardarEsquemaTPI(pkg)){
-			log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: TPI");
-			//ENVIAR ERROR AL DMA (socketSolicitud)
-		}else{
-			log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
-		}
-	    break;
-
-	case SPA:
-		if(ejecutarGuardarEsquemaSegPag(pkg)){
-			log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: SPA");
-			//ENVIAR ERROR AL DMA (socketSolicitud)
-		}else{
-			log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
-		}
-	    break;
-
-	default:
-		log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas");
-		return EXIT_FAILURE;
+	switch (config->modoEjecucion)
+	{
+		case SEG:
+			int code = ejecutarGuardarEsquemaSegmentacion(pkg);
+			if(code != 0){
+				log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: SEG");
+				if (code == 1)
+					code = FM9_CPU_MEMORIA_INSUFICIENTE;
+				if (enviar(socketSolicitud,code,pkg.data,pkg.size,logger->logger))
+				{
+					log_error_mutex(logger, "Error al avisar al DAM del error en");
+					exit_gracefully(-1);
+				}
+			}
+			else
+			{
+				log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
+			}
+			break;
+		case TPI:
+			if(ejecutarGuardarEsquemaTPI(pkg)){
+				log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: TPI");
+				//ENVIAR ERROR AL DMA (socketSolicitud)
+			}else{
+				log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
+			}
+			break;
+		case SPA:
+			if(ejecutarGuardarEsquemaSegPag(pkg)){
+				log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: SPA");
+				//ENVIAR ERROR AL DMA (socketSolicitud)
+			}else{
+				log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
+			}
+			break;
+		default:
+			log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas");
+			return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }
 
+// Lógica de segmentación pura
+int ejecutarGuardarEsquemaSegmentacion(t_package pkg, int socket)
+{
+	char * buffer = pkg.data;
+	int pid = copyIntFromBuffer(&buffer);
+	char * path = copyStringFromBuffer(&buffer);
+	int linea = copyIntFromBuffer(&buffer);
+	char * datos = copyStringFromBuffer(&buffer);
 
-int ejecutarGuardarEsquemaSegmentacion(t_package pkg){
-	//logica de segmentacion pura
-
-
+	t_gdt * gdt = dictionary_get(tablaProcesos,pid);
+	if (gdt == NULL)
+	{
+		return FM9_CPU_PROCESO_INEXISTENTE;
+	}
+	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
+	if(cantidadSegmentos > 0)
+	{
+		for(int i = 0; i < cantidadSegmentos; i++)
+		{
+			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, i);
+			if (strcmp(segmento->archivo,path) == 0 && segmento->limite >= linea)
+			{
+				guardarLinea(direccion(segmento->base,linea), datos);
+				break;
+			}
+			else
+			{
+				return FM9_CPU_ACCESO_INVALIDO;
+			}
+		}
+//		//ENVIAR MSJ DE EXITO A CPU
+		if (enviar(socket,FM9_CPU_LINEA_GUARDADA,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		return FM9_CPU_FALLO_SEGMENTO_MEMORIA;
+	}
 	return EXIT_SUCCESS;
 
 }
@@ -259,10 +294,9 @@ int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
 	return EXIT_SUCCESS;
 }
 
-int tengoMemoriaDisponible(int cantidadACargarBytes)
+int tengoMemoriaDisponible(int cantACargarEnLineas)
 {
-	int cantACargarEnLineas = cantidadACargarBytes / config->tamMaxLinea;
-	int memoriaDisponible = cantLineas - contLineasUsadas;
+	int memoriaDisponible = lineasDisponibles();
 
 	if(memoriaDisponible > cantACargarEnLineas){
 		//Tengo espacio disponible.
@@ -275,6 +309,19 @@ int tengoMemoriaDisponible(int cantidadACargarBytes)
 	return EXIT_SUCCESS;
 }
 
+int lineasDisponibles()
+{
+	int bit = 0, libres = 0;
+	while(bit <= cantLineas)
+	{
+		if(bitarray_test_bit(estadoLineas, bit) == 0)
+		{
+			libres++;
+		}
+		bit ++;
+	}
+	return libres;
+}
 
 t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo)
 {
@@ -336,38 +383,12 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
 	int cantPaquetes = copyIntFromBuffer(&buffer);
 	int tamanioPaquetes = copyIntFromBuffer(&buffer);
 	free(buffer);
-	int cantidadACargar = cantPaquetes * tamanioPaquetes;
+//	int cantidadACargar = cantPaquetes * tamanioPaquetes;
 
 	//CON EL TAMAÑO PUEDO CALCULAR CUANTOS PAQUETES PUEDEN ENTRAR EN 1 LINEA DE MEMORIA
 	//Calcular la parte entera
-	int paquetesXLinea = config->tamMaxLinea / tamanioPaquetes;
-
-	char * bufferConcatenado = malloc(config->tamMaxLinea);
-
-	for(int i = 0; i < cantPaquetes; i++){
-		t_package paquete;
-		if(recibir(socketSolicitud,&paquete,logger->logger)){
-			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
-			//enviarErrorAlDam();
-		}else{
-
-			if((i+1) < paquetesXLinea){
-				//si no supere los paquetes por linea lo sumo al bufferConcatenado
-				copyStringToBuffer(&bufferConcatenado,paquete.data);
-			}else{
-				//si llego a los paquetes máximos -> Guardo la linea
-				copyStringToBuffer(&bufferConcatenado,paquete.data);
-
-				//TODO GUARDAR LINEA EN SEGMENTO
-				//guardarlinea(bufferConcatenado,segmento);
-
-				//Descarto el buffer y lo creo de nuevo para la nueva linea
-				free(bufferConcatenado);
-				bufferConcatenado = malloc(config->tamMaxLinea);
-			}
-		}
-	}
-	if(tengoMemoriaDisponible(cantidadACargar) == 1){
+//	int paquetesXLinea = config->tamMaxLinea / tamanioPaquetes;
+	if(tengoMemoriaDisponible(cantPaquetes) == 1){
 		// Avisarle al socket que no hay memoria disponible
 		log_error_mutex(logger, "No hay memoria disponible para cargar el Escriptorio.");
 		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
@@ -383,21 +404,35 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
 	// TODO: ACA HAY QUE MANDARLE LAS LINEAS QUE TIENE EL ARCHIVO EN EL PRIMER PARAMETRO
 	// TODO: REEMPLAZAR EL TEXTO DEL ARCHIVO POR LO QUE RECIBA DEL DAM.
 	t_gdt * gdt = dictionary_get(tablaProcesos,pid);
-	t_segmento * segmento = reservarSegmento(cantidadACargar, gdt->tablaSegmentos, "/PuntoMontaje/archivo.txt");
+	t_segmento * segmento = reservarSegmento(cantPaquetes, gdt->tablaSegmentos, "/PuntoMontaje/archivo.txt");
 	if (segmento == NULL)
 		return FM9_DAM_MEMORIA_INSUFICIENTE;
 	actualizarTablaDeSegmentos(pid,segmento);
-	// TODO PENSARLO BIEN, QUE GUARDE LA LINEA Y SE VAYA CORRIENDO DE A TAMAÑO MAXIMO DE LINEA
-	char* token;
-	int i = 0;
-	//TODO GUARDAR LINEA EN SEGMENTO
-	while ((token = strsep(&bufferConcatenado, "\n")) != NULL)
+	// ACTUALIZO LA GLOBAL CON LAS LINEAS QUE UTILICE RECIEN
+	contLineasUsadas += cantPaquetes;
+
+	char * bufferConcatenado = malloc(config->tamMaxLinea);
+	int offset = 0, i = 0;
+
+	while(i < segmento->limite)
 	{
-		// VERIFICAR SI PUEDO USAR LA FUNCION DIRECCION
-		guardarLinea((segmento->base+i)*config->tamMaxLinea, token);
+		t_package paquete;
+		if(recibir(socketSolicitud,&paquete,logger->logger))
+		{
+			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
+			if (enviar(socketSolicitud,FM9_DAM_ERROR_PAQUETES,pkg.data,pkg.size,logger->logger))
+			{
+				log_error_mutex(logger, "Error al recibir los paquetes del DAM.");
+				exit_gracefully(-1);
+			}
+		}
+		bufferConcatenado = malloc(config->tamMaxLinea);
+		copyStringToBuffer(&bufferConcatenado,paquete.data);
+		guardarLinea(direccion(segmento->base,i), bufferConcatenado);
+		free(bufferConcatenado);
+		i++;
 	}
 
-	free(bufferConcatenado);
 	//ENVIAR MSJ DE EXITO A DAM
 	if (enviar(socketSolicitud,FM9_DAM_ESCRIPTORIO_CARGADO,pkg.data,pkg.size,logger->logger))
 	{
@@ -408,27 +443,49 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
 
 }
 
+int contarCantidadLineas(char * string){
+	int i = 0, cantidadLineas = 0;
+	while(string[i] != '\0')
+	{
+		if(string[i] == '\n')
+		{
+			cantidadLineas++;
+		}
+	}
+	return cantidadLineas;
+}
 void guardarLinea(int posicionMemoria, char * linea)
 {
+	memcpy(&storage+posicionMemoria, &linea, strlen(linea));
+	// TODO: Debería guardar distinto según el esquema??? No parece necesario
+	//	switch(config->modoEjecucion)
+	//	{
+	//		case SEG:
+	//			guardarLineaSegmentacionSimple(posicionMemoria, linea);
+	//			break;
+	//		default:
+	//			break;
+	//	}
+}
+
+//void guardarLineaSegmentacionSimple(int posicion, char * linea)
+//{
+//	memcpy(&storage+posicion, &linea, strlen(linea));
+//}
+
+int direccion(int base, int desplazamiento)
+{
+	// Usar la la base que llega como parametro, sumar el desplazamiento.
+	int direccion = 0;
 	switch(config->modoEjecucion)
 	{
 		case SEG:
-			guardarLineaSegmentacionSimple(posicionMemoria, linea);
+			direccion = (base + desplazamiento)*config->tamMaxLinea;
 			break;
 		default:
 			break;
 	}
-}
-
-void guardarLineaSegmentacionSimple(int posicion, char * linea)
-{
-	memcpy(&storage+posicion, &linea, strlen(linea));
-}
-
-int direccion(int base, int desplazamiento)
-{
-	// Usar la base del Storage, y desde la base que llega como parametro, sumar el desplazamiento.
-	int direccion = storage + base + desplazamiento;
+//	int direccion = storage + base + desplazamiento;
 	return direccion;
 }
 

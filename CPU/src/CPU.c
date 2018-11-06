@@ -17,19 +17,19 @@ int main(int argc, char ** argv) {
 	//t_list * lista = parseoInstrucciones(char * path, int cantidadLineas)
 	inicializarCPU(argv[1]);
     pthread_t threadPrincipal;
-    sig_handler(SIGINT);
+//    sig_handler(SIGINT);
 	//Recibir DTB y verificar valor de flag de inicializacion
     pthread_create(&threadPrincipal, &tattr, (void *) recibirDTB, NULL);
 	exit_gracefully(EXIT_SUCCESS);
 }
 
-void sig_handler(int signal)
-{
-	if (signal == SIGINT)
-	{
-		exit_gracefully(signal);
-	}
-}
+//void sig_handler(int signal)
+//{
+//	if (signal == SIGINT)
+//	{
+//		exit_gracefully(signal);
+//	}
+//}
 void recibirDTB()
 {
 	while(1)
@@ -319,14 +319,16 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 			break;
 		case ASIGNAR:
 			code = CPU_FM9_ASIGNAR;
-			size = strlen(operacion->argumentos.ASIGNAR.path) + sizeof(int) + strlen(operacion->argumentos.ASIGNAR.datos);
+			size = strlen(operacion->argumentos.ASIGNAR.path) + 2 * sizeof(int) + strlen(operacion->argumentos.ASIGNAR.datos);
+			copyIntToBuffer(&buffer, (*dtb)->idGDT);
 			copyStringToBuffer(&buffer, operacion->argumentos.ASIGNAR.path);
 			copyIntToBuffer(&buffer, operacion->argumentos.ASIGNAR.linea);
 			copyStringToBuffer(&buffer, operacion->argumentos.ASIGNAR.datos);
 			break;
 		case CLOSE:
 			code = CPU_FM9_CERRAR_ARCHIVO;
-			size = strlen(operacion->argumentos.CLOSE.path);
+			size = strlen(operacion->argumentos.CLOSE.path) + sizeof(int);
+			copyIntToBuffer(&buffer, (*dtb)->idGDT);
 			copyStringToBuffer(&buffer, operacion->argumentos.CLOSE.path);
 			break;
 		default:
@@ -377,7 +379,7 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 			log_error_mutex(loggerCPU, "Hubo un error al recibir la respuesta del FM9.");
 			return EXIT_FAILURE;
 		}
-		if(package.code == FM9_CPU_ACCESO_INVALIDO || package.code == FM9_CPU_ERROR)
+		if(package.code == FM9_CPU_ACCESO_INVALIDO || package.code == FM9_CPU_PROCESO_INEXISTENTE || package.code == FM9_CPU_FALLO_SEGMENTO_MEMORIA)
 		{
 			if (eventoSAFA(dtb, accion, CPU_SAFA_ABORTAR_DTB))
 			{
@@ -385,6 +387,10 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 				return EXIT_FAILURE;
 			}
 			return DTB_DESALOJADO;
+		}
+		if (package.code == FM9_CPU_LINEA_GUARDADA)
+		{
+			log_info_mutex(loggerCPU, "La linea correspondiente se ha guardado correctamente en memoria.");
 		}
 	}
 	free(buffer);
@@ -540,7 +546,7 @@ void exit_gracefully(int error)
 //		}
 	close(t_socketFM9->socket);
 	free(t_socketFM9);
-	pthread_mutex_destroy(mutexQuantum);
+	pthread_mutex_destroy(&mutexQuantum);
 	log_destroy_mutex(loggerCPU);
 	freeConfig(config, CPU);
 	exit(error);
