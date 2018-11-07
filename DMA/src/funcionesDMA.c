@@ -90,7 +90,7 @@ int leerEscriptorio(t_package paquete, int socketEnUso){
 	}
 
 	//Se reciben los paquetes del mdj y se envian al fm9
-	int baseMemoriaDeEscriptorio = enviarPkgDeMdjAFm9(pid);
+	int baseMemoriaDeEscriptorio = enviarPkgDeMdjAFm9(pid,path);
 
 	if(baseMemoriaDeEscriptorio >= 0){
 		//Se envia la confirmacion a SAFA del proceso y la posicion en memoria
@@ -112,7 +112,7 @@ int leerEscriptorio(t_package paquete, int socketEnUso){
 
 //Se recibe uno o varios paquetes del MDJ y se envian al FM9
 //Return: Base en memoria de los paquetes guardados.
-int enviarPkgDeMdjAFm9(int pid){
+int enviarPkgDeMdjAFm9(int pid, char * path){
 	//Se recibe el archivo desde filesystem
 	t_package package;
 	int baseMemoriaDeEscriptorio = -1;
@@ -121,10 +121,15 @@ int enviarPkgDeMdjAFm9(int pid){
 	if(recibir(t_socketMdj->socket, &package, logger->logger)){
 		log_error_mutex(logger, "No se pudo recibir el mensaje del MDJ");
 	}else{
-		//Recibo el tamaño del archivo a cargar
-		int sizeOfFile = (int) package.data;
 
-		//Lo divido por mi transfer Size y me quedo con la parte entera + 1
+		if(package.code == DAM_MDJ_FAIL){
+			return EXIT_FAILURE;
+		}
+
+		//Recibo el tamaño del archivo a cargar
+		int sizeOfFile = atoi(package.data);
+
+		//Lo divido por mi transfer Size y me quedo con la parte entera
 		double num = sizeOfFile / configDMA->transferSize;
 
 		double p_entera;
@@ -132,15 +137,47 @@ int enviarPkgDeMdjAFm9(int pid){
 		//Separo la parte entera
 		p_decimal = modf(num, &p_entera);
 		//Calculo la cantidad de paquetes
-		int cantPart = p_entera + 1;
+		int cantPart;
+		if(p_decimal != 0){
+			cantPart = p_entera + 1;
+		}else{
+			cantPart = p_entera;
+		}
 		log_info_mutex(logger, "Se recibiran %d paquetes", cantPart);
+
+		//Ahora se reciben los paquetes y se envia a memoria
+		//Si el archivo es mayor que mi Transfersize recibo n paquetes del tamaño de mi transfersize
+
+		char * bufferConcatenado = malloc(configDMA->transferSize * cantPart);
+		int sizeOfBuffer = 0;
+		//Recibo "cantPart" de paquetes con el archivo del mdj
+		for(int i = 0; i<cantPart;i++){
+			t_package pkgTransferSize;
+			pkgTransferSize.size = configDMA->transferSize; //TODO VER SI ESTO ESTA BIEN!!------------------------------------
+
+			if(recibir(t_socketMdj->socket, &pkgTransferSize, logger->logger)){
+				log_error_mutex(logger, "Error al recibir el paquete %d",i);
+			}else{
+				//todo EXTERNALIZAR ESTO.. SE HACE POR LINEAS LUEGO DE RECIBIR TODO EL ARCHIVO
+				//Enviar paquete a memoria
+				copyStringToBuffer(&bufferConcatenado, pkgTransferSize.data);
+				sizeOfBuffer = sizeOfBuffer + (strlen(pkgTransferSize.data)*sizeof(char));
+			}
+		}
+
+		//una vez recibido todo el archivo y de haberlo concatenado en un char *
+		//realizo un split con cada /n y cuento la cantidad de lineas que contiene el mensaje
+		int cantLineas = 0;
+		char** arrayLineas = str_split(bufferConcatenado,'/n',cantLineas);
+		free(bufferConcatenado);
 
 		//Se envia cantidad de paquetes a enviar a memoria
 		char *buffer;
 		copyIntToBuffer(&buffer, pid);
-		copyIntToBuffer(&buffer, cantPart);
+		copyStringToBuffer(&buffer, path); //TODO VER ESTO <-------------------------------------------------
+		copyIntToBuffer(&buffer, cantLineas);
 		copyIntToBuffer(&buffer,configDMA->transferSize);
-		int size = sizeof(int) * 2;
+		int size = sizeof(int)*3 + (strlen(path) * sizeof(char));
 
 		if(enviar(t_socketFm9->socket,DAM_FM9_CARGAR_ESCRIPTORIO,buffer,size,logger->logger)){
 			log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
@@ -149,35 +186,85 @@ int enviarPkgDeMdjAFm9(int pid){
 		}
 		free(buffer);
 
-		//Ahora se reciben los paquetes y se envia a memoria
-		//SE RECIBE UN SOLO ENVIO Y LO VOY RECIBIENDO DE A PARTES DE 16BYTES
-		for(int i = 0; i<cantPart;i++){
-			t_package pkgTransferSize;
-			pkgTransferSize.size = configDMA->transferSize;
-
-			if(recibir(t_socketMdj->socket, &pkgTransferSize, logger->logger)){
-				log_error_mutex(logger, "Error al recibir el paquete %d",i);
-			}else{
-				//Enviar paquete a memoria
-				char * buffer;
-				copyStringToBuffer(&buffer, pkgTransferSize.data);
-				int sizeOfBuffer = strlen(buffer);
-				if(enviar(t_socketMdj->socket,DAM_FM9_ENVIO_PKG,buffer, sizeOfBuffer,logger->logger)){
-					log_error_mutex(logger, "Error al enviar el paquete %d", i);
-					return EXIT_FAILURE;
-				}
-
+		//SE ENVIA LINEA POR LINEA AL FUNES MEMORY
+		int i = 0;
+		while(arrayLineas[i] != NULL){
+			if(enviar(t_socketFm9->socket,DAM_FM9_ENVIO_PKG,arrayLineas[i],size,logger->logger)){
+				log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
+				free(buffer);
+				return EXIT_FAILURE;
 			}
+			free(arrayLineas[i]);
+			i++;
 		}
-
-
-
+		free(arrayLineas);
 		log_info_mutex(logger,"Se enviaron todos los datos a memoria del proceso: %d",pid);
 
 		//Se recibe los datos de la posicion en memoria
 		baseMemoriaDeEscriptorio = recibirDatosMemoria();
 	}
 	return baseMemoriaDeEscriptorio;
+}
+
+int contarCantidadLineas(char * string){
+	int i = 0, cantidadLineas = 0;
+
+
+	while(string[i] != '\0')
+	{
+		if(string[i] == '\n')
+		{
+			cantidadLineas++;
+		}
+	}
+	return cantidadLineas;
+}
+
+char** str_split(char* a_str, const char a_delim, int count)
+{
+    char** result    = 0;
+    char* tmp        = a_str;
+    char* last_comma = 0;
+    count = 0;
+    char delim[2];
+    delim[0] = a_delim;
+    delim[1] = 0;
+
+    int i = 0;
+    /* Count how many elements will be extracted. */
+    while(a_str[i] != '\0')
+	{
+		if(a_str[i] == '\n')
+		{
+			count++;
+			last_comma = tmp;
+		}
+		i++;
+	}
+
+    /* Add space for trailing token. */
+    count += last_comma < (a_str + strlen(a_str) - 1);
+
+    /* Add space for terminating null string so caller
+       knows where the list of returned strings ends. */
+    count++;
+
+    result = malloc(sizeof(char*) * count);
+
+    if (result)
+    {
+        size_t idx  = 0;
+        char* token = strtok(a_str, delim);
+
+        while (token)
+        {
+            *(result + idx++) = strdup(token);
+            token = strtok(0, delim);
+        }
+        *(result + idx) = 0;
+    }
+
+    return result;
 }
 
 int recibirDatosMemoria(){
@@ -200,7 +287,7 @@ void enviarMsjASafaPidCargado(int pid,int itsLoaded, int base){
 	//Está cargado(ItsLoaded)--> 1: Exito, 0: Fallo.
 	//Se envía a S-afa un mensaje diciendo que el proceso ya esta cargado en memoria
 	char *buffer;
-	int size = sizeof(pid) + sizeof(itsLoaded) + sizeof(base) ;
+	int size = sizeof(int)*3;
 	copyIntToBuffer(&buffer, pid);
 	copyIntToBuffer(&buffer, itsLoaded);
 	copyIntToBuffer(&buffer, base);
@@ -238,7 +325,7 @@ int abrirArchivo(t_package paquete, int socketEnUso){
 	}
 
 	//Se reciben los paquetes del mdj y se envian al fm9
-	int baseMemoriaDeEscriptorio = enviarPkgDeMdjAFm9(pid);
+	int baseMemoriaDeEscriptorio = enviarPkgDeMdjAFm9(pid,path);
 
 	if(baseMemoriaDeEscriptorio >= 0){
 		//Se envia la confirmacion a SAFA del proceso y la posicion en memoria
@@ -275,7 +362,7 @@ int hacerFlush(t_package paquete, int socketEnUso){
 	char *bufferToMdj;
 	copyIntToBuffer(&bufferToMdj,baseEnMemoria);
 	copyIntToBuffer(&bufferToMdj,limiteEnMemoria);
-	size = sizeof(bufferToMdj);
+	size = sizeof(int) * 2;
 
 	//Se envia las posiciones a FM9 y retorna los datos para guardar en MDJ
 	if(enviar(t_socketFm9->socket,DAM_FM9_RETORNARlINEA,bufferToMdj, size, logger->logger)){
@@ -313,7 +400,7 @@ int enviarPkgDeFm9AMdj(int pid){
 		log_error_mutex(logger, "No se pudo recibir el mensaje del MDJ");
 	}else{
 		//Recibo el tamaño del archivo a cargar
-		cantLineas = (int) package.data;
+		cantLineas = atoi(package.data);
 
 		log_info_mutex(logger, "Se recibiran %d paquetes", cantLineas);
 
@@ -337,7 +424,7 @@ int enviarPkgDeFm9AMdj(int pid){
 			}
 		}
 		//ENVIAR DATOS A MDJ
-		int sizeOfBuffer = strlen(pkgToMdj); //calculo el size
+		int sizeOfBuffer = strlen(pkgToMdj) * sizeof(char); //calculo el size
 		if(enviar(t_socketMdj->socket,DAM_MDJ_GUARDAR_DATOS,pkgToMdj, sizeOfBuffer,logger->logger)){
 			log_error_mutex(logger, "Error al enviar el archivo a guardar al MDJ");
 			return EXIT_FAILURE;
@@ -361,7 +448,7 @@ void enviarMsjASafaArchivoGuardado(int pid,int itsFlushed, char * path){
 	copyIntToBuffer(&buffer, itsFlushed);
 	copyStringToBuffer(&buffer, path);
 
-	int size = sizeof(buffer);
+	int size = sizeof(int)+sizeof(int)+(strlen(path)*sizeof(char));
 
 	if(enviar(t_socketSafa->socket,DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS,buffer, size, logger->logger))
 	{
@@ -388,7 +475,7 @@ int crearArchivo(t_package paquete, int socketEnUso){
 	int pid = copyIntFromBuffer(&buffer);
 	char * path = copyStringFromBuffer(&buffer);
 
-	int size = sizeof(buffer);
+	int size = sizeof(int)+(strlen(buffer)*sizeof(char));
 
 	//SE ENVIA EL PAQEUTE CON LOS DATOS A MDJ PARA CREAR ARCHIVO
 	if(enviar(t_socketMdj->socket,DAM_MDJ_CREAR_ARCHIVO,buffer,size,logger->logger)){
@@ -414,7 +501,7 @@ void enviarMsjASafaArchivoCreado(int pid,int itsCreated, char * path){
 	copyIntToBuffer(&buffer, itsCreated);
 	copyStringToBuffer(&buffer, path);
 
-	int size = sizeof(buffer);
+	int size = sizeof(int)*2 + (strlen(path)*sizeof(char));
 
 	if(enviar(t_socketSafa->socket,DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO,buffer, size, logger->logger))
 	{
@@ -434,7 +521,7 @@ int borrarArchivo(t_package paquete, int socketEnUso){
 	int pid = copyIntFromBuffer(&buffer);
 	char * path = copyStringFromBuffer(&buffer);
 
-	int size = sizeof(buffer);
+	int size = sizeof(int)+(strlen(path)*sizeof(char));
 	//SE ENVIA EL PATH DEL ARCHIVO AL MDJ PARA BORRAR EL MISMO
 	if(enviar(t_socketMdj->socket,DAM_MDJ_BORRAR_ARCHIVO,buffer,size,logger->logger)){
 		log_error_mutex(logger, "Error al enviar el path al MDJ del archivo a borrar");
@@ -459,7 +546,7 @@ void enviarMsjASafaArchivoBorrado(int pid,int itsDeleted, char * path){
 	copyIntToBuffer(&buffer, itsDeleted);
 	copyStringToBuffer(&buffer, path);
 
-	int size = sizeof(buffer);
+	int size = sizeof(int) * 2 + (strlen(path)*sizeof(char));
 
 	if(enviar(t_socketSafa->socket,DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO,buffer, size, logger->logger))
 	{
@@ -535,6 +622,21 @@ int conectarseConMdj() {
 	socketMdj = malloc(sizeof(int));
 	conectarYenviarHandshake(configDMA->puertoMDJ, configDMA->ipMDJ, socketMdj,
 			MDJ_HSK, t_socketMdj);
+
+	//Se envía el transfer size
+	int size;
+	char * buffer;
+	copyIntToBuffer(&buffer, configDMA->transferSize);
+	size = sizeof(int);
+
+	if(enviar(t_socketMdj->socket,DAM_MDJ_TRANSFER_SIZE,buffer, size, logger->logger))
+	{
+		log_error_mutex(logger, "No se pudo enviar el transfer size al MDJ");
+		free(buffer);
+		return EXIT_FAILURE;
+	}
+
+	free(buffer);
 	return 0;
 }
 
@@ -566,7 +668,7 @@ void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeP
 
 void conectarYRecibirHandshake(int puertoEscucha) {
 
-//	uint16_t handshake;
+	int socketEscucha;
 	if (escuchar(puertoEscucha, &socketEscucha, logger->logger)) {
 		//liberar recursos/
 		exit_gracefully(1);
@@ -576,7 +678,6 @@ void conectarYRecibirHandshake(int puertoEscucha) {
 	addNewSocketToMaster(socketEscucha);
 
 	printf("Se conecto el CPU");
-	// pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
 }
 
 char * enumToProcess(int proceso) {
