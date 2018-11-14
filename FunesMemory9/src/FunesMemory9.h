@@ -17,6 +17,7 @@
 #include <grantp/compression.h>
 #include <commons/bitarray.h>
 #include "funcionesFM9.h"
+#include <errno.h>
 
 int contLineasUsadas;
 int cantLineas;
@@ -24,9 +25,9 @@ int nroSegmentoActual;
 
 t_log_mutex * logger;
 configFM9 * config;
-t_list * tablaProcesos;
+t_dictionary * tablaProcesos;
 t_bitarray * estadoLineas;
-t_bitarray * estadoPAginas;
+t_bitarray * estadoPaginas;
 char * storage;
 
 fd_set master;
@@ -62,11 +63,21 @@ int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 void ejecutarEsquemaTPI(t_package pkg, int socketSolicitud, int accion);
 void ejecutarEsquemaSegPag(t_package pkg, int socketSolicitud, int accion);
-void ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud);
+int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud);
 void ejecutarCargarEsquemaTPI(t_package pkg, int socketSolicitud);
 void ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud);
-int ejecutarGuardarEsquemaSegmentacion(t_package pkg);
+int ejecutarGuardarEsquemaSegmentacion(t_package pkg, int socket);
 int ejecutarGuardarEsquemaTPI(t_package pkg);
 int ejecutarGuardarEsquemaSegPag(t_package pkg);
 int retornarLineaSolicitada(t_package pkg, int socketSolicitud);
+
+static void liberar_segmento(t_segmento *self);
+void inicializarBitmapLineas();
+int cerrarArchivoSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
+void logicaCerrarArchivoSegmentacion(t_package pkg, int socketSolicitud);
+int cerrarArchivoSegmentacion(t_package pkg);
+void guardarLinea(int posicionMemoria, char * linea);
+char * intToString(int numero);
+void logicaGuardarSegmentacion(t_package pkg, int socketSolicitud);
+void liberarLineas(int base, int limite);
 #endif /* FUNESMEMORY9_H_ */

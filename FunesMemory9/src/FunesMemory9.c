@@ -162,27 +162,106 @@ void manejarSolicitud(t_package pkg, int socketFD) {
     free(pkg.data);
 
 }
+
+int cerrarArchivoSegunEsquemaMemoria(t_package pkg, int socketSolicitud)
+{
+	switch(config->modoEjecucion)
+	{
+		case SEG:
+			logicaCerrarArchivoSegmentacion(pkg, socketSolicitud);
+
+			break;
+		default:
+			return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+void logicaCerrarArchivoSegmentacion(t_package pkg, int socketSolicitud)
+{
+	int code = cerrarArchivoSegmentacion(pkg);
+	if (code != 0)
+	{
+		log_error_mutex(logger,"Error al cerrar el archivo indicado. Esquema: SEG");
+		if (enviar(socketSolicitud,code,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al DAM del error en el guardado de una linea.");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "Se cerró correctamente el archivo indicado.");
+	}
+}
+
+int cerrarArchivoSegmentacion(t_package pkg)
+{
+	char * buffer = pkg.data;
+	int pid = copyIntFromBuffer(&buffer);
+	char * path = copyStringFromBuffer(&buffer);
+	char * pidString = intToString(pid);
+	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
+	if (gdt == NULL)
+	{
+		return FM9_CPU_PROCESO_INEXISTENTE;
+	}
+	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
+	if(cantidadSegmentos > 0)
+	{
+		for(int i = 0; i < cantidadSegmentos; i++)
+		{
+			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, i);
+			if (strcmp(segmento->archivo,path) == 0)
+			{
+				liberarLineas(segmento->base,segmento->limite);
+				break;
+			}
+//			else
+//			{
+//				return FM9_CPU_ACCESO_INVALIDO;
+//			}
+		}
+		//ENVIAR MSJ DE EXITO A CPU
+		if (enviar(socket,FM9_CPU_LINEA_GUARDADA,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
+			exit_gracefully(-1);
+		}
+		dictionary_clean_and_destroy_elements(gdt->tablaSegmentos,(void *)liberar_segmento);
+	}
+	return EXIT_SUCCESS;
+}
+
+void liberarLineas(int base, int limite)
+{
+	int i = base;
+	while(i <= limite)
+	{
+		bitarray_clean_bit(estadoLineas, i);
+		i++;
+	}
+}
+
+char * intToString(int numero)
+{
+	char * string = malloc(sizeof(int));
+	sprintf(string, "%d", numero);
+	return string;
+}
+
+static void liberar_segmento(t_segmento *self)
+{
+	free(self->archivo);
+	free(self);
+}
 //--------------------------------------GUARDAR DATOS EN MEMORIA SEGUN ESQUEMA ELEGIDO
 
 int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
 	switch (config->modoEjecucion)
 	{
 		case SEG:
-			int code = ejecutarGuardarEsquemaSegmentacion(pkg);
-			if(code != 0){
-				log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: SEG");
-				if (code == 1)
-					code = FM9_CPU_MEMORIA_INSUFICIENTE;
-				if (enviar(socketSolicitud,code,pkg.data,pkg.size,logger->logger))
-				{
-					log_error_mutex(logger, "Error al avisar al DAM del error en");
-					exit_gracefully(-1);
-				}
-			}
-			else
-			{
-				log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
-			}
+			logicaGuardarSegmentacion(pkg, socketSolicitud);
 			break;
 		case TPI:
 			if(ejecutarGuardarEsquemaTPI(pkg)){
@@ -207,6 +286,24 @@ int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
 	return EXIT_SUCCESS;
 }
 
+void logicaGuardarSegmentacion(t_package pkg, int socketSolicitud)
+{
+	int code = ejecutarGuardarEsquemaSegmentacion(pkg, socketSolicitud);
+	if(code != 0){
+		log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: SEG");
+		if (code == 1)
+			code = FM9_CPU_MEMORIA_INSUFICIENTE;
+		if (enviar(socketSolicitud,code,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al DAM del error en el guardado de una linea.");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
+	}
+}
 // Lógica de segmentación pura
 int ejecutarGuardarEsquemaSegmentacion(t_package pkg, int socket)
 {
@@ -266,17 +363,8 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg){
 int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
 	switch (config->modoEjecucion){
 	case SEG:
-		int error = ejecutarCargarEsquemaSegmentacion(pkg,socketSolicitud);
-		if (error != 0){
-			log_error_mutex(logger,"Error al cargar el Escriptorio recibido. Esquema: SEG");
-			if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
-			{
-				log_error_mutex(logger, "Error al avisar al DAM del error en");
-				exit_gracefully(-1);
-			}
-		}else{
-			log_info_mutex(logger, "Se cargó correctamente el Escriptorio recibido.");
-		}
+		logicaCargarEscriptorioSegmentacion(pkg, socketSolicitud);
+
 	    break;
 
 	case TPI:
@@ -292,6 +380,24 @@ int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
 	}
 
 	return EXIT_SUCCESS;
+}
+
+void logicaCargarEscriptorioSegmentacion(t_package pkg, int socketSolicitud)
+{
+	int error = ejecutarCargarEsquemaSegmentacion(pkg,socketSolicitud);
+	if (error != 0)
+	{
+		log_error_mutex(logger,"Error al cargar el Escriptorio recibido. Esquema: SEG");
+		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al DAM del error en");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "Se cargó correctamente el Escriptorio recibido.");
+	}
 }
 
 int tengoMemoriaDisponible(int cantACargarEnLineas)
@@ -325,7 +431,7 @@ int lineasDisponibles()
 
 t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo)
 {
-	t_segmento * segmento;
+	t_segmento * segmento = malloc(sizeof(t_segmento));
 	int lineasLibresContiguas = 0, i = 0, base;
 	while(i <= cantLineas)
 	{
@@ -360,18 +466,26 @@ t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos
 		return NULL;
 
 }
+
 void crearProceso(int pid)
 {
-	t_gdt * gdt;
+	t_gdt * gdt = malloc(sizeof(t_gdt));
 	gdt->tablaSegmentos = dictionary_create();
-	dictionary_put(tablaProcesos,pid,gdt);
+	char * pidString = intToString(pid);
+	dictionary_put(tablaProcesos,pidString,gdt);
+	free(pidString);
+	free(gdt);
 }
 
 void actualizarTablaDeSegmentos(int pid, t_segmento * segmento)
 {
-	t_gdt * gdt = dictionary_get(tablaProcesos,pid);
-	dictionary_put(gdt->tablaSegmentos,segmento->nroSegmento,segmento);
-	dictionary_put(tablaProcesos,pid,gdt);
+	char pidString[5];
+	sprintf(pidString, "%d", pid);
+	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
+	char * nroSegmentoString = intToString(segmento->nroSegmento);
+	dictionary_put(gdt->tablaSegmentos,nroSegmentoString,segmento);
+	free(nroSegmentoString);
+	dictionary_put(tablaProcesos,pidString,gdt);
 }
 
 // Lógica de segmentacion pura
@@ -403,7 +517,9 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
 	// EN CASO QUE SI RESERVAR UN SEGMENTO
 	// TODO: ACA HAY QUE MANDARLE LAS LINEAS QUE TIENE EL ARCHIVO EN EL PRIMER PARAMETRO
 	// TODO: REEMPLAZAR EL TEXTO DEL ARCHIVO POR LO QUE RECIBA DEL DAM.
-	t_gdt * gdt = dictionary_get(tablaProcesos,pid);
+	char * pidString = intToString(pid);
+	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
+	free(pidString);
 	t_segmento * segmento = reservarSegmento(cantPaquetes, gdt->tablaSegmentos, "/PuntoMontaje/archivo.txt");
 	if (segmento == NULL)
 		return FM9_DAM_MEMORIA_INSUFICIENTE;
