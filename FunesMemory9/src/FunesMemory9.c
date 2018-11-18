@@ -655,10 +655,8 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
 	char * buffer= pkg.data;
 	int pid = copyIntFromBuffer(&buffer);
 	int cantPaquetes = copyIntFromBuffer(&buffer);
-	int tamanioPaquetes = copyIntFromBuffer(&buffer);
 	char * pathArchivo = copyStringFromBuffer(&buffer);
 	free(buffer);
-//	int cantidadACargar = cantPaquetes * tamanioPaquetes;
 
 	//CON EL TAMAÑO PUEDO CALCULAR CUANTOS PAQUETES PUEDEN ENTRAR EN 1 LINEA DE MEMORIA
 	//Calcular la parte entera
@@ -704,6 +702,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
 		}
 		char * bufferLinea = paquete.data;
 		int nroLinea = copyIntFromBuffer(&bufferLinea);
+		int tamanioPaquete = copyIntFromBuffer(&bufferLinea);
 		char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
 		if (nroLinea != lineaLeida)
 		{
@@ -711,14 +710,13 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
 			i++;
 			free(bufferGuardado);
 			bufferGuardado = malloc(config->tamMaxLinea);
-			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquetes - sizeof(int));
-			offset += tamanioPaquetes - sizeof(int);
-
+			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquete - 2*sizeof(int));
+			offset += tamanioPaquete - 2*sizeof(int);
 		}
 		else
 		{
-			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquetes - sizeof(int));
-			offset += tamanioPaquetes - sizeof(int);
+			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquete - 2*sizeof(int));
+			offset += tamanioPaquete - 2*sizeof(int);
 		}
 		lineaLeida = nroLinea;
 	}
@@ -764,7 +762,6 @@ int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){
 	char * buffer= pkg.data;
 	int pid = copyIntFromBuffer(&buffer);
 	int cantLineas = copyIntFromBuffer(&buffer);
-	int tamanioPaquetes = copyIntFromBuffer(&buffer);
 	char * pathArchivo = copyStringFromBuffer(&buffer);
 	free(buffer);
 
@@ -803,6 +800,7 @@ int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){
 		}
 		char * bufferLinea = paquete.data;
 		int nroLinea = copyIntFromBuffer(&bufferLinea);
+		int tamanioPaquete = copyIntFromBuffer(&bufferLinea);
 		char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
 		if (nroLinea != lineaLeida)
 		{
@@ -817,14 +815,14 @@ int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){
 			i++;
 			free(bufferGuardado);
 			bufferGuardado = malloc(config->tamMaxLinea);
-			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquetes - sizeof(int));
-			offset += tamanioPaquetes - sizeof(int);
+			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquete - 2*sizeof(int));
+			offset += tamanioPaquete - 2*sizeof(int);
 
 		}
 		else
 		{
-			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquetes - sizeof(int));
-			offset += tamanioPaquetes - sizeof(int);
+			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquete - 2*sizeof(int));
+			offset += tamanioPaquete - 2*sizeof(int);
 		}
 		lineaLeida = nroLinea;
 	}
