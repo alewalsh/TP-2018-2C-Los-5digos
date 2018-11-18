@@ -15,6 +15,7 @@
 #include <grantp/mutex_log.h>
 #include <grantp/structCommons.h>
 #include <grantp/compression.h>
+#include <grantp/split.c>
 #include <commons/bitarray.h>
 #include "funcionesFM9.h"
 #include <errno.h>
@@ -105,4 +106,12 @@ void logicaCargarEscriptorioTPI(t_package pkg, int socketSolicitud);
 void liberarMarco(t_pagina * pagina);
 void logicaCerrarArchivoTPI(t_package pkg, int socketSolicitud);
 int cerrarArchivoTPI(t_package pkg, int socketSolicitud);
+
+int realizarFlushSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
+void logicaFlush(t_package pkg, int socketSolicitud, int code);
+int flushSegmentacionPaginada(t_package pkg, int socketSolicitud);
+int flushTPI(t_package pkg, int socketSolicitud);
+int flushSegmentacion(t_package pkg, int socketSolicitud);
+void realizarFlush(char * linea, int nroLinea, int tamanioPaquete, int socket);
+char * obtenerLinea(int posicionMemoria);
 #endif /* FUNESMEMORY9_H_ */

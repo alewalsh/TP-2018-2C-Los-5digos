@@ -303,7 +303,8 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 			break;
 		case FLUSH:
 			code = CPU_DAM_FLUSH;
-			size = strlen(operacion->argumentos.FLUSH.path);
+			size = strlen(operacion->argumentos.FLUSH.path) + sizeof(int);
+			copyIntToBuffer(&buffer, (*dtb)->idGDT);
 			copyStringToBuffer(&buffer, operacion->argumentos.FLUSH.path);
 			break;
 		case CREAR:

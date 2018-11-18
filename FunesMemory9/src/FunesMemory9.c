@@ -144,6 +144,11 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 				log_error_mutex(logger,"Error al cargar el escriptorio en la memoria");
 			}
 			break;
+        case DAM_FM9_FLUSH:
+        	if(realizarFlushSegunEsquemaMemoria(pkg,socketFD)){
+				log_error_mutex(logger,"Error al cargar el escriptorio en la memoria");
+			}
+			break;
         case CPU_FM9_ASIGNAR:
         	if(guardarLineaSegunEsquemaMemoria(pkg,socketFD)){
 				log_error_mutex(logger,"Error al guardar la data recibida en memoria");
@@ -152,11 +157,6 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         case CPU_FM9_CERRAR_ARCHIVO:
 			if(cerrarArchivoSegunEsquemaMemoria(pkg,socketFD)){
 				log_error_mutex(logger,"Error al guardar la data recibida en memoria");
-			}
-			break;
-        case DAM_FM9_RETORNARlINEA:
-        	if(retornarLineaSolicitada(pkg,socketFD)){
-				log_error_mutex(logger,"Error al retornar la memoria solicitada");
 			}
 			break;
         case SOCKET_DISCONECT:
@@ -484,6 +484,211 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg){
 	return EXIT_SUCCESS;
 }
 
+//------------------------------REALIZAR FLUSH SEGUN ESQUEMA ELEGIDO
+int realizarFlushSegunEsquemaMemoria(t_package pkg, int socketSolicitud)
+{
+	switch (config->modoEjecucion)
+	{
+		case SEG:
+			logicaFlush(pkg, socketSolicitud, SEG);
+		    break;
+		case TPI:
+			logicaFlush(pkg,socketSolicitud, TPI);
+			break;
+		case SPA:
+			logicaFlush(pkg,socketSolicitud, SPA);
+			break;
+		default:
+			log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas");
+			return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
+}
+
+void logicaFlush(t_package pkg, int socketSolicitud, int code)
+{
+	int error = 0;
+	switch(code)
+	{
+		case SEG:
+			error = flushSegmentacion(pkg,socketSolicitud);
+			break;
+		case TPI:
+			error = flushTPI(pkg,socketSolicitud);
+			break;
+		case SPA:
+			error = flushSegmentacionPaginada(pkg,socketSolicitud);
+			break;
+		default:
+			log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas");
+	}
+	if (error != 0)
+	{
+		log_error_mutex(logger,"Error al cargar el Escriptorio recibido. Esquema: TPI");
+		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al DAM del error en la carga del escriptorio");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "Se cargó correctamente el Escriptorio recibido.");
+	}
+}
+
+int flushSegmentacion(t_package pkg, int socketSolicitud)
+{
+	char * buffer = pkg.data;
+	int pid = copyIntFromBuffer(&buffer);
+	char * path = copyStringFromBuffer(&buffer);
+	int transferSize = copyIntFromBuffer(&buffer);
+
+	t_gdt * gdt = dictionary_get(tablaProcesos,intToString(pid));
+	if (gdt == NULL)
+	{
+		return FM9_DAM_ARCHIVO_INEXISTENTE;
+	}
+	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
+	if(cantidadSegmentos > 0)
+	{
+		// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO
+		int cantidadLineas = 0;
+		for (int i = 0; i < cantidadSegmentos; i++)
+		{
+			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
+			if (strcmp(segmento->archivo, path) == 0)
+			{
+				cantidadLineas += segmento->limite;
+			}
+		}
+		char * buffer;
+		copyIntToBuffer(&buffer, cantidadLineas);
+		if (enviar(socketSolicitud,FM9_DAM_FLUSH,buffer,sizeof(int),logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
+			exit_gracefully(-1);
+		}
+
+		// LUEGO RECORRO CADA SEGMENTO Y VOY ENVIANDO DE A UNA LINEA
+		int nroLinea = 1;
+		for(int i = 0; i < cantidadSegmentos; i++)
+		{
+			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
+			int j = 0;
+			if (strcmp(segmento->archivo, path) == 0)
+			{
+				while(j < segmento->limite)
+				{
+					char * linea = obtenerLinea(direccion(segmento->base, j));
+					realizarFlush(linea, nroLinea, transferSize, socketSolicitud);
+					j++;
+					nroLinea++;
+				}
+			}
+//			else
+//			{
+//				return FM9_DAM_ARCHIVO_INEXISTENTE;
+//			}
+		}
+	}
+	else
+	{
+		return FM9_CPU_FALLO_SEGMENTO_MEMORIA;
+	}
+	return EXIT_SUCCESS;
+}
+
+//TODO: TERMINAR ESTO QUE ES FUNDAMENTAL
+void realizarFlush(char * linea, int nroLinea, int tamanioPaquete, int socket)
+{
+	// AGREGAR CANTIDAD DE LINEAS Y ENVIARLO AL DAM
+	int noLoUso = 0;
+	char** arrayLineas = str_split(linea,'\n',noLoUso);
+	char * lineaAEnviar = arrayLineas[0];
+	int tamanioLinea = strlen(lineaAEnviar);
+	int cantidadPaquetes = tamanioLinea / tamanioPaquete;
+	if(tamanioLinea % tamanioPaquete != 0){
+		cantidadPaquetes++;
+	}
+	char * bufferInicial;
+	// copyIntToBuffer(&buffer,tamanioLinea);
+	copyIntToBuffer(&bufferInicial,cantidadPaquetes);
+	int size = sizeof(int);
+	if (enviar(socket,FM9_DAM_FLUSH,bufferInicial,size,logger->logger))
+	{
+		log_error_mutex(logger, "Error al avisar al DAM del error en la carga del escriptorio");
+		exit_gracefully(-1);
+	}
+	free(bufferInicial);
+
+	char * buffer = lineaAEnviar;
+	//Si la linea es mayor a mi transfer size debo enviarlo en varios paquetes
+	if(tamanioLinea > tamanioPaquete)
+	{
+		//por cada paquete...
+		for(int i=0 ; i < cantidadPaquetes;i++){
+			char sub[tamanioPaquete]; // substring a enviar
+			int inicio = tamanioPaquete*i, // posicion inicial del substring
+			fin = tamanioPaquete * (i+1); // posicion final del substring
+
+			// Si es el ultimo paquete a enviar el fin es el tamanio de linea
+			if(i+1 == cantidadPaquetes){
+				fin = tamanioLinea;
+			}
+
+			int count = 0;
+			while(inicio <fin){
+				sub[count] = buffer[inicio];
+				inicio++;
+				count++;
+			}
+			//sub[c] = '\0'; <-----------------------TODO VER SI HACE FALTA ESTO
+
+			char * bufferAEnviar;
+			int tamanioLineaPkg = count*sizeof(char);
+			copyIntToBuffer(&bufferAEnviar, nroLinea);
+			copyIntToBuffer(&bufferAEnviar, tamanioLineaPkg);
+			copyStringToBuffer(&bufferAEnviar,sub);
+			int size = sizeof(int)*2 + tamanioLineaPkg;
+
+			if(enviar(socket,DAM_FM9_ENVIO_PKG,bufferAEnviar,size,logger->logger)){
+				log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
+				free(bufferAEnviar);
+			}
+			free(bufferAEnviar);
+		}
+	}else{
+		//Si está dentro del tamaño permitido se envía la linea
+		char * bufferAEnviar;
+		copyIntToBuffer(&bufferAEnviar, nroLinea);
+		copyIntToBuffer(&bufferAEnviar, tamanioLinea*sizeof(char));
+		copyStringToBuffer(&bufferAEnviar, buffer);
+		int size = sizeof(int)*2 + tamanioLinea*sizeof(char);
+
+		if(enviar(socket,DAM_FM9_ENVIO_PKG,bufferAEnviar,size,logger->logger)){
+			log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
+			free(buffer);
+			free(bufferAEnviar);
+		}
+		free(bufferAEnviar);
+	}
+	//enviar
+	free(buffer);
+}
+
+int flushTPI(t_package pkg, int socketSolicitud)
+{
+
+	return EXIT_SUCCESS;
+}
+int flushSegmentacionPaginada(t_package pkg, int socketSolicitud)
+{
+
+	return EXIT_SUCCESS;
+}
+
 //------------------------------CARGAR ESCRIPTORIO EN MEMORIA SEGUN ESQUEMA ELEGIDO
 int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
 	switch (config->modoEjecucion){
@@ -658,11 +863,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
 	char * pathArchivo = copyStringFromBuffer(&buffer);
 	free(buffer);
 
-	//CON EL TAMAÑO PUEDO CALCULAR CUANTOS PAQUETES PUEDEN ENTRAR EN 1 LINEA DE MEMORIA
-	//Calcular la parte entera
-//	int paquetesXLinea = config->tamMaxLinea / tamanioPaquetes;
 	if(tengoMemoriaDisponible(cantPaquetes) == 1){
-		// Avisarle al socket que no hay memoria disponible
 		log_error_mutex(logger, "No hay memoria disponible para cargar el Escriptorio.");
 		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
 		{
@@ -672,9 +873,6 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
 	}
 	crearProceso(pid);
 
-	// ACA HAY QUE FIJARSE EN EL STORAGE SI TENGO UN SEGMENTO CONTIGUO PARA ALMACENAR LOS DATOS
-	// EN CASO QUE SI, RESERVAR UN SEGMENTO
-	// TODO: ACA HAY QUE MANDARLE LAS LINEAS QUE TIENE EL ARCHIVO EN EL PRIMER PARAMETRO
 	char * pidString = intToString(pid);
 	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
 	free(pidString);
@@ -706,6 +904,8 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
 		char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
 		if (nroLinea != lineaLeida)
 		{
+			int tamanioBuffer = strlen(bufferGuardado);
+			bufferGuardado[tamanioBuffer] = '\n';
 			guardarLinea(direccion(segmento->base,i), bufferGuardado);
 			i++;
 			free(bufferGuardado);
@@ -735,6 +935,13 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
 void guardarLinea(int posicionMemoria, char * linea)
 {
 	memcpy(&storage+posicionMemoria, &linea, strlen(linea));
+}
+
+char * obtenerLinea(int posicionMemoria)
+{
+	char * buffer = malloc(sizeof(config->tamMaxLinea));
+	memcpy(&buffer, &storage+posicionMemoria, config->tamMaxLinea);
+	return buffer;
 }
 
 int direccion(int base, int desplazamiento)
@@ -805,6 +1012,8 @@ int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){
 		if (nroLinea != lineaLeida)
 		{
 			t_pagina * pagina = list_get(paginasProceso,paginaActual);
+			int tamanioBuffer = strlen(bufferGuardado);
+			bufferGuardado[tamanioBuffer] = '\n';
 			guardarLinea(direccion(pagina->nroPagina,lineasGuardadas), bufferGuardado);
 			lineasGuardadas++;
 			if (lineasGuardadas == lineasXPagina)
