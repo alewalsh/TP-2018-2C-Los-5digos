@@ -30,7 +30,7 @@ configFM9 * config;
 t_dictionary * tablaProcesos;
 t_list * tablaPaginasInvertida;
 t_bitarray * estadoLineas;
-t_bitarray * estadoPaginas;
+t_bitarray * estadoMarcos;
 char * storage;
 
 fd_set master;
@@ -77,11 +77,13 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud);
 int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud);
 void ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud);
 int ejecutarGuardarEsquemaSegmentacion(t_package pkg, int socket);
-int ejecutarGuardarEsquemaTPI(t_package pkg);
+int ejecutarGuardarEsquemaTPI(t_package pkg, int socket);
 int ejecutarGuardarEsquemaSegPag(t_package pkg);
 int retornarLineaSolicitada(t_package pkg, int socketSolicitud);
 
 static void liberar_segmento(t_segmento *self);
+static void liberar_pagina(t_pagina * self);
+
 void inicializarBitmap(t_bitarray * bitArray);
 int cerrarArchivoSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 void logicaCerrarArchivoSegmentacion(t_package pkg, int socketSolicitud);
@@ -100,4 +102,7 @@ void reservarPaginasNecesarias(int paginasAReservar, int pid, char * path);
 void actualizarTPI(t_pagina * pagina);
 
 void logicaCargarEscriptorioTPI(t_package pkg, int socketSolicitud);
+void liberarMarco(t_pagina * pagina);
+void logicaCerrarArchivoTPI(t_package pkg, int socketSolicitud);
+int cerrarArchivoTPI(t_package pkg, int socketSolicitud);
 #endif /* FUNESMEMORY9_H_ */

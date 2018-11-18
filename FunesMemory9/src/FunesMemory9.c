@@ -28,9 +28,7 @@ void inicializarContadores(){
 	tablaProcesos = dictionary_create();
 	tablaPaginasInvertida = list_create();
 	inicializarBitmap(estadoLineas);
-	inicializarBitmap(estadoPaginas);
-//	if (config->modoEjecucion == TPI)
-//		inicializarTPI();
+	inicializarBitmap(estadoMarcos);
 }
 
 void exit_gracefully(int error)
@@ -183,10 +181,31 @@ int cerrarArchivoSegunEsquemaMemoria(t_package pkg, int socketSolicitud)
 		case SEG:
 			logicaCerrarArchivoSegmentacion(pkg, socketSolicitud);
 			break;
+		case TPI:
+			logicaCerrarArchivoTPI(pkg, socketSolicitud);
+			break;
 		default:
 			return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
+}
+
+void logicaCerrarArchivoTPI(t_package pkg, int socketSolicitud)
+{
+	int code = cerrarArchivoTPI(pkg, socketSolicitud);
+	if (code != 0)
+	{
+		log_error_mutex(logger,"Error al cerrar el archivo indicado. Esquema: TPI");
+		if (enviar(socketSolicitud,code,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU del error al cerrar un archivo.");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "Se cerró correctamente el archivo indicado.");
+	}
 }
 
 void logicaCerrarArchivoSegmentacion(t_package pkg, int socketSolicitud)
@@ -197,7 +216,7 @@ void logicaCerrarArchivoSegmentacion(t_package pkg, int socketSolicitud)
 		log_error_mutex(logger,"Error al cerrar el archivo indicado. Esquema: SEG");
 		if (enviar(socketSolicitud,code,pkg.data,pkg.size,logger->logger))
 		{
-			log_error_mutex(logger, "Error al avisar al DAM del error en el guardado de una linea.");
+			log_error_mutex(logger, "Error al avisar al CPU del error al cerrar un archivo.");
 			exit_gracefully(-1);
 		}
 	}
@@ -205,6 +224,43 @@ void logicaCerrarArchivoSegmentacion(t_package pkg, int socketSolicitud)
 	{
 		log_info_mutex(logger, "Se cerró correctamente el archivo indicado.");
 	}
+}
+
+int cerrarArchivoTPI(t_package pkg, int socketSolicitud)
+{
+	char * buffer = pkg.data;
+	int pid = copyIntFromBuffer(&buffer);
+	char * path = copyStringFromBuffer(&buffer);
+	pidBuscado = pid;
+	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+	int cantidadPaginas = list_size(paginasProceso);
+	if (list_is_empty(paginasProceso))
+	{
+		return FM9_CPU_PROCESO_INEXISTENTE;
+	}
+	int i = 0;
+	while(i < cantidadPaginas)
+	{
+		t_pagina * pagina = list_get(paginasProceso, i);
+		if (strcmp(pagina->path, path) == 0)
+		{
+			liberarMarco(pagina);
+		}
+	}
+	//ENVIAR MSJ DE EXITO A CPU
+	if (enviar(socketSolicitud,FM9_CPU_ARCHIVO_CERRADO,pkg.data,pkg.size,logger->logger))
+	{
+		log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
+		exit_gracefully(-1);
+	}
+	list_clean_and_destroy_elements(paginasProceso,(void *)liberar_pagina);
+
+	return EXIT_SUCCESS;
+}
+
+void liberarMarco(t_pagina * pagina)
+{
+	bitarray_clean_bit(estadoMarcos, pagina->nroPagina);
 }
 
 int cerrarArchivoSegmentacion(t_package pkg, int socketSolicitud)
@@ -229,13 +285,9 @@ int cerrarArchivoSegmentacion(t_package pkg, int socketSolicitud)
 				liberarLineas(segmento->base,segmento->limite);
 				break;
 			}
-//			else
-//			{
-//				return FM9_CPU_ACCESO_INVALIDO;
-//			}
 		}
 		//ENVIAR MSJ DE EXITO A CPU
-		if (enviar(socketSolicitud,FM9_CPU_LINEA_GUARDADA,pkg.data,pkg.size,logger->logger))
+		if (enviar(socketSolicitud,FM9_CPU_ARCHIVO_CERRADO,pkg.data,pkg.size,logger->logger))
 		{
 			log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
 			exit_gracefully(-1);
@@ -267,6 +319,12 @@ static void liberar_segmento(t_segmento *self)
 	free(self->archivo);
 	free(self);
 }
+
+static void liberar_pagina(t_pagina * self)
+{
+	free(self->path);
+	free(self);
+}
 //--------------------------------------GUARDAR DATOS EN MEMORIA SEGUN ESQUEMA ELEGIDO
 
 int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
@@ -276,7 +334,7 @@ int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
 			logicaGuardarSegmentacion(pkg, socketSolicitud);
 			break;
 		case TPI:
-			if(ejecutarGuardarEsquemaTPI(pkg)){
+			if(ejecutarGuardarEsquemaTPI(pkg, socketSolicitud)){
 				log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: TPI");
 				//ENVIAR ERROR AL DMA (socketSolicitud)
 			}else{
@@ -366,8 +424,58 @@ int ejecutarGuardarEsquemaSegmentacion(t_package pkg, int socket)
 
 }
 
-int ejecutarGuardarEsquemaTPI(t_package pkg){
-	//logica de tabla de paginas invertida
+int ejecutarGuardarEsquemaTPI(t_package pkg, int socket){
+	char * buffer = pkg.data;
+	int pid = copyIntFromBuffer(&buffer);
+	char * path = copyStringFromBuffer(&buffer);
+	int linea = copyIntFromBuffer(&buffer);
+	char * datos = copyStringFromBuffer(&buffer);
+
+	bool pudeGuardar = false;
+	pidBuscado = pid;
+	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+	int cantidadPaginas = list_size(paginasProceso);
+	if (cantidadPaginas <= 0)
+	{
+		return FM9_CPU_PROCESO_INEXISTENTE;
+	}
+	else if (cantidadPaginas > 0)
+	{
+		if (cantidadPaginas * lineasXPagina >= linea)
+		{
+			int nroPaginaCorrespondiente = linea / lineasXPagina;
+			t_pagina * paginaCorrespondiente = list_get(paginasProceso, nroPaginaCorrespondiente);
+			if (strcmp(paginaCorrespondiente->path,path) == 0)
+			{
+				while (linea >= lineasXPagina){
+					linea -= lineasXPagina;
+				}
+				guardarLinea(direccion(paginaCorrespondiente->nroPagina,linea), datos);
+				pudeGuardar = true;
+			}
+		}
+		else
+		{
+			return FM9_CPU_ACCESO_INVALIDO;
+		}
+		if (pudeGuardar)
+		{
+			//ENVIAR MSJ DE EXITO A CPU
+			if (enviar(socket,FM9_CPU_LINEA_GUARDADA,pkg.data,pkg.size,logger->logger))
+			{
+				log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
+				exit_gracefully(-1);
+			}
+		}
+		else
+		{
+			return FM9_CPU_ACCESO_INVALIDO;
+		}
+	}
+	else
+	{
+		return FM9_CPU_FALLO_SEGMENTO_MEMORIA;
+	}
 	return EXIT_SUCCESS;
 }
 
@@ -439,7 +547,7 @@ int tengoMemoriaDisponible(int cantACargar)
 	if (config->modoEjecucion == SEG)
 		memoriaDisponible = posicionesLibres(estadoLineas);
 	else
-		memoriaDisponible = posicionesLibres(estadoPaginas);
+		memoriaDisponible = posicionesLibres(estadoMarcos);
 
 	if(memoriaDisponible > cantACargar){
 		//Tengo espacio disponible.
@@ -488,7 +596,6 @@ t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos
 		i++;
 	}
 	actualizarPosicionesLibres(base, lineasEsperadas, estadoLineas);
-	// TERMINAR ESTO, ES IMPORTANTE PARA YA GUARDAR UN SEGMENTO
 	if (lineasLibresContiguas == lineasEsperadas)
 	{
 		segmento->base = base - lineasEsperadas;
@@ -507,7 +614,7 @@ t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos
 
 void ocuparMarco(int pagina)
 {
-	bitarray_set_bit(estadoPaginas, pagina);
+	bitarray_set_bit(estadoMarcos, pagina);
 }
 
 void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarray * bitArray)
@@ -627,35 +734,10 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud)
 
 }
 
-int contarCantidadLineas(char * string){
-	int i = 0, cantidadLineas = 0;
-	while(string[i] != '\0')
-	{
-		if(string[i] == '\n')
-		{
-			cantidadLineas++;
-		}
-	}
-	return cantidadLineas;
-}
 void guardarLinea(int posicionMemoria, char * linea)
 {
 	memcpy(&storage+posicionMemoria, &linea, strlen(linea));
-	// TODO: Debería guardar distinto según el esquema??? No parece necesario
-	//	switch(config->modoEjecucion)
-	//	{
-	//		case SEG:
-	//			guardarLineaSegmentacionSimple(posicionMemoria, linea);
-	//			break;
-	//		default:
-	//			break;
-	//	}
 }
-
-//void guardarLineaSegmentacionSimple(int posicion, char * linea)
-//{
-//	memcpy(&storage+posicion, &linea, strlen(linea));
-//}
 
 int direccion(int base, int desplazamiento)
 {
@@ -774,7 +856,7 @@ void reservarPaginasNecesarias(int paginasAReservar, int pid, char * path)
 	pagina->path = path;
 	while(paginasReservadas != paginasAReservar)
 	{
-		if(bitarray_test_bit(estadoPaginas,i) == 0)
+		if(bitarray_test_bit(estadoMarcos,i) == 0)
 		{
 			pagina->nroPagina = i;
 			actualizarTPI(pagina);
