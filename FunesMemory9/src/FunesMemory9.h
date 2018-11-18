@@ -21,11 +21,14 @@
 
 int contLineasUsadas;
 int cantLineas;
-int nroSegmentoActual;
+int cantPaginas;
+int lineasXPagina;
+int pidBuscado;
 
 t_log_mutex * logger;
 configFM9 * config;
 t_dictionary * tablaProcesos;
+t_list * tablaPaginasInvertida;
 t_bitarray * estadoLineas;
 t_bitarray * estadoPaginas;
 char * storage;
@@ -42,7 +45,14 @@ typedef struct{
 } t_segmento;
 
 typedef struct{
+	int nroPagina;
+	int pid;
+	char * path;
+} t_pagina;
+
+typedef struct{
 	t_dictionary * tablaSegmentos;
+	t_dictionary * tablaPaginas;
 } t_gdt;
 
 typedef struct{
@@ -64,7 +74,7 @@ int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 void ejecutarEsquemaTPI(t_package pkg, int socketSolicitud, int accion);
 void ejecutarEsquemaSegPag(t_package pkg, int socketSolicitud, int accion);
 int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud);
-void ejecutarCargarEsquemaTPI(t_package pkg, int socketSolicitud);
+int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud);
 void ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud);
 int ejecutarGuardarEsquemaSegmentacion(t_package pkg, int socket);
 int ejecutarGuardarEsquemaTPI(t_package pkg);
@@ -72,12 +82,22 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg);
 int retornarLineaSolicitada(t_package pkg, int socketSolicitud);
 
 static void liberar_segmento(t_segmento *self);
-void inicializarBitmapLineas();
+void inicializarBitmap(t_bitarray * bitArray);
 int cerrarArchivoSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 void logicaCerrarArchivoSegmentacion(t_package pkg, int socketSolicitud);
-int cerrarArchivoSegmentacion(t_package pkg);
+int cerrarArchivoSegmentacion(t_package pkg, int socketSolicitud);
 void guardarLinea(int posicionMemoria, char * linea);
 char * intToString(int numero);
 void logicaGuardarSegmentacion(t_package pkg, int socketSolicitud);
 void liberarLineas(int base, int limite);
+void logicaCargarEscriptorioSegmentacion(t_package pkg, int socketSolicitud);
+int direccion(int base, int desplazamiento);
+int posicionesLibres(t_bitarray * bitArray);
+
+void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarray * bitArray);
+bool filtrarPorPid(t_pagina * pagina);
+void reservarPaginasNecesarias(int paginasAReservar, int pid, char * path);
+void actualizarTPI(t_pagina * pagina);
+
+void logicaCargarEscriptorioTPI(t_package pkg, int socketSolicitud);
 #endif /* FUNESMEMORY9_H_ */
