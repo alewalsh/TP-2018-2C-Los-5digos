@@ -60,7 +60,7 @@ int isSetted(int socket);
 
 int recibirConfirmacionMemoria();
 void enviarMsjASafaPidCargado(int pid,int itsLoaded);
-void enviarMsjASafaArchivoGuardado(int pid,int itsFlushed, char* path);
+void enviarMsjASafaArchivoGuardado(int pid,int result);
 int leerEscriptorio(t_package paquete, int socketEnUso);
 int abrirArchivo(t_package paquete, int socketEnUso);
 int hacerFlush(t_package paquete, int socketEnUso);
