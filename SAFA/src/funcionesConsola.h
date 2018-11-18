@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-//#include "schedulerFunctions.h"
+#include "funcionesSAFA.h"
 #include <semaphore.h>
 //#include "handlerConnections.h"
 
@@ -27,9 +27,9 @@ extern pthread_mutex_t mutexExit;
 
 
 //void consoleStop();
-//
-//void consolePlay();
-//
+
+void consolaEjecutar(char *args);
+
 //void consoleBlock(char *args);
 //
 //void consoleUnblock(char *esi);
@@ -50,9 +50,9 @@ void consoleExit();
 void consoleHelp();
 
 //void consoleStatusAllESI();
-//
-//void consoleClear();
-//
+
+void consoleClear();
+
 //char *statusToString(uint16_t status);
 //
 //char *statusKeyToSting(uint16_t status);

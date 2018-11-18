@@ -10,9 +10,8 @@
 #include <grantp/socket.h>
 #include <grantp/mutex_log.h>
 #include <grantp/structCommons.h>
-#include "SAFA.h"
-
-
+//#include "SAFA.h"
+#include "funcionesSAFA.h"
 
 //void manejarSolicitud(t_package pkg, int socketFD) {
 //
@@ -59,7 +58,7 @@ void manejarConexiones(){
     uint16_t handshake;
     t_package pkg;
 
-    int estadoSAFA = Corrupto;
+    estadoSAFA = Corrupto;
 	int CPUConectado, DAMConectado = 0;
 	log_trace_mutex(logger, "Se inicializa SAFA en estado Corrupto");
 
@@ -92,6 +91,17 @@ void manejarConexiones(){
             	log_trace_mutex(logger, "Se me conecto un CPU, socket: %d", nuevoFd);
                 addNewSocketToMaster(nuevoFd);
                 CPUConectado++;
+
+                char *buffer = copyIntToBuffer(&buffer,conf->quantum);
+            	int size;
+            	char *keyCompress = compressKey(buffer, &size);
+            	if(enviar(nuevoFd, SAFA_CPU_QUANTUM, keyCompress, size, logger->logger))
+            	{
+            		log_error_mutex(logger, "No se pudo enviar el quantum al CPU.");
+            		free(keyCompress);
+            	}
+        		free(keyCompress);
+
                 break;
             default:
                 log_warning_mutex(logger, "Se me quizo conectar alguien que no espero");
@@ -101,7 +111,7 @@ void manejarConexiones(){
 
         if ((CPUConectado != 0) && (DAMConectado != 0)){
         	estadoSAFA = Operativo;
-        	//TODO: Aca podria mandar el dummy
+        	//TODO: Aca deberia mandar el dummy
         }
     }
 

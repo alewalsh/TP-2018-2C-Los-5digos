@@ -19,19 +19,30 @@
 #include "stdbool.h"
 
 
-extern t_list *statusList;
-extern pthread_mutex_t mutexStatusList;
+//extern t_list *statusList;
+//extern pthread_mutex_t mutexStatusList;
+extern t_list* colaNew;			// Lista New.
+extern t_list* colaReady;			// Lista Ready.
+extern t_list* colaBloqueados;		// Lista Bloqueados.
+extern t_list* colaExit;		// Lista Terminados.
 
 extern pthread_mutex_t mutexMaster;
 extern pthread_mutex_t mutexReadset;
 extern pthread_mutex_t mutexMaxfd;
 //extern pthread_mutex_t mutexTime;
-//extern pthread_mutex_t mutexStop;
-//extern pthread_mutex_t mutexConsole;
+extern pthread_mutex_t mutexStop;
+extern pthread_mutex_t mutexConsole;
+extern pthread_mutex_t mutexgdtCounter;
+extern pthread_mutex_t mutexNewList;
+extern pthread_mutex_t mutexReadyList;
+extern pthread_mutex_t mutexBloqueadosList;
+extern pthread_mutex_t mutexExitList;
+
 //extern int tiempo;
 extern int maxfd;
-//extern int console;
-//extern int scheduler;
+extern int console;
+extern int scheduler;
+extern int gdtCounter;
 extern fd_set master;
 extern fd_set readset;
 extern configSAFA *conf;
@@ -50,6 +61,27 @@ void updateMaxfd(int socket);
 void deleteSocketFromMaster(int socket);
 void updateReadset();
 int isSetted(int socket);
+
+//======================================================================================================================================
+//============================================FUNCIONES Consola=========================================================================
+//======================================================================================================================================
+
+void setPlay();
+void setPause();
+int getConsoleStatus();
+void playExecute();
+void stopExecute();
+int getExecute();
+
+
+//------------------------------------------------------------------------------------------------------------------
+//		FUNCIONES GDT y DTB
+//------------------------------------------------------------------------------------------------------------------
+
+t_dtb *crearNuevoDTB(char *dirScript);
+int agregarDTBaNEW(t_dtb *dtb);
+void sumarGDTCounter();
+int obtenerGDTCounter();
 
 
 

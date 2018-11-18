@@ -12,6 +12,7 @@
 #include <grantp/mutex_log.h>
 #include <grantp/socket.h>
 //#include "executer.h"
+#include "planificadorLargo.h"
 #include <grantp/compression.h>
 //#include "blockedKeyFunctions.h"
 
@@ -27,21 +28,22 @@ const char *descriptions[] = {"Ejecutara el Script indicado.",
                               "Detallara los estados de las colas de planificacion.",
                               "Se enviara el proceso indicado a la cola de EXIT, liberando lugar en READY.",
                               "Se brindara informacion de las metricas solicitadas",
-                              "SE TE VA A CERRAR LA CONSOLA!",
+                              "SE VA A CERRAR LA CONSOLA!",
                               "I NEED SOMEBODY HELP, NOT JUST ANYBODY HELP, I NEED SOMEONE HEEEEELP!"};
 
-////TODO: tiene que tener un man?
-//void consolePrintMan() {
-//    printf("Sintaxis de comandos que requieren parametros:\n");
-//    printf("\n");
-//    printf("BLOCK:    block <clave> <ID>\n");
-//    printf("UNBLOCK:   unlock <clave>\n");
-//    printf("LIST:     list <recurso>\n");
-//    printf("KILL:     kill <ID>\n");
-//    printf("STATUS:   status <clave>\n");
-//    printf("\n\n");
-//}
-//
+
+void consolaEjecutar(char *args) {
+
+    //sem_post(&sem_console);
+//    setPlay();
+//    pthread_mutex_unlock(&mutexStop);
+    log_info_mutex(logger, "Se solicitara al PLP crear el DTB asociado al nuevo programa.");
+    if(consolaNuevoGDT(args)){
+        log_info_mutex(logger, "DTB creado satisfactoriamente.");
+    } else {
+        log_error(logger, "NO SE HA PODIDO CREAR EL DTB CORRESPONDIENTE.");
+	}
+}
 
 
 
@@ -62,16 +64,7 @@ const char *descriptions[] = {"Ejecutara el Script indicado.",
 //
 
 
-//void consolePlay(char *args) {
-//
-// ACA LE AGREGUE YO EL ARGS PORQUE LO VOY A NECESITAR
-//
-//    //sem_post(&sem_console);
-//    setPlay();
-//    pthread_mutex_unlock(&mutexStop);
-//    log_info_mutex(logger, "La planificacion esta en ejecucion");
-//}
-//
+
 
 //void consoleBlock(char *args) {
 //
@@ -209,11 +202,11 @@ const char *descriptions[] = {"Ejecutara el Script indicado.",
 //    log_debug_mutex(logger, "Se movio el esi a finalizado");
 //
 //}
-//
-//void consoleClear() {
-//    system("clear");
-//}
-//
+
+void consoleClear() {
+    system("clear");
+}
+
 //void consoleStatus(char *key) {
 //
 //    t_package pkg;

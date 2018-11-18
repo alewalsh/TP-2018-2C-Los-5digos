@@ -16,8 +16,9 @@ int seguirEjecutando = 1;
 void executeCommand(int comando, char *args) {
     switch (comando) {
         case EJECUTAR:
-//            consolePlay(args);
-            printf("Comando EJECUTAR (%d) seleccionado.\n", comando);
+            printf("Nuevo programa GDT ingresado con el scrpit: (%s)", args);
+            consolaEjecutar(args);
+//        	printf("(%d)", estadoSAFA);
             break;
         case STATUS:
 //            consoleStop();
@@ -33,12 +34,16 @@ void executeCommand(int comando, char *args) {
             break;
         case EXIT:
             printf("Comando EXIT seleccionado.\n");
+            printf("Se procedera a cerrar el programa.\n");
         	seguirEjecutando = 0;
             consoleExit();
             break;
         case HELP:
             printf("Comando HELP seleccionado.\n");
             consoleHelp();
+            break;
+        case CLEAR:
+            consoleClear();
             break;
         default:
             printf("El comando igresado no es valido.\n");

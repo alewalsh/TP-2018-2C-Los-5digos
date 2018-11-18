@@ -29,17 +29,20 @@ fd_set readset;
 //	MUTEX GLOBALES a ser utilizados
 // ------------------------------------------------------------------------------
 pthread_mutex_t mutexMaster;
-//pthread_mutex_t mutexStatusList;
-//pthread_mutex_t mutexBlockedKeys;
+pthread_mutex_t mutexNewList;
+pthread_mutex_t mutexReadyList;
+pthread_mutex_t mutexBloqueadosList;
+pthread_mutex_t mutexExitList;
 pthread_mutex_t mutexReadset;
 pthread_mutex_t mutexMaxfd;
 //pthread_mutex_t mutexTime;
+pthread_mutex_t mutexgdtCounter;
 
 pthread_mutex_t mutexExit;
 
-//pthread_mutex_t mutexStop;
+pthread_mutex_t mutexStop;
 //pthread_mutex_t mutexReadyExecute;
-//pthread_mutex_t mutexConsole;
+pthread_mutex_t mutexConsole;
 
 
 // ------------------------------------------------------------------------------
@@ -52,8 +55,14 @@ int shouldExit;
 int maxfd;
 //int coordinator = 0;
 //int tiempo = 0;
-//int console = 1;
-//int scheduler = 0;
+int console = 1;         //VER SI LAS TENGO QUE USAR
+int scheduler = 0;       //VER SI LAS TENGO QUE USAR
+int gdtCounter = 0;
+
+t_list* colaNew;			// Lista New.
+t_list* colaReady;			// Lista Ready.
+t_list* colaBloqueados;		// Lista Bloqueados.
+t_list* colaExit;		// Lista Terminados.
 
 
 // ------------------------------------------------------------------------------
@@ -70,7 +79,9 @@ char inotifyBuf[200];
 void inicializarRecursos(char * pathConfig);
 void liberarRecursos();
 void initMutexs();
+void initList();
 void cambiosConfig();
+void manejoAlgoritmos();
 
 void sig_handler(int signo);
 void exit_gracefully(int error);
