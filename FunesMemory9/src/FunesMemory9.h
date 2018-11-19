@@ -39,6 +39,12 @@ fd_set readset;
 int maxfd;
 
 typedef struct{
+	int pid;
+	char * path;
+	int transferSize;
+} t_datosFlush;
+
+typedef struct{
 	int nroSegmento;
 	int base;
 	int limite;
@@ -49,6 +55,7 @@ typedef struct{
 	int nroPagina;
 	int pid;
 	char * path;
+	int lineasUtilizadas;
 } t_pagina;
 
 typedef struct{
@@ -99,7 +106,7 @@ int posicionesLibres(t_bitarray * bitArray);
 
 void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarray * bitArray);
 bool filtrarPorPid(t_pagina * pagina);
-void reservarPaginasNecesarias(int paginasAReservar, int pid, char * path);
+void reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar);
 void actualizarTPI(t_pagina * pagina);
 
 void logicaCargarEscriptorioTPI(t_package pkg, int socketSolicitud);
@@ -109,9 +116,10 @@ int cerrarArchivoTPI(t_package pkg, int socketSolicitud);
 
 int realizarFlushSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 void logicaFlush(t_package pkg, int socketSolicitud, int code);
-int flushSegmentacionPaginada(t_package pkg, int socketSolicitud);
-int flushTPI(t_package pkg, int socketSolicitud);
-int flushSegmentacion(t_package pkg, int socketSolicitud);
+int flushSegmentacionPaginada(t_package pkg, int socketSolicitud, t_datosFlush * data);
+int flushTPI(t_package pkg, int socketSolicitud, t_datosFlush * data);
+int flushSegmentacion(t_package pkg, int socketSolicitud, t_datosFlush * data);
 void realizarFlush(char * linea, int nroLinea, int tamanioPaquete, int socket);
 char * obtenerLinea(int posicionMemoria);
+void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int tamanioPaquete, int cantidadPaquetes, int nroLinea, int socket);
 #endif /* FUNESMEMORY9_H_ */
