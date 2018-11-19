@@ -16,9 +16,9 @@ void responderDAM() {
 	sleep(configuracion->retardo/1000);
 
 //	int opcion = pkg.code; //sera asignado por escuchar al DAM
-
+//
 	int opcion;
-	opcion = 2;
+	opcion = 6;
 
 	switch (opcion) {
 	case 1: //validar archivo ++ [Path]
@@ -152,6 +152,8 @@ void responderDAM() {
 		}
 		//todo validar archivo para ver si esta todo bien?
 		free(pathArchivoAEliminar);
+		break;
+	case 6:
 		break;
 	}
 }
@@ -336,6 +338,7 @@ char* obtenerDatos(char*pathArhivo,int offset,int size){
 	leerMetadata(pathArhivo, metadataArchivoALeer);
 
 	char **bloquesMetadata = string_get_string_as_array(metadataArchivoALeer->bloques);
+	free(metadataArchivoALeer->bloques);
 	free(metadataArchivoALeer);
 
 	int bloqueI;
@@ -353,25 +356,38 @@ char* obtenerDatos(char*pathArhivo,int offset,int size){
 		FILE *archivoBloqueI;
 		archivoBloqueI = fopen(pathBloqueI, "rb");
 
+
 		if(archivoBloqueI == NULL){
 			log_error(loggerAtencionDAM, "Error. No se puedo arbir el bloque: %d del archivo: %s",bloqueI, pathArhivo);
 		}
 
-		char *contenidoBloque = malloc(configuracion->tam_bloq);
+		fseek(archivoBloqueI, 0, SEEK_END);
+		long tamanioReal = ftell(archivoBloqueI);
 
-		fread(contenidoBloque, configuracion->tam_bloq, 1, archivoBloqueI);
+		char* contenidoBloque = malloc(tamanioReal+1);
+
+		fseek(archivoBloqueI, 0, SEEK_SET);
+		fread(contenidoBloque, 1, tamanioReal, archivoBloqueI);
+
+		contenidoBloque[tamanioReal] = '\0';
 
 		string_append(&contenido,contenidoBloque);
 
-		bloqueI ++;
+		free(contenidoBloque);
 		fclose(archivoBloqueI);
 		free(pathBloqueI);
-		free(contenidoBloque);
+		bloqueI ++;
 	}
 
-	char*retorno = string_from_format(contenido);
+	free(*bloquesMetadata);
+
+	//quito los primeros caracteres no necesarios que no formen parte del length
+	char*retornoOffset = string_substring_from(contenido, offset);
+	//quito los ultimos caraccteres que no entran en en size.
+	char*retornoFinal = string_substring_until(retornoOffset, size);
 	free(contenido);
-	return retorno;
+	free(retornoOffset);
+	return retornoFinal;
 }
 
 void borrarArchivo(char *path){

@@ -60,9 +60,9 @@ void crearFifa(){
 
 	char *pathArchivoMetadata = string_new();
 	string_append(&pathArchivoMetadata,configuracion->puntoMontaje);
-	string_append(&pathArchivoMetadata,"Metadata/metadata.bin");
+	string_append(&pathArchivoMetadata,"Metadata/Metadata.bin");
 	FILE *metadata;
-	metadata = fopen(pathArchivoMetadata, "ab");
+	metadata = fopen(pathArchivoMetadata, "wb");
 
 	if( metadata == NULL){
 		log_error(loggerMDJ, "Error al crear archivo metadata.bin.");
@@ -90,7 +90,7 @@ void crearFifa(){
 	}
 
 	char* data=malloc(tamBitarray);
-	bitarray = bitarray_create_with_mode(data,tamBitarray,LSB_FIRST); // if create falla error.
+	bitarray = bitarray_create_with_mode(data,tamBitarray,MSB_FIRST); // if create falla error.
 
 	int bit;
 	bit = 0;
@@ -104,7 +104,7 @@ void crearFifa(){
 
 	char *pathArchivoBitmap = string_new();
 	string_append(&pathArchivoBitmap,configuracion->puntoMontaje);
-	string_append(&pathArchivoBitmap,"Metadata/bitmap.bin");
+	string_append(&pathArchivoBitmap,"Metadata/Bitmap.bin");
 
 	int status;
 	status = validarArchivo(pathArchivoBitmap);
@@ -115,7 +115,7 @@ void crearFifa(){
 
 		char *pathArchivoBitmap = string_new();
 		string_append(&pathArchivoBitmap,configuracion->puntoMontaje);
-		string_append(&pathArchivoBitmap,"Metadata/bitmap.bin");
+		string_append(&pathArchivoBitmap,"Metadata/Bitmap.bin");
 
 		FILE *bitmap;
 		bitmap = fopen(pathArchivoBitmap, "rb");
@@ -126,15 +126,16 @@ void crearFifa(){
 			int posicion;
 			posicion = 0;
 
-			char bit[2];
+			char * bitarrayCompleto = malloc(configuracion->cant_bloq);
+
+			fseek(bitmap, 0, SEEK_SET);
+			fread(bitarrayCompleto, 1, configuracion->cant_bloq, bitmap);
 
 			while(posicion <= configuracion->cant_bloq){
-				fseek(bitmap, posicion, SEEK_SET);
-				fread(bit, 1, 1, bitmap);
-
-				if(strcmp(bit, "1") == 0){
+				if((bitarrayCompleto[BIT_CHAR(posicion)] & _bit_in_char(posicion, bitarray->mode)) != 0){
 					bitarray_set_bit(bitarray, posicion);
 				}
+
 				posicion ++;
 			}
 		}
@@ -231,27 +232,13 @@ void crearRutaDirectorio(char *ruta){
 void actualizarBitmapHDD(){
 	char *pathArchivoBitmap = string_new();
 	string_append(&pathArchivoBitmap,configuracion->puntoMontaje);
-	string_append(&pathArchivoBitmap,"Metadata/bitmap.bin");
+	string_append(&pathArchivoBitmap,"Metadata/Bitmap.bin");
 
 	FILE *bitmap;
 	bitmap = fopen(pathArchivoBitmap, "wb");
 
-	int posicion;
-	posicion = 0;
-
-	char cero[] = "0";
-	char uno[] = "1";
-
-	while(posicion <= configuracion->cant_bloq){
-		 if(bitarray_test_bit(bitarray, posicion) == 0){
-			 fseek(bitmap, posicion, SEEK_SET);
-			 fwrite(cero, 1, sizeof(cero), bitmap);
-		 }else{
-			 fseek(bitmap, posicion, SEEK_SET);
-			 fwrite(uno, 1, sizeof(uno), bitmap);
-		 }
-			posicion ++;
-	}
+	fseek(bitmap, 0, SEEK_SET);
+	fwrite(bitarray->bitarray, 1, bitarray->size, bitmap);
 
 	log_info(loggerAtencionDAM, "Bitmap persistido en memoria.");
 

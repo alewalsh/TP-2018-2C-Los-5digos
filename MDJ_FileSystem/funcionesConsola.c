@@ -25,6 +25,7 @@ void inicializarCosnola() {
 		//obtengo primer paramentro de la entrada.
 		token = strtok(linea, s);
 
+		//LS
 		if((token != NULL) && (strcmp(token, "ls") == 0)){
 			//obtengo segundo parametro de la entrada.
 			token = strtok(NULL, s);
@@ -83,20 +84,28 @@ void inicializarCosnola() {
 				int statusMd5;
 				statusMd5 = validarArchivo(pathMD5);
 				if (statusMd5) {
-//					struct metadataArchivo *metadataArchivoALeer = malloc(sizeof(struct metadataArchivo));
-//					leerMetadata(pathMD5, metadataArchivoALeer);
+					struct metadataArchivo *metadataArchivoALeer = malloc(sizeof(struct metadataArchivo));
+					leerMetadata(pathMD5, metadataArchivoALeer);
+
+					char * datosMD5 = obtenerDatos(pathMD5,0, metadataArchivoALeer->tamanio);
+
+					void * digest = malloc(MD5_DIGEST_LENGTH); //o puede ser unsigned char*
+					MD5_CTX context;
+					MD5_Init(&context);
+					MD5_Update(&context, datosMD5, strlen(datosMD5) + 1);
+					MD5_Final(digest, &context);
+
+//					char * md5EnChar = digest;
 //
-//					char * datosMD5 = obtenerDatos(pathMD5,0, metadataArchivoALeer->tamanio);
-//
-//					void * digest = malloc(MD5_DIGEST_LENGTH);
-//					MD5_CTX context;
-//					MD5_Init(&context);
-//					MD5_Update(&context, datosMD5, strlen(datosMD5) + 1);
-//					MD5_Final(digest, &context);
-//
-//					printf("MD5 de %s es = %s \n", pathMD5, digest);
-//
-//					free(datosMD5);
+					printf("MD5 hash = (%d) \n", digest);
+//					int i;
+//					for (i=0;i<MD5_DIGEST_LENGTH;i++){
+//					    printf ("%02x", digest[i]);
+//					}
+
+					free(metadataArchivoALeer->bloques);
+					free(metadataArchivoALeer);
+					free(datosMD5);
 				}
 				free(pathMD5);
 			}
@@ -121,15 +130,17 @@ void inicializarCosnola() {
 
 					char * datos = obtenerDatos(path,0, metadataArchivoALeer->tamanio);
 
-					printf("%s\n", datos);
+					printf("%s", datos);
 
+					free(metadataArchivoALeer->bloques);
+					free(metadataArchivoALeer);
 					free(datos);
 				}
 				else{
 					printf("Archivo inexistente.\n");
 				}
 			}
-			free(path);
+		free(path);
 		}
 	}
 	free(linea);

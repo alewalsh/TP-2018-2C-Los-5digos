@@ -23,7 +23,7 @@
 
 //libreria para comando ls
 #include <dirent.h>
-//#include <openssl/md5.h> // Para calcular el MD5
+#include <openssl/md5.h> // Para calcular el MD5
 
 pthread_t threadDAM;
 pthread_t threadConsola;
