@@ -11,66 +11,13 @@
 #include <grantp/configuracion.h>
 
 //------------------------------------------------------------------------------------------------------------------
-//		FUNCIONES PARA EL MANEJO DEL SELECT
-//------------------------------------------------------------------------------------------------------------------
-
-void addNewSocketToMaster(int socket) {
-	pthread_mutex_lock(&mutexMaster);
-	FD_SET(socket, &master);
-	log_trace_mutex(logger, "Se agrega el socket %d a la lista de sockets",
-			socket);
-	updateMaxfd(socket);
-	pthread_mutex_unlock(&mutexMaster);
-}
-
-int getMaxfd() {
-	int m;
-	pthread_mutex_lock(&mutexMaxfd);
-	m = maxfd;
-	pthread_mutex_unlock(&mutexMaxfd);
-	return m;
-}
-
-void updateMaxfd(int socket) {
-	if (socket > getMaxfd()) {
-		pthread_mutex_lock(&mutexMaxfd);
-		maxfd = socket;
-		pthread_mutex_unlock(&mutexMaxfd);
-	}
-}
-
-void deleteSocketFromMaster(int socket) {
-	pthread_mutex_lock(&mutexMaster);
-	FD_CLR(socket, &master);
-	log_trace_mutex(logger, "Se saca el socket %d de la lista de sockets",
-			socket);
-	pthread_mutex_unlock(&mutexMaster);
-}
-
-void updateReadset() {
-	pthread_mutex_lock(&mutexMaster);
-	pthread_mutex_lock(&mutexReadset);
-	readset = master;
-	pthread_mutex_unlock(&mutexReadset);
-	pthread_mutex_unlock(&mutexMaster);
-}
-
-int isSetted(int socket) {
-	int s;
-	pthread_mutex_lock(&mutexReadset);
-	s = FD_ISSET(socket, &readset);
-	pthread_mutex_unlock(&mutexReadset);
-	return s;
-}
-
-//------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA Manejo de solicitudes del DMA
 //------------------------------------------------------------------------------------------------------------------
 
 /*
  * -----------------------------LEER ESCRIPTORIO-------------------------------------
  */
-int leerEscriptorio(t_package paquete, int socketEnUso) {
+bool leerEscriptorio(t_package paquete, int socketEnUso) {
 
 	//Datos recibidos del cpu
 	char *buffer = paquete.data;
@@ -89,25 +36,17 @@ int leerEscriptorio(t_package paquete, int socketEnUso) {
 		log_error_mutex(logger,
 				"No se pudo enviar la busqueda del escriptorio al MDJ");
 		free(keyCompress);
-		return EXIT_FAILURE;
+		return false;
 	}
 
 	//Se reciben los paquetes del mdj y se envian al fm9
 	int result = enviarPkgDeMdjAFm9(pid, path);
 
-	if (result == EXIT_SUCCESS) {
-		//Se envia la confirmacion a SAFA del proceso y la posicion en memoria
-		//itsLoaded = true
-		enviarMsjASafaPidCargado(pid, 1);
-	} else {
-		//Comunicarle un error al safa
-		//itsLoaded = false
-		enviarMsjASafaPidCargado(pid, 0);
-	}
+	enviarConfirmacionSafa(pid, result, ARCHIVO_CARGADO);
 
 	free(keyCompress);
 
-	return EXIT_SUCCESS;
+	return true;
 }
 
 //Se recibe uno o varios paquetes del MDJ y se envian al FM9
@@ -256,79 +195,10 @@ int enviarPkgDeMdjAFm9(int pid, char * path) {
 	return result;
 }
 
-int calcularCantidadPaquetes(int sizeOfFile) {
-	//Lo divido por mi transfer Size y me quedo con la parte entera
-	double num = sizeOfFile / configDMA->transferSize;
-
-	double p_entera;
-	double p_decimal;
-	//Separo la parte entera
-	p_decimal = modf(num, &p_entera);
-	//Calculo la cantidad de paquetes
-	int cantPart;
-	if (p_decimal != 0) {
-		cantPart = p_entera + 1;
-	} else {
-		cantPart = p_entera;
-	}
-	log_info_mutex(logger, "Se recibiran %d paquetes", cantPart);
-
-	return cantPart;
-}
-
-int contarCantidadLineas(char * string) {
-	int i = 0, cantidadLineas = 0;
-
-	while (string[i] != '\0') {
-		if (string[i] == '\n') {
-			cantidadLineas++;
-		}
-	}
-	return cantidadLineas;
-}
-
-int recibirConfirmacionMemoria() {
-
-	t_package package;
-	int result;
-
-	if (recibir(t_socketFm9->socket, &package, logger->logger)) {
-		log_error_mutex(logger,
-				"Error al recibir los datos de memoria asociados al proceso");
-		result = -1;
-	} else {
-		result = atoi(package.data);
-	}
-
-	if (result == FM9_DAM_ESCRIPTORIO_CARGADO) {
-		return EXIT_SUCCESS;
-	} else {
-		return EXIT_FAILURE;
-	}
-}
-
-void enviarMsjASafaPidCargado(int pid, int result) {
-
-	//Está cargado(ItsLoaded)--> 1: Exito, 0: Fallo.
-	//Se envía a S-afa un mensaje diciendo que el proceso ya esta cargado en memoria
-	char *buffer;
-	int size = sizeof(int) * 2;
-	copyIntToBuffer(&buffer, pid);
-	copyIntToBuffer(&buffer, result);
-
-	if (enviar(t_socketSafa->socket, DAM_SAFA_CONFIRMACION_PID_CARGADO, buffer,
-			size, logger->logger)) {
-		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
-		free(buffer);
-	}
-	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
-	free(buffer);
-}
-
 /*
  * -------------------------------ABRIR ARCHIVO ------------------------------------
  */
-int abrirArchivo(t_package paquete, int socketEnUso) {
+bool abrirArchivo(t_package paquete, int socketEnUso) {
 
 	//Datos recibidos del cpu
 	char *buffer = paquete.data;
@@ -347,31 +217,23 @@ int abrirArchivo(t_package paquete, int socketEnUso) {
 		log_error_mutex(logger,
 				"No se pudo enviar la busqueda del escriptorio al MDJ");
 		free(keyCompress);
-		return EXIT_FAILURE;
+		return false;
 	}
 
 	//Se reciben los paquetes del mdj y se envian al fm9
 	int result = enviarPkgDeMdjAFm9(pid, path);
 
-	if (result == EXIT_SUCCESS) {
-		//Se envia la confirmacion a SAFA del proceso y la posicion en memoria
-		//itsLoaded = true
-		enviarMsjASafaPidCargado(pid, 1);
-	} else {
-		//Comunicarle un error al safa
-		//itsLoaded = false
-		enviarMsjASafaPidCargado(pid, 0);
-	}
+	enviarConfirmacionSafa(pid, result, ARCHIVO_CARGADO);
 
 	free(keyCompress);
 
-	return EXIT_SUCCESS;
+	return true;
 }
 
 /*
  * --------------------------HACER FLUSH DE DATOS EN MEMORIA---------------------
  */
-int hacerFlush(t_package paquete, int socketEnUso) {
+bool hacerFlush(t_package paquete, int socketEnUso) {
 
 	//Datos recibidos del cpu
 	char *buffer = paquete.data;
@@ -393,26 +255,14 @@ int hacerFlush(t_package paquete, int socketEnUso) {
 			logger->logger)) {
 		log_error_mutex(logger, "Error al enviar solicitud de datos a FM9");
 		free(bufferToFm9);
-		return EXIT_FAILURE;
+		return false;
 	}
 	free(bufferToFm9);
 
 	//Se reciben los paquetes del mdj y se envian al fm9
 	int result = enviarPkgDeFm9AMdj(pid);
-
-	if (result == EXIT_SUCCESS) {
-		//Se guardó correctamente y se envía itFlushed= 0 y el pid
-		//itsLoaded = false
-		//itsFlushed = true
-		enviarMsjASafaArchivoGuardado(pid, EXIT_SUCCESS);
-	} else {
-		//ocurrio un fallo y se envia itFlushed = 1 y el pid
-		//itsLoaded = false
-		//itsFlushed = false
-		enviarMsjASafaArchivoGuardado(pid, EXIT_FAILURE);
-	}
-
-	return EXIT_SUCCESS;
+	enviarConfirmacionSafa(pid, result, ARCHIVO_GUARDADO);
+	return true;
 }
 
 int enviarPkgDeFm9AMdj(int pid) {
@@ -497,125 +347,98 @@ int enviarPkgDeFm9AMdj(int pid) {
 
 }
 
-void enviarMsjASafaArchivoGuardado(int pid, int itsFlushed) {
-
-	//Está cargado(ItsLoaded)--> 0: Exito, 1: Fallo.
-	//Se envía a S-afa un mensaje diciendo que el proceso ya esta cargado en memoria
-	char *buffer;
-
-	copyIntToBuffer(&buffer, pid);
-	copyIntToBuffer(&buffer, itsFlushed);
-
-	int size = sizeof(int) + sizeof(int);
-
-	if (enviar(t_socketSafa->socket, DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS,
-			buffer, size, logger->logger)) {
-		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
-		free(buffer);
-	}
-	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
-	free(buffer);
-}
-
 //-------------------------CREAR ARCHIVO ---------------------------------------------
-
 /*
  * Funcion para solicitar al MDJ la creacion de un archivo
  * params: pid,path,cantidad de lineas
  * return: 1 -> Fail
  * 		   0 -> Success
  */
-int crearArchivo(t_package paquete, int socketEnUso) {
+ bool crearArchivo(t_package paquete, int socketEnUso) {
 
 	//Datos recibidos del cpu
-	char *buffer = paquete.data;
+	int pid = copyIntFromBuffer(&paquete.data); //PID
+	char * path = copyStringFromBuffer(&paquete.data); //PATH del archivo a crear
+	int cantLineas = copyIntFromBuffer(&paquete.data); //Cantidad de lineas del archivo a crear
 
-	int pid = copyIntFromBuffer(&buffer);
-	char * path = copyStringFromBuffer(&buffer);
+	char *buffer;
+	copyIntToBuffer(&buffer, pid);
+	copyStringToBuffer(&buffer, path);
+	copyIntToBuffer(&buffer, cantLineas);
 
-	int size = sizeof(int) + (strlen(buffer) * sizeof(char));
+	int size = sizeof(int) + (strlen(buffer) * sizeof(char)) + sizeof(int);
 
 	//SE ENVIA EL PAQEUTE CON LOS DATOS A MDJ PARA CREAR ARCHIVO
 	if (enviar(t_socketMdj->socket, DAM_MDJ_CREAR_ARCHIVO, buffer, size,
 			logger->logger)) {
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
 		free(buffer);
-		enviarMsjASafaArchivoCreado(pid, 0, path);
-		return EXIT_FAILURE;
+		enviarConfirmacionSafa(pid, EXIT_FAILURE, ARCHIVO_CREADO);
+		return false;
+	}
+
+	t_package response;
+	if(recibir(t_socketMdj->socket, &response, logger->logger)){
+		log_error_mutex(logger, "Error al crear el archivo: %s", path);
+		enviarConfirmacionSafa(pid,EXIT_FAILURE,ARCHIVO_CREADO);
+		return false;
+	}
+
+	int result;
+	if(response.code == DAM_MDJ_OK){
+		result = EXIT_SUCCESS;
+	}else{
+		result = EXIT_FAILURE;
 	}
 
 	//SE ENVIA CONFIRMACION A SAFA
-	enviarMsjASafaArchivoCreado(pid, 1, path);
+	enviarConfirmacionSafa(pid, result, ARCHIVO_CREADO);
 	free(buffer);
-	return EXIT_SUCCESS;
-}
-
-void enviarMsjASafaArchivoCreado(int pid, int itsCreated, char * path) {
-
-	//Está creado(itsCreated)--> 1: Exito, 0: Fallo.
-	//Se envía a S-afa un mensaje diciendo que el proceso ya esta cargado en memoria
-	char *buffer;
-
-	copyIntToBuffer(&buffer, pid);
-	copyIntToBuffer(&buffer, itsCreated);
-	copyStringToBuffer(&buffer, path);
-
-	int size = sizeof(int) * 2 + (strlen(path) * sizeof(char));
-
-	if (enviar(t_socketSafa->socket, DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO,
-			buffer, size, logger->logger)) {
-		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
-		free(buffer);
-	}
-	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
-	free(buffer);
+	return true;
 }
 
 //--------------------------BORRAR ARCHIVO ------------------------------------------
 
-int borrarArchivo(t_package paquete, int socketEnUso) {
+bool borrarArchivo(t_package paquete, int socketEnUso) {
 
 	//Datos recibidos del cpu
-	char *buffer = paquete.data;
-	int pid = copyIntFromBuffer(&buffer);
-	char * path = copyStringFromBuffer(&buffer);
+	int pid = copyIntFromBuffer(&paquete.data);
+	char * path = copyStringFromBuffer(&paquete.data);
+
+	char *buffer;
+	copyIntToBuffer(&buffer,pid);
+	copyStringToBuffer(&buffer,path);
 
 	int size = sizeof(int) + (strlen(path) * sizeof(char));
+
 	//SE ENVIA EL PATH DEL ARCHIVO AL MDJ PARA BORRAR EL MISMO
 	if (enviar(t_socketMdj->socket, DAM_MDJ_BORRAR_ARCHIVO, buffer, size,
 			logger->logger)) {
 		log_error_mutex(logger,
 				"Error al enviar el path al MDJ del archivo a borrar");
 		free(buffer);
-		enviarMsjASafaArchivoBorrado(pid, 0, path);
-		return EXIT_FAILURE;
+		enviarConfirmacionSafa(pid, EXIT_FAILURE, ARCHIVO_BORRADO);
+		return false;
 	}
 
 	free(buffer);
+	t_package response;
+	if(recibir(t_socketMdj->socket, &response, logger->logger)){
+		log_error_mutex(logger, "Error al crear el archivo: %s", path);
+		enviarConfirmacionSafa(pid,EXIT_FAILURE,ARCHIVO_CREADO);
+		return false;
+	}
+
+	int result;
+	if(response.code == DAM_MDJ_OK){
+		result = EXIT_SUCCESS;
+	}else{
+		result = EXIT_FAILURE;
+	}
+
 	//SE ENVIA LA CONFIRMACION A SAFA
-	enviarMsjASafaArchivoBorrado(pid, 1, path);
-	return EXIT_SUCCESS;
-}
-
-void enviarMsjASafaArchivoBorrado(int pid, int itsDeleted, char * path) {
-
-	//Está creado(itsCreated)--> 1: Exito, 0: Fallo.
-	//Se envía a S-afa un mensaje diciendo que el proceso ya esta cargado en memoria
-	char *buffer;
-
-	copyIntToBuffer(&buffer, pid);
-	copyIntToBuffer(&buffer, itsDeleted);
-	copyStringToBuffer(&buffer, path);
-
-	int size = sizeof(int) * 2 + (strlen(path) * sizeof(char));
-
-	if (enviar(t_socketSafa->socket, DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO,
-			buffer, size, logger->logger)) {
-		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
-		free(buffer);
-	}
-	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
-	free(buffer);
+	enviarConfirmacionSafa(pid, result, ARCHIVO_BORRADO);
+	return true;
 }
 
 //------------------------------------------------------------------------------------------------------------------
@@ -743,6 +566,48 @@ void conectarYRecibirHandshake(int puertoEscucha) {
 	printf("Se conecto el CPU");
 }
 
+
+//------------------------------------------------------------------------------------------------------------------
+//		FUNCIONES COMUNES
+//------------------------------------------------------------------------------------------------------------------
+
+
+void enviarConfirmacionSafa(int pid, int result, int code){
+	char *buffer;
+	int msjCode;
+	int size = sizeof(int) * 2;
+	copyIntToBuffer(&buffer, pid);
+	copyIntToBuffer(&buffer, result);
+
+	switch(code){
+	case ARCHIVO_CREADO:
+		msjCode = DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO;
+		break;
+
+	case ARCHIVO_BORRADO:
+		msjCode = DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO;
+		break;
+
+	case ARCHIVO_CARGADO:
+		msjCode = DAM_SAFA_CONFIRMACION_PID_CARGADO;
+		break;
+
+	case ARCHIVO_GUARDADO:
+		msjCode = DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS;
+		break;
+	}
+
+
+	if (enviar(t_socketSafa->socket, msjCode, buffer,
+			size, logger->logger)) {
+		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
+		free(buffer);
+	}
+
+	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
+	free(buffer);
+}
+
 char * enumToProcess(int proceso) {
 	char * nombreProceso = "";
 	switch (proceso) {
@@ -767,7 +632,106 @@ char * enumToProcess(int proceso) {
 	return nombreProceso;
 }
 
+int calcularCantidadPaquetes(int sizeOfFile) {
+	//Lo divido por mi transfer Size y me quedo con la parte entera
+	double num = sizeOfFile / configDMA->transferSize;
+
+	double p_entera;
+	double p_decimal;
+	//Separo la parte entera
+	p_decimal = modf(num, &p_entera);
+	//Calculo la cantidad de paquetes
+	int cantPart;
+	if (p_decimal != 0) {
+		cantPart = p_entera + 1;
+	} else {
+		cantPart = p_entera;
+	}
+	log_info_mutex(logger, "Se recibiran %d paquetes", cantPart);
+
+	return cantPart;
+}
+
+int contarCantidadLineas(char * string) {
+	int i = 0, cantidadLineas = 0;
+
+	while (string[i] != '\0') {
+		if (string[i] == '\n') {
+			cantidadLineas++;
+		}
+	}
+	return cantidadLineas;
+}
+
+int recibirConfirmacionMemoria() {
+
+	t_package package;
+	int result;
+
+	if (recibir(t_socketFm9->socket, &package, logger->logger)) {
+		log_error_mutex(logger,
+				"Error al recibir los datos de memoria asociados al proceso");
+		result = -1;
+	} else {
+		result = atoi(package.data);
+	}
+
+	if (result == FM9_DAM_ESCRIPTORIO_CARGADO) {
+		return EXIT_SUCCESS;
+	} else {
+		return EXIT_FAILURE;
+	}
+}
+
 //------------------------------------------------------------------------------------------------------------------
-//		FUNCIONES PARA -------------------------
+//		FUNCIONES PARA EL MANEJO DEL SELECT
 //------------------------------------------------------------------------------------------------------------------
 
+void addNewSocketToMaster(int socket) {
+	pthread_mutex_lock(&mutexMaster);
+	FD_SET(socket, &master);
+	log_trace_mutex(logger, "Se agrega el socket %d a la lista de sockets",
+			socket);
+	updateMaxfd(socket);
+	pthread_mutex_unlock(&mutexMaster);
+}
+
+int getMaxfd() {
+	int m;
+	pthread_mutex_lock(&mutexMaxfd);
+	m = maxfd;
+	pthread_mutex_unlock(&mutexMaxfd);
+	return m;
+}
+
+void updateMaxfd(int socket) {
+	if (socket > getMaxfd()) {
+		pthread_mutex_lock(&mutexMaxfd);
+		maxfd = socket;
+		pthread_mutex_unlock(&mutexMaxfd);
+	}
+}
+
+void deleteSocketFromMaster(int socket) {
+	pthread_mutex_lock(&mutexMaster);
+	FD_CLR(socket, &master);
+	log_trace_mutex(logger, "Se saca el socket %d de la lista de sockets",
+			socket);
+	pthread_mutex_unlock(&mutexMaster);
+}
+
+void updateReadset() {
+	pthread_mutex_lock(&mutexMaster);
+	pthread_mutex_lock(&mutexReadset);
+	readset = master;
+	pthread_mutex_unlock(&mutexReadset);
+	pthread_mutex_unlock(&mutexMaster);
+}
+
+int isSetted(int socket) {
+	int s;
+	pthread_mutex_lock(&mutexReadset);
+	s = FD_ISSET(socket, &readset);
+	pthread_mutex_unlock(&mutexReadset);
+	return s;
+}
