@@ -60,7 +60,7 @@ typedef struct{
 
 typedef struct{
 	t_dictionary * tablaSegmentos;
-	t_dictionary * tablaPaginas;
+	t_list * tablaPaginas;
 } t_gdt;
 
 typedef struct{
@@ -77,13 +77,14 @@ void inicializarContadores();
 void manejarConexiones();
 void manejarSolicitud(t_package pkg, int socketFD);
 void liberarRecursos();
+bool existeProceso(int pid);
 int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 void ejecutarEsquemaTPI(t_package pkg, int socketSolicitud, int accion);
 void ejecutarEsquemaSegPag(t_package pkg, int socketSolicitud, int accion);
 int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud);
 int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud);
-void ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud);
+int ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud);
 int ejecutarGuardarEsquemaSegmentacion(t_package pkg, int socket);
 int ejecutarGuardarEsquemaTPI(t_package pkg, int socket);
 int ejecutarGuardarEsquemaSegPag(t_package pkg);
@@ -122,4 +123,6 @@ int flushSegmentacion(t_package pkg, int socketSolicitud, t_datosFlush * data);
 void realizarFlush(char * linea, int nroLinea, int tamanioPaquete, int socket);
 char * obtenerLinea(int posicionMemoria);
 void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int tamanioPaquete, int cantidadPaquetes, int nroLinea, int socket);
+
+int reservarSegmentoSegmentacionPaginada(t_gdt * gdt, int pid);
 #endif /* FUNESMEMORY9_H_ */
