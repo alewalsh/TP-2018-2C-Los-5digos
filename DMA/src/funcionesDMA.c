@@ -54,144 +54,144 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 int enviarPkgDeMdjAFm9(int pid, char * path) {
 	//Se recibe el archivo desde filesystem
 	t_package package;
-	int result;
+	int result = EXIT_FAILURE;
 
 	//Recibo un primer mensaje para saber cuanto pesa el archivo
 	if (recibir(t_socketMdj->socket, &package, logger->logger)) {
 		log_error_mutex(logger, "No se pudo recibir el mensaje del MDJ");
 		return EXIT_FAILURE;
-	} else {
+	}
 
-		if (package.code == DAM_MDJ_FAIL) {
-			return EXIT_FAILURE;
+	if (package.code == DAM_MDJ_FAIL) {
+		return EXIT_FAILURE;
+	}
+
+	//Recibo el tamaño del archivo a cargar
+	int sizeOfFile = atoi(package.data);
+
+	//Calculo cuantos paquetes voy a recibir del fm9 segun mi transfer size
+	int cantPkg = calcularCantidadPaquetes(sizeOfFile);
+
+	//Ahora se reciben los paquetes y se concatena todo el archivo
+	//(Si el archivo es mayor que mi Transfersize recibo n paquetes del tamaño de mi transfersize)
+
+	char * bufferConcatenado = malloc(configDMA->transferSize * cantPkg);
+	int sizeOfBuffer = 0;
+	//Recibo x cantPkg del mdj y se concatenan en un bufferConcatenado
+	for (int i = 0; i < cantPkg; i++) {
+		t_package pkgTransferSize;
+		pkgTransferSize.size = configDMA->transferSize; //TODO VER SI ESTO ESTA BIEN!!------------------------------------
+
+		if (recibir(t_socketMdj->socket, &pkgTransferSize,
+				logger->logger)) {
+			log_error_mutex(logger, "Error al recibir el paquete %d", i);
+		} else {
+			//Concatenar y recalcular sizeOfBuffer
+			copyStringToBuffer(&bufferConcatenado, pkgTransferSize.data);
+			sizeOfBuffer = sizeOfBuffer
+					+ (strlen(pkgTransferSize.data) * sizeof(char));
 		}
+	}
 
-		//Recibo el tamaño del archivo a cargar
-		int sizeOfFile = atoi(package.data);
+	//una vez recibido todo el archivo y de haberlo concatenado en un char *
+	//realizo un split con cada /n y cuento la cantidad de lineas que contiene el mensaje
+	int cantLineas;
 
-		//Calculo cuantos paquetes voy a recibir del fm9 segun mi transfer size
-		int cantPkg = calcularCantidadPaquetes(sizeOfFile);
+	char** arrayLineas = str_split(bufferConcatenado, '\n', cantLineas);
 
-		//Ahora se reciben los paquetes y se concatena todo el archivo
-		//(Si el archivo es mayor que mi Transfersize recibo n paquetes del tamaño de mi transfersize)
+	free(bufferConcatenado);
 
-		char * bufferConcatenado = malloc(configDMA->transferSize * cantPkg);
-		int sizeOfBuffer = 0;
-		//Recibo x cantPkg del mdj y se concatenan en un bufferConcatenado
-		for (int i = 0; i < cantPkg; i++) {
-			t_package pkgTransferSize;
-			pkgTransferSize.size = configDMA->transferSize; //TODO VER SI ESTO ESTA BIEN!!------------------------------------
+	//Se envia un msj al fm9 con los siguientes parametros
+	char *buffer;
+	copyIntToBuffer(&buffer, pid); //ProcesID
+	copyIntToBuffer(&buffer, cantLineas); //Cantidad De lineas
+	copyStringToBuffer(&buffer, path); //Path del archivo
+	int size = sizeof(int) * 3 + (strlen(path) * sizeof(char));
 
-			if (recibir(t_socketMdj->socket, &pkgTransferSize,
-					logger->logger)) {
-				log_error_mutex(logger, "Error al recibir el paquete %d", i);
-			} else {
-				//Concatenar y recalcular sizeOfBuffer
-				copyStringToBuffer(&bufferConcatenado, pkgTransferSize.data);
-				sizeOfBuffer = sizeOfBuffer
-						+ (strlen(pkgTransferSize.data) * sizeof(char));
-			}
-		}
-
-		//una vez recibido todo el archivo y de haberlo concatenado en un char *
-		//realizo un split con cada /n y cuento la cantidad de lineas que contiene el mensaje
-		int cantLineas;
-
-		char** arrayLineas = str_split(bufferConcatenado, '\n', cantLineas);
-
-		free(bufferConcatenado);
-
-		//Se envia un msj al fm9 con los siguientes parametros
-		char *buffer;
-		copyIntToBuffer(&buffer, pid); //ProcesID
-		copyIntToBuffer(&buffer, cantLineas); //Cantidad De lineas
-		copyStringToBuffer(&buffer, path); //Path del archivo
-		int size = sizeof(int) * 3 + (strlen(path) * sizeof(char));
-
-		if (enviar(t_socketFm9->socket, DAM_FM9_CARGAR_ESCRIPTORIO, buffer,
-				size, logger->logger)) {
-			log_error_mutex(logger,
-					"Error al enviar info del escriptorio a FM9");
-			free(buffer);
-			return EXIT_FAILURE;
-		}
+	if (enviar(t_socketFm9->socket, DAM_FM9_CARGAR_ESCRIPTORIO, buffer,
+			size, logger->logger)) {
+		log_error_mutex(logger,
+				"Error al enviar info del escriptorio a FM9");
 		free(buffer);
+		return EXIT_FAILURE;
+	}
+	free(buffer);
 
-		//SE ENVIA LINEA POR LINEA AL FM9
-		for (int i = 0; *(arrayLineas + i); i++) {
-			//Linea -> buffer
-			char * buffer = *(arrayLineas + i);
-			//Tomo el tamaño total de la linea
-			int tamanioLinea = strlen(buffer);
+	//SE ENVIA LINEA POR LINEA AL FM9
+	for (int i = 0; *(arrayLineas + i); i++) {
+		//Linea -> buffer
+		char * buffer = *(arrayLineas + i);
+		//Tomo el tamaño total de la linea
+		int tamanioLinea = strlen(buffer);
 
-			//Si la linea es mayor a mi transfer size debo enviarlo en varios paquetes
-			if (tamanioLinea > configDMA->transferSize) {
-				//Calculo la cantidad de paquetes
-				int cantPaquetes = calcularCantidadPaquetes(tamanioLinea);
+		//Si la linea es mayor a mi transfer size debo enviarlo en varios paquetes
+		if (tamanioLinea > configDMA->transferSize) {
+			//Calculo la cantidad de paquetes
+			int cantPaquetes = calcularCantidadPaquetes(tamanioLinea);
 
-				//por cada paquete...
-				for (i = 0; i < cantPaquetes; i++) {
-					char sub[configDMA->transferSize]; //substring a enviar
-					int inicio = configDMA->transferSize * i, //posicion inicial del substring
-					fin = configDMA->transferSize * (i + 1); //posicion final del substring
+			//por cada paquete...
+			for (i = 0; i < cantPaquetes; i++) {
+				char sub[configDMA->transferSize]; //substring a enviar
+				int inicio = configDMA->transferSize * i, //posicion inicial del substring
+				fin = configDMA->transferSize * (i + 1); //posicion final del substring
 
-					//Si es el ultimo paquete a enviar el fin es el tamanio de linea
-					if (i + 1 == cantPaquetes) {
-						fin = tamanioLinea;
-					}
-
-					int count = 0;
-					while (inicio < fin) {
-						sub[count] = buffer[inicio];
-						inicio++;
-						count++;
-					}
-					//sub[c] = '\0'; <-----------------------TODO VER SI HACE FALTA ESTO
-
-					char * bufferAEnviar;
-					copyIntToBuffer(&bufferAEnviar, i + 1);
-					copyIntToBuffer(&bufferAEnviar, count * sizeof(char));
-					copyStringToBuffer(&bufferAEnviar, sub);
-					int size = sizeof(int) * 2 + count * sizeof(char);
-
-					if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG,
-							bufferAEnviar, size, logger->logger)) {
-						log_error_mutex(logger,
-								"Error al enviar info del escriptorio a FM9");
-						free(bufferAEnviar);
-						return EXIT_FAILURE;
-					}
-					//enviar
-					free(bufferAEnviar);
-					free(buffer);
+				//Si es el ultimo paquete a enviar el fin es el tamanio de linea
+				if (i + 1 == cantPaquetes) {
+					fin = tamanioLinea;
 				}
-			} else {
-				//Si está dentro del tamaño permitido se envía la linea
+
+				int count = 0;
+				while (inicio < fin) {
+					sub[count] = buffer[inicio];
+					inicio++;
+					count++;
+				}
+				//sub[c] = '\0'; <-----------------------TODO VER SI HACE FALTA ESTO
+
 				char * bufferAEnviar;
-				copyIntToBuffer(&bufferAEnviar, (i + 1));
-				copyIntToBuffer(&bufferAEnviar, tamanioLinea * sizeof(char));
-				copyStringToBuffer(&bufferAEnviar, buffer);
-				int size = sizeof(int) * 2 + tamanioLinea * sizeof(char);
+				copyIntToBuffer(&bufferAEnviar, i + 1);
+				copyIntToBuffer(&bufferAEnviar, count * sizeof(char));
+				copyStringToBuffer(&bufferAEnviar, sub);
+				int size = sizeof(int) * 2 + count * sizeof(char);
 
 				if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG,
-						bufferAEnviar, size,
-						logger->logger)) {
+						bufferAEnviar, size, logger->logger)) {
 					log_error_mutex(logger,
 							"Error al enviar info del escriptorio a FM9");
-					free(buffer);
+					free(bufferAEnviar);
 					return EXIT_FAILURE;
 				}
+				//enviar
+				free(bufferAEnviar);
+				free(buffer);
 			}
-			free(*(arrayLineas + i));
-			i++;
-		}
-		free(arrayLineas);
-		log_info_mutex(logger,
-				"Se enviaron todos los datos a memoria del proceso: %d", pid);
+		} else {
+			//Si está dentro del tamaño permitido se envía la linea
+			char * bufferAEnviar;
+			copyIntToBuffer(&bufferAEnviar, (i + 1));
+			copyIntToBuffer(&bufferAEnviar, tamanioLinea * sizeof(char));
+			copyStringToBuffer(&bufferAEnviar, buffer);
+			int size = sizeof(int) * 2 + tamanioLinea * sizeof(char);
 
-		//Se recibe confirmacion de datos guardados en memoria del FM9
-		result = recibirConfirmacionMemoria();
+			if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG,
+					bufferAEnviar, size,
+					logger->logger)) {
+				log_error_mutex(logger,
+						"Error al enviar info del escriptorio a FM9");
+				free(buffer);
+				return EXIT_FAILURE;
+			}
+		}
+		free(*(arrayLineas + i));
+		i++;
 	}
+	free(arrayLineas);
+	log_info_mutex(logger,
+			"Se enviaron todos los datos a memoria del proceso: %d", pid);
+
+	//Se recibe confirmacion de datos guardados en memoria del FM9
+	result = recibirConfirmacionMemoria();
+
 	return result;
 }
 
@@ -666,17 +666,13 @@ int contarCantidadLineas(char * string) {
 int recibirConfirmacionMemoria() {
 
 	t_package package;
-	int result;
 
 	if (recibir(t_socketFm9->socket, &package, logger->logger)) {
 		log_error_mutex(logger,
 				"Error al recibir los datos de memoria asociados al proceso");
-		result = -1;
-	} else {
-		result = atoi(package.data);
+		return EXIT_FAILURE;
 	}
-
-	if (result == FM9_DAM_ESCRIPTORIO_CARGADO) {
+	if (package.code == FM9_DAM_ESCRIPTORIO_CARGADO) {
 		return EXIT_SUCCESS;
 	} else {
 		return EXIT_FAILURE;
