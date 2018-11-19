@@ -40,7 +40,12 @@ extern fd_set readset;
 extern configSAFA *conf;
 extern t_log_mutex *logger;
 
-
+enum codConfirmSafaId{
+	ARCHIVO_CREADO= 24000, //CREAR ARCHIVO
+	ARCHIVO_BORRADO, //BORRAR ARCHIVO
+	ARCHIVO_CARGADO, //CARGAR SCRIPTORIO Y ABRIR ARCHIVO
+	ARCHIVO_GUARDADO //FLUSH
+};
 
 
 //------------------------------------------------------------------------------------------------------------------
@@ -59,18 +64,15 @@ int isSetted(int socket);
 //------------------------------------------------------------------------------------------------------------------
 
 int recibirConfirmacionMemoria();
-void enviarMsjASafaPidCargado(int pid,int itsLoaded);
-void enviarMsjASafaArchivoGuardado(int pid,int result);
-int leerEscriptorio(t_package paquete, int socketEnUso);
-int abrirArchivo(t_package paquete, int socketEnUso);
-int hacerFlush(t_package paquete, int socketEnUso);
+bool leerEscriptorio(t_package paquete, int socketEnUso);
+bool abrirArchivo(t_package paquete, int socketEnUso);
+bool hacerFlush(t_package paquete, int socketEnUso);
 void enviarPaqueteAFm9(char * buffer);
 int enviarPkgDeMdjAFm9(int pid, char * path);
 int enviarPkgDeFm9AMdj(int pid);
-int crearArchivo(t_package paquete, int socketEnUso);
-int borrarArchivo(t_package paquete, int socketEnUso);
-void enviarMsjASafaArchivoCreado(int pid,int itsCreated, char * path);
-void enviarMsjASafaArchivoBorrado(int pid,int itsDeleted, char * path);
+bool crearArchivo(t_package paquete, int socketEnUso);
+bool borrarArchivo(t_package paquete, int socketEnUso);
 int contarCantidadLineas(char * string);
 int calcularCantidadPaquetes(int sizeOfFile);
+void enviarConfirmacionSafa(int pid, int result, int code);
 #endif /* FUNCIONESDMA_H_ */
