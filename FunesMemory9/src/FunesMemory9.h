@@ -64,9 +64,22 @@ typedef struct{
 } t_gdt;
 
 typedef struct{
-	int base;
-	int offset;
-} t_bloqueMemoria;
+	int pid;
+	char * path;
+	int linea;
+	char * datos;
+} t_infoGuardadoLinea;
+
+typedef struct{
+	int pid;
+	int cantPaquetes;
+	char * path;
+} t_infoCargaEscriptorio;
+
+typedef struct{
+	int pid;
+	char * path;
+} t_infoCerrarArchivo;
 
 pthread_mutex_t mutexMaster;
 pthread_mutex_t mutexReadset;
@@ -81,12 +94,12 @@ int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 void ejecutarEsquemaTPI(t_package pkg, int socketSolicitud, int accion);
 void ejecutarEsquemaSegPag(t_package pkg, int socketSolicitud, int accion);
-int ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud);
-int ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud);
-void ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud);
-int ejecutarGuardarEsquemaSegmentacion(t_package pkg, int socket);
-int ejecutarGuardarEsquemaTPI(t_package pkg, int socket);
-int ejecutarGuardarEsquemaSegPag(t_package pkg);
+int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud);
+int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud);
+void ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud);
+int ejecutarGuardarEsquemaSegmentacion(t_package pkg, t_infoGuardadoLinea* datosPaquete, int socket);
+int ejecutarGuardarEsquemaTPI(t_package pkg, t_infoGuardadoLinea* datosPaquete, int socket);
+int ejecutarGuardarEsquemaSegPag(t_package pkg, t_infoGuardadoLinea* datosPaquete, int socket);
 int retornarLineaSolicitada(t_package pkg, int socketSolicitud);
 
 static void liberar_segmento(t_segmento *self);
@@ -94,13 +107,13 @@ static void liberar_pagina(t_pagina * self);
 
 void inicializarBitmap(t_bitarray * bitArray);
 int cerrarArchivoSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
-void logicaCerrarArchivoSegmentacion(t_package pkg, int socketSolicitud);
-int cerrarArchivoSegmentacion(t_package pkg, int socketSolicitud);
+void logicaCerrarArchivoSegmentacion(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socketSolicitud);
+int cerrarArchivoSegmentacion(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socketSolicitud);
 void guardarLinea(int posicionMemoria, char * linea);
 char * intToString(int numero);
-void logicaGuardarSegmentacion(t_package pkg, int socketSolicitud);
+void logicaGuardarSegmentacion(t_package pkg, t_infoGuardadoLinea* datosPaquete, int socketSolicitud);
 void liberarLineas(int base, int limite);
-void logicaCargarEscriptorioSegmentacion(t_package pkg, int socketSolicitud);
+void logicaCargarEscriptorioSegmentacion(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud);
 int direccion(int base, int desplazamiento);
 int posicionesLibres(t_bitarray * bitArray);
 
@@ -109,10 +122,17 @@ bool filtrarPorPid(t_pagina * pagina);
 void reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar);
 void actualizarTPI(t_pagina * pagina);
 
-void logicaCargarEscriptorioTPI(t_package pkg, int socketSolicitud);
+void logicaCargarEscriptorioTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud);
 void liberarMarco(t_pagina * pagina);
-void logicaCerrarArchivoTPI(t_package pkg, int socketSolicitud);
-int cerrarArchivoTPI(t_package pkg, int socketSolicitud);
+void logicaCerrarArchivoTPI(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socketSolicitud);
+int cerrarArchivoTPI(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socketSolicitud);
+void logicaCerrarArchivoSegPag(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socketSolicitud);
+int cerrarArchivoSegPag(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socketSolicitud);
+
+t_infoGuardadoLinea * guardarDatosPaqueteGuardadoLinea(t_package pkg);
+t_infoCargaEscriptorio * guardarDatosPaqueteCargaEscriptorio(t_package pkg);
+t_infoCerrarArchivo * guardarDatosPaqueteCierreArchivo(t_package pkg);
+t_datosFlush * guardarDatosPaqueteFlush(t_package pkg);
 
 int realizarFlushSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 void logicaFlush(t_package pkg, int socketSolicitud, int code);
