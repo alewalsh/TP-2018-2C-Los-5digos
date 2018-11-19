@@ -8,7 +8,6 @@
 #ifndef FUNCIONESFM9_H_
 #define FUNCIONESFM9_H_
 
-#include <grantp/structCommons.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
