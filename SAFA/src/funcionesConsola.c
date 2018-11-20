@@ -71,7 +71,7 @@ void consolaStatus() {
 void imprimirNEW(){
     pthread_mutex_lock(&mutexNewList);
 	int size = list_size(colaNew);
-    printf("*---------------------COLA NEW ---------------------*\n");
+    printf("*---------------------COLA NEW -----------------------*\n");
     int i;
     for (i = 0; i < size; i++) {
         t_dtb *dtb = (t_dtb *) list_get(colaNew, i);
@@ -87,7 +87,7 @@ void imprimirREADY(){
     printf("*---------------------COLA READY ---------------------*\n");
     int i;
     for (i = 0; i < size; i++) {
-        t_dtb *dtb = (t_dtb *) list_get(colaNew, i);
+        t_dtb *dtb = (t_dtb *) list_get(colaReady, i);
         printf("DTB numero: (%d) \n", dtb->idGDT);
     }
     printf("*-----------------------------------------------------*\n\n");

@@ -65,6 +65,17 @@ t_list* colaBloqueados;		// Lista Bloqueados.
 t_list* colaExit;		// Lista Terminados.
 
 
+////informa que se corrio un EJECUTAR y hay dtbs en NEW
+//sem_t sem_DTBenNEW;
+
+////informa que debe ejecutar
+//sem_t sem_shouldExecute;
+//
+////informa si se esta ejecutando(tener en cuenta ya que la corridas son atomicas)
+//sem_t sem_shouldScheduler;
+//
+//sem_t sem_preemptive;
+
 // ------------------------------------------------------------------------------
 //	VARIABLES SAFA
 // ------------------------------------------------------------------------------

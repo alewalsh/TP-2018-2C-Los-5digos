@@ -18,24 +18,24 @@ int consolaNuevoGDT(char* scriptIngresado){
 
 int pasarDTBdeNEWaREADY(){
 
-
-
+	t_dtb *dtb = list_remove(colaNew,0);
+	list_add(colaReady, dtb);
 	return 1;
 }
 
 void planificadorLP() {
-    log_info_mutex(logger, "Hilo Planificador Largo levantado");
 
-    int gradoMulti = conf->grado_mp;
+	int gradoMulti = conf->grado_mp;
+    log_info_mutex(logger, "Hilo Planificador Largo levantado. Grado de multiprogramacion: %d", gradoMulti);
 
     while(1){
 
-    	if(list_size(colaReady) < gradoMulti){
+    	//TODO: AGREGAR UN SEMAFORO QUE ME MANDE EL AVISO PARA CHEQUEAR ESTO
+    	if((list_size(colaReady) < gradoMulti) && (list_size(colaNew) > 0)){
     	    //log_info_mutex(logger, "Debo agregar GDTs en ready");
-
-//    		pasarDTBdeNEWaREADY();
-
-
+    		if(pasarDTBdeNEWaREADY()){
+        	    log_info_mutex(logger, "DTB pasado a ready");
+    		}
     	}
 
     }

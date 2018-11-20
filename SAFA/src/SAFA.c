@@ -147,10 +147,11 @@ void cambiosConfig(){
 
 ////Se inicializan todos los semaforos a ser utilizados
 //void initSems() {
-//    sem_init(&sem_shouldScheduler, 0, 1);
-//    sem_init(&sem_newEsi, 0, 0);
-//    sem_init(&sem_shouldExecute, 0, 0);
-//    sem_init(&sem_preemptive, 0, 0);
+//
+////    sem_init(&sem_shouldScheduler, 0, 1);
+////    sem_init(&sem_newEsi, 0, 0);
+////    sem_init(&sem_shouldExecute, 0, 0);
+////    sem_init(&sem_preemptive, 0, 0);
 //}
 
 
