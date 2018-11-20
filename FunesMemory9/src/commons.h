@@ -48,6 +48,10 @@ void liberarRecursos();
 bool existeProceso(int pid);
 void crearProceso(int pid);
 
-void reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar);
+int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar);
+
+void logPosicionesLibres(t_bitarray * bitarray, int modo);
+int obtenerLineasProceso(int pid);
+void liberarMarco(t_pagina * pagina);
 
 #endif /* SRC_COMMONS_H_ */

@@ -44,6 +44,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 	if(tengoMemoriaDisponible(datosPaquete->cantPaquetes) == 1){
 		log_error_mutex(logger, "No hay memoria disponible para cargar el Escriptorio.");
 		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
+		logPosicionesLibres(estadoLineas,SEG);
 		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
 		{
 			log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
@@ -57,9 +58,12 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
 	free(pidString);
 	t_segmento * segmento = reservarSegmento(datosPaquete->cantPaquetes, gdt->tablaSegmentos, datosPaquete->path);
-	// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
+	// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ LINEAS HAY LIBRES
 	if (segmento == NULL)
-		return FM9_DAM_MEMORIA_INSUFICIENTE;
+	{
+		logPosicionesLibres(estadoLineas,SEG);
+		return FM9_DAM_MEMORIA_INSUFICIENTE_FRAG_EXTERNA;
+	}
 	actualizarTablaDeSegmentos(datosPaquete->pid,segmento);
 	// ACTUALIZO LA GLOBAL CON LAS LINEAS QUE UTILICE RECIEN
 	// ESTO PARA QUE ESTA?????
@@ -124,15 +128,7 @@ int flushSegmentacion(t_package pkg, int socketSolicitud, t_datosFlush * data)
 	if(cantidadSegmentos > 0)
 	{
 		// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO
-		int cantidadLineas = 0;
-		for (int i = 0; i < cantidadSegmentos; i++)
-		{
-			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
-			if (strcmp(segmento->archivo, data->path) == 0)
-			{
-				cantidadLineas += segmento->limite;
-			}
-		}
+		int cantidadLineas = obtenerLineasProceso(data->pid);
 		char * buffer;
 		copyIntToBuffer(&buffer, cantidadLineas);
 		if (enviar(socketSolicitud,FM9_DAM_FLUSH,buffer,sizeof(int),logger->logger))

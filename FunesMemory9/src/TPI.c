@@ -71,6 +71,7 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 	if(tengoMemoriaDisponible(paginasNecesarias) == 1){
 		log_error_mutex(logger, "No hay memoria disponible para cargar el Escriptorio.");
 		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
+		logPosicionesLibres(estadoMarcos,TPI);
 		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
 		{
 			log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
@@ -78,7 +79,12 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 		}
 	}
 
-	reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, cantLineas);
+	int code = reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, cantLineas);
+	if (code == FM9_DAM_MEMORIA_INSUFICIENTE)
+	{
+		logPosicionesLibres(estadoMarcos,TPI);
+		return code;
+	}
 	pidBuscado = datosPaquete->pid;
 	t_list * paginasProceso = list_filter(tablaPaginasInvertida, (void *) filtrarPorPid);
 	// ESTO PARA QUE ESTA?????
@@ -146,13 +152,14 @@ int ejecutarGuardarEsquemaTPI(t_package pkg, t_infoGuardadoLinea* datosPaquete, 
 	pidBuscado = datosPaquete->pid;
 	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
 	int cantidadPaginas = list_size(paginasProceso);
+	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid);
 	if (cantidadPaginas <= 0)
 	{
 		return FM9_CPU_PROCESO_INEXISTENTE;
 	}
 	else if (cantidadPaginas > 0)
 	{
-		if (cantidadPaginas * lineasXPagina >= datosPaquete->linea)
+		if (cantidadLineas >= datosPaquete->linea)
 		{
 			int nroPaginaCorrespondiente = datosPaquete->linea / lineasXPagina;
 			t_pagina * paginaCorrespondiente = list_get(paginasProceso, nroPaginaCorrespondiente);
@@ -217,9 +224,4 @@ int cerrarArchivoTPI(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socke
 	list_clean_and_destroy_elements(paginasProceso,(void *)liberarPagina);
 
 	return EXIT_SUCCESS;
-}
-
-void liberarMarco(t_pagina * pagina)
-{
-	bitarray_clean_bit(estadoMarcos, pagina->nroPagina);
 }

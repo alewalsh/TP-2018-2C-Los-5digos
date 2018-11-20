@@ -23,7 +23,7 @@ int direccion(int base, int desplazamiento)
 		case SEG:
 			direccion = (base + desplazamiento)*config->tamMaxLinea;
 			break;
-		case TPI:
+		case TPI: case SPA:
 			direccion = (base * config->tamPagina + desplazamiento * config->tamMaxLinea);
 			break;
 		default:
@@ -242,7 +242,7 @@ void crearProceso(int pid)
 	free(gdt);
 }
 
-void reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar)
+int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar)
 {
 	int i = 0, paginasReservadas = 0;
 	t_pagina * pagina = malloc(sizeof(t_pagina));
@@ -255,6 +255,10 @@ void reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int l
 	}
 	while(paginasReservadas != paginasAReservar)
 	{
+		if (i == bitarray_get_max_bit(estadoMarcos))
+		{
+			break;
+		}
 		if(bitarray_test_bit(estadoMarcos,i) == 0)
 		{
 			pagina->nroPagina = i;
@@ -279,10 +283,13 @@ void reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int l
 		}
 		i++;
 	}
+	if (paginasReservadas != paginasAReservar)
+		return FM9_DAM_MEMORIA_INSUFICIENTE;
 	if (config->modoEjecucion == SPA)
 	{
 		dictionary_put(tablaProcesos, intToString(pid), proceso);
 	}
+	return EXIT_SUCCESS;
 }
 
 void ocuparMarco(int pagina)
@@ -293,4 +300,73 @@ void ocuparMarco(int pagina)
 void actualizarTPI(t_pagina * pagina)
 {
 	list_add(tablaPaginasInvertida, pagina);
+}
+
+void logPosicionesLibres(t_bitarray * bitarray, int modo)
+{
+	char * modoEjecucion;
+	if (modo == TPI || modo == SPA)
+		modoEjecucion = "página";
+	else
+		modoEjecucion = "línea";
+	int i = 0;
+	while (i < cantLineas)
+	{
+		if(bitarray_test_bit(bitarray,i) == 0)
+		{
+			log_info(logger->logger, "La %s %d está libre", modoEjecucion, i);
+		}
+		else
+		{
+			log_info(logger->logger, "La %s %d está ocupada", modoEjecucion, i);
+		}
+	}
+}
+
+int obtenerLineasProceso(int pid)
+{
+	int cantidadLineas = 0;
+	if (config->modoEjecucion == SPA)
+	{
+		t_gdt * proceso = dictionary_get(tablaProcesos, intToString(pid));
+		int cantidadSegmentos = dictionary_size(proceso->tablaSegmentos);
+		for(int i = 0; i < cantidadSegmentos; i++)
+		{
+			// PRIMERO VERIFICO SI TENGO LA CANTIDAD DE LINEAS DISPONIBLES PARA REALIZAR EL GUARDADO
+			t_segmento * segmento = dictionary_get(proceso->tablaSegmentos, intToString(i));
+			for(int j = segmento->base; j < (segmento->base+segmento->limite); j++)
+			{
+				t_pagina * pagina = list_get(proceso->tablaPaginas, j);
+				cantidadLineas += pagina->lineasUtilizadas;
+			}
+		}
+	}
+	if (config->modoEjecucion == TPI)
+	{
+		pidBuscado = pid;
+		t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+		int i = 0, cantPaginas = list_size(paginasProceso);
+		while(i < cantPaginas)
+		{
+			t_pagina * pagina = list_get(paginasProceso,i);
+			cantidadLineas += pagina->lineasUtilizadas;
+		}
+		list_destroy_and_destroy_elements(paginasProceso, (void *)liberarPagina);
+	}
+	if (config->modoEjecucion == SEG)
+	{
+		t_gdt * gdt = dictionary_get(tablaProcesos, intToString(pid));
+		int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
+		for (int i = 0; i < cantidadSegmentos; i++)
+		{
+			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
+			cantidadLineas += segmento->limite;
+		}
+	}
+	return cantidadLineas;
+}
+
+void liberarMarco(t_pagina * pagina)
+{
+	bitarray_clean_bit(estadoMarcos, pagina->nroPagina);
 }
