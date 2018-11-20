@@ -20,7 +20,8 @@ int main(int argc, char ** argv) {
     pthread_t threadConsola;
     pthread_t threadConexiones;
 //    pthread_t threadCambioConfig;
-    pthread_t threadAlgoritmos;
+    pthread_t threadCortoPlazo;
+    pthread_t threadLargoPlazo;
 
     /*inicializacion de recursos y carga de configuracion
      /home/utnso/git/tp-2018-2c-Los-5digos/SAFA/config"*/
@@ -37,7 +38,8 @@ int main(int argc, char ** argv) {
 	//Inicializo la consola del Planificador y los threads correspondientes
     pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
 //    pthread_create(&threadCambioConfig, &tattr, (void *) cambiosConfig, NULL);
-    pthread_create(&threadAlgoritmos, &tattr, (void *) manejoAlgoritmos, NULL);
+    pthread_create(&threadCortoPlazo, &tattr, (void *) manejoCortoPlazo, NULL);
+    pthread_create(&threadLargoPlazo, &tattr, (void *) manejoLargoPlazo, NULL);
     pthread_create(&threadConsola, &tattr, (void *) mainConsola, NULL);
 
     printf("Hilos creados");
@@ -152,9 +154,11 @@ void cambiosConfig(){
 //}
 
 
+void manejoLargoPlazo() {
+	planificadorLP();
+}
 
-
-void manejoAlgoritmos() {
+void manejoCortoPlazo() {
 
     switch (conf->algoritmo) {
         case RR:

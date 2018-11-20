@@ -81,7 +81,8 @@ void liberarRecursos();
 void initMutexs();
 void initList();
 void cambiosConfig();
-void manejoAlgoritmos();
+void manejoCortoPlazo();
+void manejoLargoPlazo();
 
 void sig_handler(int signo);
 void exit_gracefully(int error);

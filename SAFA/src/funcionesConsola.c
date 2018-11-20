@@ -20,8 +20,8 @@
 // ----------------------------------------------------------------------------------------------------------------------
 
 
-int cantComandos = 6;
-const char *functions[] = {"EJECUTAR", "STATUS", "FINALIZAR", "METRICAS", "EXIT", "HELP"};
+int cantComandos = 7;
+const char *functions[] = {"EJECUTAR", "STATUS", "FINALIZAR", "METRICAS", "EXIT", "HELP", "CLEAR"};
 
 
 const char *descriptions[] = {"Ejecutara el Script indicado.",
@@ -29,7 +29,8 @@ const char *descriptions[] = {"Ejecutara el Script indicado.",
                               "Se enviara el proceso indicado a la cola de EXIT, liberando lugar en READY.",
                               "Se brindara informacion de las metricas solicitadas",
                               "SE VA A CERRAR LA CONSOLA!",
-                              "I NEED SOMEBODY HELP, NOT JUST ANYBODY HELP, I NEED SOMEONE HEEEEELP!"};
+							  "I NEED SOMEBODY HELP, NOT JUST ANYBODY HELP, I NEED SOMEONE HEEEEELP!",
+                              "Console Clear"};
 
 
 void consolaEjecutar(char *args) {
@@ -38,13 +39,60 @@ void consolaEjecutar(char *args) {
 //    setPlay();
 //    pthread_mutex_unlock(&mutexStop);
     log_info_mutex(logger, "Se solicitara al PLP crear el DTB asociado al nuevo programa.");
+
     if(consolaNuevoGDT(args)){
-        log_info_mutex(logger, "DTB creado satisfactoriamente.");
-    } else {
-        log_error(logger, "NO SE HA PODIDO CREAR EL DTB CORRESPONDIENTE.");
-	}
+        log_error_mutex(logger, "NO SE HA PODIDO CREAR EL DTB CORRESPONDIENTE.");
+        return;
+    }
+	log_info_mutex(logger, "DTB creado satisfactoriamente y enviado a NEW.");
 }
 
+
+void consolaStatus() {
+
+	//TODO: Separar en si tiene argumento o no tiene argumento. Hacer una funcion para printear cada cola
+
+	if(list_size(colaNew) != 0){
+		imprimirNEW();
+	} else {printf("Cola NEW sin elementos\n");}
+	if(list_size(colaReady) != 0){
+		imprimirREADY();
+	} else{printf("Cola READY sin elementos\n");}
+//	if(list_size(colaBloqueados) != 0){
+//
+//} else{printf("Cola BLOCKED sin elementos\n");}
+//	if(list_size(colaExit) != 0){
+//
+//} else{printf("Cola EXIT sin elementos\n");}
+
+}
+
+
+void imprimirNEW(){
+    pthread_mutex_lock(&mutexNewList);
+	int size = list_size(colaNew);
+    printf("*---------------------COLA NEW ---------------------*\n");
+    int i;
+    for (i = 0; i < size; i++) {
+        t_dtb *dtb = (t_dtb *) list_get(colaNew, i);
+        printf("DTB numero: (%d) \n", dtb->idGDT);
+    }
+    printf("*-----------------------------------------------------*\n\n");
+    pthread_mutex_unlock(&mutexNewList);
+}
+
+void imprimirREADY(){
+	pthread_mutex_lock(&mutexReadyList);
+	int size = list_size(colaReady);
+    printf("*---------------------COLA READY ---------------------*\n");
+    int i;
+    for (i = 0; i < size; i++) {
+        t_dtb *dtb = (t_dtb *) list_get(colaNew, i);
+        printf("DTB numero: (%d) \n", dtb->idGDT);
+    }
+    printf("*-----------------------------------------------------*\n\n");
+	pthread_mutex_unlock(&mutexReadyList);
+}
 
 
 //char *compressKey(char *key, int *size) {
@@ -55,17 +103,6 @@ void consolaEjecutar(char *args) {
 //    return compress;
 //}
 //
-//void consoleStop() {
-//    //sem_wait(&sem_console);
-//    setPause();
-//    pthread_mutex_lock(&mutexStop);
-//    log_info_mutex(logger, "La planificacion esta pausada");
-//}
-//
-
-
-
-
 //void consoleBlock(char *args) {
 //
 //    if (args == NULL) {

@@ -129,7 +129,9 @@ t_dtb *crearNuevoDTB(char *dirScript) {
 
 int agregarDTBaNEW(t_dtb *dtb) {
     pthread_mutex_lock(&mutexNewList);
-    if (list_add(colaNew, dtb)) {
+    int i = colaNew->elements_count;
+    if (list_add(colaNew, dtb) != i) {
+        log_info_mutex(logger, "no se pudo agregar el elemento a la lista");
         pthread_mutex_unlock(&mutexNewList);
         return EXIT_FAILURE;
     }

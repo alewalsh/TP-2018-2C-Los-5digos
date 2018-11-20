@@ -16,13 +16,12 @@ int seguirEjecutando = 1;
 void executeCommand(int comando, char *args) {
     switch (comando) {
         case EJECUTAR:
-            printf("Nuevo programa GDT ingresado con el scrpit: (%s)", args);
+        	//printf("(%d)", estadoSAFA);
             consolaEjecutar(args);
-//        	printf("(%d)", estadoSAFA);
             break;
         case STATUS:
-//            consoleStop();
-            printf("Comando STATUS seleccionado.\n");
+            consolaStatus();
+//            printf("Comando STATUS seleccionado.\n");
             break;
         case FINALIZAR:
 //            consoleBlock(args);

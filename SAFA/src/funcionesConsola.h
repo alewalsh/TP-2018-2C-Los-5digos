@@ -19,6 +19,11 @@
 extern int shouldExit;
 extern pthread_mutex_t mutexExit;
 
+extern t_list* colaNew;			// Lista New.
+extern t_list* colaReady;			// Lista Ready.
+extern t_list* colaBloqueados;		// Lista Bloqueados.
+extern t_list* colaExit;		// Lista Terminados.
+
 //extern pthread_mutex_t mutexReadyExecute;
 //
 //extern sem_t sem_newEsi;
@@ -30,6 +35,10 @@ extern pthread_mutex_t mutexExit;
 
 void consolaEjecutar(char *args);
 
+void consolaStatus();
+void imprimirNEW();
+void imprimirREADY();
+
 //void consoleBlock(char *args);
 //
 //void consoleUnblock(char *esi);
@@ -37,8 +46,6 @@ void consolaEjecutar(char *args);
 //void consoleList(char *key);
 //
 //void consoleKill(char *id);
-//
-//void consoleStatus(char *key);
 //
 //void consoleDeadlock();
 //
