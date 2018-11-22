@@ -94,6 +94,7 @@ void manejarConexiones(){
 		}
 	}
 }
+
 void manejarSolicitud(t_package pkg, int socketFD) {
 
     switch (pkg.code) {
@@ -110,7 +111,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 			break;
         case DAM_FM9_FLUSH:
         	if(realizarFlushSegunEsquemaMemoria(pkg,socketFD)){
-				log_error_mutex(logger,"Error al cargar el escriptorio en la memoria");
+				log_error_mutex(logger,"Error al realizar el flush en la memoria");
 			}
 			break;
         case CPU_FM9_ASIGNAR:
@@ -120,7 +121,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 			break;
         case CPU_FM9_CERRAR_ARCHIVO:
 			if(cerrarArchivoSegunEsquemaMemoria(pkg,socketFD)){
-				log_error_mutex(logger,"Error al guardar la data recibida en memoria");
+				log_error_mutex(logger,"Error al cerrar el archivo en memoria");
 			}
 			break;
         case SOCKET_DISCONECT:
