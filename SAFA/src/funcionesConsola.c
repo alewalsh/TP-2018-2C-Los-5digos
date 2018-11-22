@@ -35,11 +35,7 @@ const char *descriptions[] = {"Ejecutara el Script indicado.",
 
 void consolaEjecutar(char *args) {
 
-    //sem_post(&sem_console);
-//    setPlay();
-//    pthread_mutex_unlock(&mutexStop);
     log_info_mutex(logger, "Se solicitara al PLP crear el DTB asociado al nuevo programa.");
-
     if(consolaNuevoGDT(args)){
         log_error_mutex(logger, "NO SE HA PODIDO CREAR EL DTB CORRESPONDIENTE.");
         return;

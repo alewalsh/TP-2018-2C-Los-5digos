@@ -96,9 +96,9 @@ void liberarRecursos(){
     pthread_mutex_destroy(&mutexReadset);
 //    pthread_mutex_destroy(&mutexTime);
     pthread_mutex_destroy(&mutexExit);
-//    pthread_mutex_destroy(&mutexStop);
+    pthread_mutex_destroy(&mutexStop);
 //    pthread_mutex_destroy(&mutexReadyExecute);
-//    pthread_mutex_destroy(&mutexConsole);
+    pthread_mutex_destroy(&mutexConsole);
     pthread_mutex_destroy(&mutexgdtCounter);
 //
 //    sem_destroy(&sem_shouldScheduler);
@@ -160,22 +160,7 @@ void manejoLargoPlazo() {
 }
 
 void manejoCortoPlazo() {
-
-    switch (conf->algoritmo) {
-        case RR:
-            log_trace_mutex(logger, "Algoritmo Round Robin");
-//            planificarRR();
-            break;
-        case VRR:
-            log_trace_mutex(logger, "Algoritmo Virtual Round Robin");
-//            planificarVRR();
-            break;
-        default:
-            log_trace_mutex(logger, "Algoritmo Propio");
-//            playExecute();
-//            planificarPropio();
-            break;
-    }
+	planificadorCP();
 }
 
 

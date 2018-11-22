@@ -82,6 +82,7 @@ t_dtb *crearNuevoDTB(char *dirScript);
 int agregarDTBaNEW(t_dtb *dtb);
 void sumarGDTCounter();
 int obtenerGDTCounter();
+t_dtb *crearDummyDTB();
 
 
 

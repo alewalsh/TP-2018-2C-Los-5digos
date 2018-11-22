@@ -112,6 +112,8 @@ int getExecute() {
 //		FUNCIONES GDT y DTB
 //------------------------------------------------------------------------------------------------------------------
 
+//TODO: HACER LOS FREE PARA CUANDO SE TENGAN QUE LIBTERAR LOS DTBS!!!!!
+
 t_dtb *crearNuevoDTB(char *dirScript) {
 
 	sumarGDTCounter();
@@ -121,7 +123,7 @@ t_dtb *crearNuevoDTB(char *dirScript) {
 	newDTB->idGDT = aux;
 	newDTB->dirEscriptorio = dirScript;
 	newDTB->programCounter = aux;
-	newDTB->flagInicializado = false;
+	newDTB->flagInicializado = true;
 //	newDTB->tablaDirecciones //char *tablaDirecciones;
 //	newDTB->cantidadLineas //int cantidadLineas;
 	return newDTB;
@@ -152,6 +154,22 @@ int obtenerGDTCounter() {
     pthread_mutex_unlock(&mutexgdtCounter);
     return aux;
 }
+
+
+t_dtb *crearDummyDTB() {
+
+    t_dtb *newDTB = malloc(sizeof(t_dtb));
+	newDTB->idGDT = 0;
+//	newDTB->dirEscriptorio = dirScript;
+//	newDTB->programCounter = aux;
+	newDTB->flagInicializado = false;
+//	newDTB->tablaDirecciones //char *tablaDirecciones;
+//	newDTB->cantidadLineas //int cantidadLineas;
+	return newDTB;
+}
+
+
+
 
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA .....
