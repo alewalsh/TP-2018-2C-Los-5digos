@@ -38,12 +38,13 @@ void manejarConsolaFM9()
 	}
 
 
-	if(strcmp(comandoSpliteado[0],"dump") == 0){
+	if(strcmp(comandoSpliteado[0],"dump") == 0)
+	{
 		int esIdProceso = esUnNumeroIDProceso(comandoSpliteado[1]);
 
 		if(esIdProceso == 0){
 
-			ejecutarDumpSegunEsquemaMemoria(storage);
+			ejecutarDumpSegunEsquemaMemoria(comandoSpliteado[1]);
 
 		}else{
 
@@ -54,33 +55,47 @@ void manejarConsolaFM9()
 
 }
 
-void ejecutarDumpSegunEsquemaMemoria(char * storage){
+void ejecutarDumpSegunEsquemaMemoria(char * pidString)
+{
+	int pid = strtol(pidString, NULL, 10);
+	if (pid != 0)
+	{
+		t_datosFlush * datos = malloc(sizeof(t_datosFlush));
+		datos->pid = pid;
+		switch(config->modoEjecucion){
 
-	switch(config->modoEjecucion){
-
-		case SEG:
-			dumpEnSegmentacionPura(storage);
-			break;
-
-		case TPI:
-			dumpEnTPI(storage);
-			break;
-
-		case SPA:
-			dumpEnSegPag(storage);
-			break;
+			case SEG:
+				flushSegmentacion(0, datos, DUMP);
+				break;
+			case TPI:
+				flushTPI(0, datos, DUMP);
+				break;
+			case SPA:
+				flushSegmentacionPaginada(0, datos, DUMP);
+				break;
+			default:
+				printf("Modo de ejecución inexistente, verifique el archivo de configuracion y vuelva a iniciar el proceso.");
+				log_warning_mutex(logger, "Modo de ejecución inexistente, verifique el archivo de configuracion y vuelva a iniciar el proceso.");
+				break;
+		}
+		free(datos);
+	}
+	else
+	{
+		printf("PID erróneo, por favor verifique la información ingreasada por consola.");
+		log_error_mutex(logger, "PID erróneo, por favor verifique la información ingreasada por consola.");
 	}
 }
 
-void dumpEnSegmentacionPura(char * storage){
-	//logica dump en segmentacion
-}
+//void dumpEnSegmentacionPura(int pid){
+//	//logica dump en segmentacion
+//}
 
-void dumpEnTPI(char * storage){
+void dumpEnTPI(int pid){
 	//logica dump en TPI
 }
 
-void dumpEnSegPag(char * storage){
+void dumpEnSegPag(int pid){
 	//logica dump en seg. paginada
 }
 

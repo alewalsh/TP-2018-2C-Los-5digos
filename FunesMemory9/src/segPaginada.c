@@ -163,7 +163,7 @@ int reservarSegmentoSegmentacionPaginada(t_gdt * gdt, int pid)
 	return EXIT_SUCCESS;
 }
 
-int flushSegmentacionPaginada(t_package pkg, int socketSolicitud, t_datosFlush * data)
+int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int accion)
 {
 	t_gdt * gdt = dictionary_get(tablaProcesos,intToString(data->pid));
 	if (gdt == NULL)
@@ -173,14 +173,17 @@ int flushSegmentacionPaginada(t_package pkg, int socketSolicitud, t_datosFlush *
 	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
 	if(cantidadSegmentos > 0)
 	{
-		// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO
-		int cantidadLineas = obtenerLineasProceso(data->pid);
-		char * buffer;
-		copyIntToBuffer(&buffer, cantidadLineas);
-		if (enviar(socketSolicitud,FM9_DAM_FLUSH,buffer,sizeof(int),logger->logger))
+		if (accion == FLUSH)
 		{
-			log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
-			exit_gracefully(-1);
+			// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO
+			int cantidadLineas = obtenerLineasProceso(data->pid);
+			char * buffer;
+			copyIntToBuffer(&buffer, cantidadLineas);
+			if (enviar(socketSolicitud,FM9_DAM_FLUSH,buffer,sizeof(int),logger->logger))
+			{
+				log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
+				exit_gracefully(-1);
+			}
 		}
 
 		// LUEGO RECORRO CADA SEGMENTO Y VOY ENVIANDO DE A UNA LINEA
@@ -193,15 +196,26 @@ int flushSegmentacionPaginada(t_package pkg, int socketSolicitud, t_datosFlush *
 			{
 				while(j < (segmento->base+segmento->limite))
 				{
-					paginaBuscada = j;
 					int idLinea = 0;
+					paginaBuscada = j;
 					t_pagina * pagina = list_find(gdt->tablaPaginas, (void *) filtrarPorNroPagina);
 					while (idLinea < pagina->lineasUtilizadas)
 					{
-						char * linea = obtenerLinea(direccion(pagina->nroPagina, idLinea));
-						realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
-						idLinea++;
-						nroLinea++;
+						if (strcmp(pagina->path, data->path) == 0)
+						{
+							char * linea = obtenerLinea(direccion(pagina->nroPagina, idLinea));
+							if (accion == DUMP)
+							{
+								printf("Linea %d PID %d: %s\n", j, data->pid, linea);
+								log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
+							}
+							if (accion == FLUSH)
+							{
+								realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
+							}
+							idLinea++;
+							nroLinea++;
+						}
 					}
 					j++;
 				}

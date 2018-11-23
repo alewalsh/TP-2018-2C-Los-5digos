@@ -72,6 +72,12 @@ typedef struct{
 	char * path;
 } t_infoCerrarArchivo;
 
+typedef enum
+{
+	DUMP = 1,
+	FLUSH
+} accionFM9;
+
 //typedef struct {
 //    char *operation;
 //    char *key;

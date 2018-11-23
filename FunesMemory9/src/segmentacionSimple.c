@@ -117,7 +117,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 	return EXIT_SUCCESS;
 }
 
-int flushSegmentacion(t_package pkg, int socketSolicitud, t_datosFlush * data)
+int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 {
 	t_gdt * gdt = dictionary_get(tablaProcesos,intToString(data->pid));
 	if (gdt == NULL)
@@ -127,14 +127,17 @@ int flushSegmentacion(t_package pkg, int socketSolicitud, t_datosFlush * data)
 	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
 	if(cantidadSegmentos > 0)
 	{
-		// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO
-		int cantidadLineas = obtenerLineasProceso(data->pid);
-		char * buffer;
-		copyIntToBuffer(&buffer, cantidadLineas);
-		if (enviar(socketSolicitud,FM9_DAM_FLUSH,buffer,sizeof(int),logger->logger))
+		if (accion == FLUSH)
 		{
-			log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
-			exit_gracefully(-1);
+			// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO
+			int cantidadLineas = obtenerLineasProceso(data->pid);
+			char * buffer;
+			copyIntToBuffer(&buffer, cantidadLineas);
+			if (enviar(socketSolicitud,FM9_DAM_FLUSH,buffer,sizeof(int),logger->logger))
+			{
+				log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
+				exit_gracefully(-1);
+			}
 		}
 
 		// LUEGO RECORRO CADA SEGMENTO Y VOY ENVIANDO DE A UNA LINEA
@@ -148,7 +151,15 @@ int flushSegmentacion(t_package pkg, int socketSolicitud, t_datosFlush * data)
 				while(j < segmento->limite)
 				{
 					char * linea = obtenerLinea(direccion(segmento->base, j));
-					realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
+					if (accion == DUMP)
+					{
+						printf("Linea %d PID %d: %s\n", j, data->pid, linea);
+						log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
+					}
+					if (accion == FLUSH)
+					{
+						realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
+					}
 					j++;
 					nroLinea++;
 				}
