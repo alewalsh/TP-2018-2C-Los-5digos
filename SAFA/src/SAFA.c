@@ -91,15 +91,19 @@ void liberarRecursos(){
     pthread_mutex_destroy(&mutexNewList);
     pthread_mutex_destroy(&mutexReadyList);
     pthread_mutex_destroy(&mutexBloqueadosList);
+    pthread_mutex_destroy(&mutexEjecutandoList);
     pthread_mutex_destroy(&mutexExitList);
+
     pthread_mutex_destroy(&mutexMaster);
     pthread_mutex_destroy(&mutexReadset);
+
 //    pthread_mutex_destroy(&mutexTime);
     pthread_mutex_destroy(&mutexExit);
     pthread_mutex_destroy(&mutexStop);
 //    pthread_mutex_destroy(&mutexReadyExecute);
     pthread_mutex_destroy(&mutexConsole);
     pthread_mutex_destroy(&mutexgdtCounter);
+    pthread_mutex_destroy(&mutexDummy);
 //
 //    sem_destroy(&sem_shouldScheduler);
 //    sem_destroy(&sem_newEsi);
@@ -112,20 +116,25 @@ void liberarRecursos(){
 
 
 void initMutexs(){
+
 	//Se inicializan todos los semaforos MUTEX a ser utilizados
 	pthread_mutex_init(&mutexMaster, NULL);
 	pthread_mutex_init(&mutexReadset, NULL);
+
 	//Mutex para las listas
 	pthread_mutex_init(&mutexNewList, NULL);
 	pthread_mutex_init(&mutexReadyList, NULL);
 	pthread_mutex_init(&mutexBloqueadosList, NULL);
+	pthread_mutex_init(&mutexEjecutandoList, NULL);
 	pthread_mutex_init(&mutexExitList, NULL);
-//	pthread_mutex_init(&mutexTime, NULL);
+
+	//	pthread_mutex_init(&mutexTime, NULL);
 	pthread_mutex_init(&mutexExit, NULL);
 	pthread_mutex_init(&mutexStop, NULL);
 //	pthread_mutex_init(&mutexReadyExecute, NULL);
 	pthread_mutex_init(&mutexConsole, NULL);
 	pthread_mutex_init(&mutexgdtCounter, NULL);
+	pthread_mutex_init(&mutexDummy, NULL);
 }
 
 
@@ -133,6 +142,7 @@ void initList() {
 	colaNew = list_create();
 	colaReady = list_create();
 	colaBloqueados = list_create();
+	colaEjecutando = list_create();
 	colaExit = list_create();
 }
 

@@ -24,6 +24,7 @@ void executeCommand(int comando, char *args) {
 //            printf("Comando STATUS seleccionado.\n");
             break;
         case FINALIZAR:
+            consolaLiberar();
 //            consoleBlock(args);
             printf("Comando FINALIZAR seleccionado.\n");
             break;

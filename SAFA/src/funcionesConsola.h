@@ -22,6 +22,7 @@ extern pthread_mutex_t mutexExit;
 extern t_list* colaNew;			// Lista New.
 extern t_list* colaReady;			// Lista Ready.
 extern t_list* colaBloqueados;		// Lista Bloqueados.
+extern t_list* colaEjecutando;     // Lista DTBs en ejec
 extern t_list* colaExit;		// Lista Terminados.
 
 //extern pthread_mutex_t mutexReadyExecute;
@@ -34,10 +35,12 @@ extern t_list* colaExit;		// Lista Terminados.
 //void consoleStop();
 
 void consolaEjecutar(char *args);
+void consolaLiberar();
 
 void consolaStatus();
 void imprimirNEW();
 void imprimirREADY();
+void imprimirEJECUTANDO();
 
 //void consoleBlock(char *args);
 //

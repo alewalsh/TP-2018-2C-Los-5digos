@@ -159,7 +159,7 @@ int obtenerGDTCounter() {
 t_dtb *crearDummyDTB() {
 
     t_dtb *newDTB = malloc(sizeof(t_dtb));
-	newDTB->idGDT = 0;
+//	newDTB->idGDT = 0;
 //	newDTB->dirEscriptorio = dirScript;
 //	newDTB->programCounter = aux;
 	newDTB->flagInicializado = false;
@@ -169,6 +169,25 @@ t_dtb *crearDummyDTB() {
 }
 
 
+void desbloquearDummy(){
+    pthread_mutex_lock(&mutexDummy);
+    dummyBloqueado = 0;
+    pthread_mutex_unlock(&mutexDummy);
+}
+
+void bloquearDummy(){
+    pthread_mutex_lock(&mutexDummy);
+    dummyBloqueado = 1;
+    pthread_mutex_unlock(&mutexDummy);
+}
+
+int obtenerEstadoDummy() {
+    int aux = 0;
+    pthread_mutex_lock(&mutexDummy);
+    aux = dummyBloqueado;
+    pthread_mutex_unlock(&mutexDummy);
+    return aux;
+}
 
 
 //------------------------------------------------------------------------------------------------------------------

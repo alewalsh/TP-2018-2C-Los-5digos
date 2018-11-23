@@ -16,13 +16,18 @@ extern configSAFA *conf;
 extern t_list* colaNew;			// Lista New.
 extern t_list* colaReady;			// Lista Ready.
 extern t_list* colaBloqueados;		// Lista Bloqueados.
+extern t_list* colaEjecutando;     // Lista DTBs en ejec
 extern t_list* colaExit;		// Lista Terminados.
 
 t_dtb *dummyDTB;
+int dummyBloqueado;
+
+pthread_mutex_t mutexPlanificando;
 
 
 void planificadorCP();
-
-
+void planificadorCPdesbloquearDummy(int idGDT, char *dirScript);
+void ejecutarRR();
+void pasarDTBaEjecutando();
 
 #endif /* PLANIFICADORCORTO_H_ */

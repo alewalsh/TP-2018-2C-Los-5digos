@@ -16,13 +16,6 @@ int consolaNuevoGDT(char* scriptIngresado){
     return EXIT_SUCCESS;
 }
 
-int pasarDTBdeNEWaREADY(){
-
-	t_dtb *dtb = list_remove(colaNew,0);
-	list_add(colaReady, dtb);
-	return 1;
-}
-
 void planificadorLP() {
 
 	int gradoMulti = conf->grado_mp;
@@ -33,19 +26,19 @@ void planificadorLP() {
     	//TODO: ANALIZAR COMO HACER CUANDO EL PLANI DE CORTO VAYA SACANDO COSAS DE READY
     	// QUIZA SE RESUELVE HACIENDO QUE EL CORTO EN VEZ DE SACAR, MUEVA EL PRIMERO AL FINAL ETC
 
-    	//TODO: MISMO, QUIZA PUEDO HACER UN MUTEX QUE DIGA QUE EL PLANIFICADOR DE CORTO ESTA EJECUTANDO ENTONCES
-    	// SE PUEDE CONFIRMAR SI ESTA BIEN LA COLA DE READY O NO
-
-    	//TODO: OPCION 3, QUE EL PLANIFICADOR DE CORTO PLAZO MUTEXEE LA LISTA DE READY HASTA QUE TERMINA QUANTUM O ALGO ASI
-    	// que libere la lista de ready solo cuadnto termino de ejecutar
-
         pthread_mutex_lock(&mutexNewList);
         pthread_mutex_lock(&mutexReadyList);
-    	if((list_size(colaReady) < gradoMulti) && (list_size(colaNew) > 0)){
-    	    //log_info_mutex(logger, "Debo agregar GDTs en ready");
-    		if(pasarDTBdeNEWaREADY()){
-        	    log_info_mutex(logger, "DTB pasado a ready");
-    		}
+
+        //Si hay algo en new, si ready no tiene lo maximo, y si el dummy esta libre recien ahi podria mandar cosas
+    	if((list_size(colaReady) < gradoMulti) && (list_size(colaNew) > 0) && (obtenerEstadoDummy() == 1)){
+
+    		//Me fijo cual es el primer elemento de la lista, no lo saco, solo tengo los datos
+    		t_dtb *primerDTB = list_get(colaNew,0);
+
+    		//TODO: Tener en cuenta que el planificador corto en algun momento va a tener que avisarme que estuvo ok y ahi
+    		// voy a poder hacer el REMOVE de la cola, ME VA A LLEGAR POR EL LADO DE CONEXIONES CON CPU
+    		planificadorCPdesbloquearDummy(primerDTB->idGDT,primerDTB->dirEscriptorio);
+
     	}
         pthread_mutex_unlock(&mutexNewList);
         pthread_mutex_unlock(&mutexReadyList);

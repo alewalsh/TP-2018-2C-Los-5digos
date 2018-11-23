@@ -54,6 +54,9 @@ void consolaStatus() {
 	if(list_size(colaReady) != 0){
 		imprimirREADY();
 	} else{printf("Cola READY sin elementos\n");}
+	if(list_size(colaEjecutando) != 0){
+		imprimirEJECUTANDO();
+	} else{printf("Cola EJECUTANDO sin elementos\n");}
 //	if(list_size(colaBloqueados) != 0){
 //
 //} else{printf("Cola BLOCKED sin elementos\n");}
@@ -89,6 +92,25 @@ void imprimirREADY(){
     printf("*-----------------------------------------------------*\n\n");
 	pthread_mutex_unlock(&mutexReadyList);
 }
+
+void imprimirEJECUTANDO(){
+    pthread_mutex_lock(&mutexEjecutandoList);
+	int size = list_size(colaEjecutando);
+    printf("*---------------------COLA EJECUTANDO -----------------------*\n");
+    int i;
+    for (i = 0; i < size; i++) {
+        t_dtb *dtb = (t_dtb *) list_get(colaEjecutando, i);
+        printf("DTB numero: (%d) \n", dtb->idGDT);
+    }
+    printf("*-----------------------------------------------------*\n\n");
+    pthread_mutex_unlock(&mutexEjecutandoList);
+}
+
+
+void consolaLiberar(){
+	bloquearDummy();
+}
+
 
 
 //char *compressKey(char *key, int *size) {

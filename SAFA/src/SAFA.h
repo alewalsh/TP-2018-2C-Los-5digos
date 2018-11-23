@@ -32,11 +32,13 @@ pthread_mutex_t mutexMaster;
 pthread_mutex_t mutexNewList;
 pthread_mutex_t mutexReadyList;
 pthread_mutex_t mutexBloqueadosList;
+pthread_mutex_t mutexEjecutandoList;
 pthread_mutex_t mutexExitList;
 pthread_mutex_t mutexReadset;
 pthread_mutex_t mutexMaxfd;
 //pthread_mutex_t mutexTime;
 pthread_mutex_t mutexgdtCounter;
+pthread_mutex_t mutexDummy;
 
 pthread_mutex_t mutexExit;
 
@@ -62,6 +64,7 @@ int gdtCounter = 0;
 t_list* colaNew;			// Lista New.
 t_list* colaReady;			// Lista Ready.
 t_list* colaBloqueados;		// Lista Bloqueados.
+t_list* colaEjecutando;     // Lista DTBs en ejec
 t_list* colaExit;		// Lista Terminados.
 
 

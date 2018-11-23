@@ -24,6 +24,7 @@
 extern t_list* colaNew;			// Lista New.
 extern t_list* colaReady;			// Lista Ready.
 extern t_list* colaBloqueados;		// Lista Bloqueados.
+extern t_list* colaEjecutando;     // Lista DTBs en ejec
 extern t_list* colaExit;		// Lista Terminados.
 
 extern pthread_mutex_t mutexMaster;
@@ -36,7 +37,9 @@ extern pthread_mutex_t mutexgdtCounter;
 extern pthread_mutex_t mutexNewList;
 extern pthread_mutex_t mutexReadyList;
 extern pthread_mutex_t mutexBloqueadosList;
+extern pthread_mutex_t mutexEjecutandoList;
 extern pthread_mutex_t mutexExitList;
+extern pthread_mutex_t mutexDummy;
 
 //extern int tiempo;
 extern int maxfd;
@@ -47,6 +50,8 @@ extern fd_set master;
 extern fd_set readset;
 extern configSAFA *conf;
 extern t_log_mutex *logger;
+
+extern int dummyBloqueado;
 
 
 
@@ -83,6 +88,9 @@ int agregarDTBaNEW(t_dtb *dtb);
 void sumarGDTCounter();
 int obtenerGDTCounter();
 t_dtb *crearDummyDTB();
+void desbloquearDummy();
+void bloquearDummy();
+int obtenerEstadoDummy();
 
 
 
