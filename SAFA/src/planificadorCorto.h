@@ -10,6 +10,7 @@
 
 #include "funcionesSAFA.h"
 #include <grantp/configuracion.h>
+#include <grantp/compression.h>
 
 
 extern configSAFA *conf;
@@ -28,6 +29,7 @@ pthread_mutex_t mutexPlanificando;
 void planificadorCP();
 void planificadorCPdesbloquearDummy(int idGDT, char *dirScript);
 void ejecutarRR();
-void pasarDTBaEjecutando();
+t_dtb *pasarDTBdeREADYaEXEC();
+void enviarDTBaCPU(t_dtb *dtbAEnviar);
 
 #endif /* PLANIFICADORCORTO_H_ */

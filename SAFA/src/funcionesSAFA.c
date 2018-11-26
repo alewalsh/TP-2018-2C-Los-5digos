@@ -116,16 +116,16 @@ int getExecute() {
 
 t_dtb *crearNuevoDTB(char *dirScript) {
 
+	//TODO: Por ahora inicializo la tabla y lineas en nada. se va a cambiar?
 	sumarGDTCounter();
 	int aux = obtenerGDTCounter();
-
     t_dtb *newDTB = malloc(sizeof(t_dtb));
 	newDTB->idGDT = aux;
 	newDTB->dirEscriptorio = dirScript;
-	newDTB->programCounter = aux;
+	newDTB->programCounter = 0;
 	newDTB->flagInicializado = true;
-//	newDTB->tablaDirecciones //char *tablaDirecciones;
-//	newDTB->cantidadLineas //int cantidadLineas;
+	newDTB->tablaDirecciones = NULL;
+	newDTB->cantidadLineas = 0;
 	return newDTB;
 }
 
@@ -157,14 +157,14 @@ int obtenerGDTCounter() {
 
 
 t_dtb *crearDummyDTB() {
-
+	//Se inicializa vacio, despues el PLP lo rellena cuando le pide al PCP
     t_dtb *newDTB = malloc(sizeof(t_dtb));
-//	newDTB->idGDT = 0;
-//	newDTB->dirEscriptorio = dirScript;
-//	newDTB->programCounter = aux;
+	newDTB->idGDT = 0;
+	newDTB->dirEscriptorio = NULL;
+	newDTB->programCounter = 0;
 	newDTB->flagInicializado = false;
-//	newDTB->tablaDirecciones //char *tablaDirecciones;
-//	newDTB->cantidadLineas //int cantidadLineas;
+	newDTB->tablaDirecciones = NULL;
+	newDTB->cantidadLineas = 0;
 	return newDTB;
 }
 

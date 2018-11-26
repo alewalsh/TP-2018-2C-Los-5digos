@@ -35,7 +35,7 @@ void planificadorLP() {
     		//Me fijo cual es el primer elemento de la lista, no lo saco, solo tengo los datos
     		t_dtb *primerDTB = list_get(colaNew,0);
 
-    		//TODO: Tener en cuenta que el planificador corto en algun momento va a tener que avisarme que estuvo ok y ahi
+    		//TODO: Tener en cuenta que el planificador corto o el diegote en algun momento va a tener que avisarme que estuvo ok y ahi
     		// voy a poder hacer el REMOVE de la cola, ME VA A LLEGAR POR EL LADO DE CONEXIONES CON CPU
     		planificadorCPdesbloquearDummy(primerDTB->idGDT,primerDTB->dirEscriptorio);
 
