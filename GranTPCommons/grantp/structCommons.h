@@ -15,6 +15,7 @@
 #include "compression.h"
 #include <commons/collections/dictionary.h>
 #include <commons/collections/list.h>
+#include "parser.h"
 
 /*
  *  Ejemplo DTB: habria que ponerlo en GranTPCommons si utilizamos este.
@@ -74,8 +75,8 @@ typedef struct{
 
 typedef enum
 {
-	DUMP = 1,
-	FLUSH
+	AccionDUMP = 1,
+	AccionFLUSH
 } accionFM9;
 
 //typedef struct {
@@ -148,6 +149,8 @@ void freeBlockedKey(void *bk);
 void liberarSegmento(t_segmento *self);
 
 void liberarPagina(t_pagina * self);
+
+void liberarOperacion(t_cpu_operacion * operacion);
 
 t_infoGuardadoLinea * guardarDatosPaqueteGuardadoLinea(t_package pkg);
 

@@ -18,7 +18,7 @@ int flushTPI(int socketSolicitud, t_datosFlush * data, int accion)
 	}
 	else if (cantidadPaginas > 0)
 	{
-		if (accion == FLUSH)
+		if (accion == AccionFLUSH)
 		{
 			// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO
 			int cantidadLineas = 0;
@@ -51,12 +51,12 @@ int flushTPI(int socketSolicitud, t_datosFlush * data, int accion)
 				while(j < pagina->lineasUtilizadas)
 				{
 					char * linea = obtenerLinea(direccion(pagina->nroPagina, j));
-					if (accion == DUMP)
+					if (accion == AccionDUMP)
 					{
 						printf("Linea %d PID %d: %s\n", j, data->pid, linea);
 						log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
 					}
-					if (accion == FLUSH)
+					if (accion == AccionFLUSH)
 					{
 						realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
 					}

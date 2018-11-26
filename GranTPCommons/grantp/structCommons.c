@@ -43,6 +43,41 @@ void liberarPagina(t_pagina * self)
 	free(self);
 }
 
+void liberarOperacion(t_cpu_operacion * self)
+{
+	switch(self->keyword)
+	{
+		case ABRIR:
+			free(self->argumentos.ABRIR.path);
+			break;
+		case ASIGNAR:
+			free(self->argumentos.ASIGNAR.datos);
+			free(self->argumentos.ASIGNAR.path);
+			break;
+		case WAIT:
+			free(self->argumentos.WAIT.recurso);
+			break;
+		case SIGNAL:
+			free(self->argumentos.SIGNAL.recurso);
+			break;
+		case FLUSH:
+			free(self->argumentos.FLUSH.path);
+			break;
+		case CLOSE:
+			free(self->argumentos.CLOSE.path);
+			break;
+		case CREAR:
+			free(self->argumentos.CREAR.path);
+			break;
+		case BORRAR:
+			free(self->argumentos.BORRAR.path);
+			break;
+		default:
+			break;
+	}
+	free(self);
+}
+
 t_infoGuardadoLinea * guardarDatosPaqueteGuardadoLinea(t_package pkg){
 
 	char * buffer = pkg.data;

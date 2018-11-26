@@ -335,13 +335,13 @@ void logicaFlush(t_package pkg, int socketSolicitud, int code)
 	switch(code)
 	{
 		case SEG:
-			resultado = flushSegmentacion(socketSolicitud, infoFlush, FLUSH);
+			resultado = flushSegmentacion(socketSolicitud, infoFlush, AccionFLUSH);
 			break;
 		case TPI:
-			resultado = flushTPI(socketSolicitud, infoFlush, FLUSH);
+			resultado = flushTPI(socketSolicitud, infoFlush, AccionFLUSH);
 			break;
 		case SPA:
-			resultado = flushSegmentacionPaginada(socketSolicitud, infoFlush, FLUSH);
+			resultado = flushSegmentacionPaginada(socketSolicitud, infoFlush, AccionFLUSH);
 			break;
 		default:
 			log_warning_mutex(logger, "No se especifico el esquema para el flush");

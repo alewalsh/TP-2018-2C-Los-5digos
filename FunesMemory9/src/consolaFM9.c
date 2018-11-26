@@ -65,13 +65,13 @@ void ejecutarDumpSegunEsquemaMemoria(char * pidString)
 		switch(config->modoEjecucion){
 
 			case SEG:
-				flushSegmentacion(0, datos, DUMP);
+				flushSegmentacion(0, datos, AccionDUMP);
 				break;
 			case TPI:
-				flushTPI(0, datos, DUMP);
+				flushTPI(0, datos, AccionDUMP);
 				break;
 			case SPA:
-				flushSegmentacionPaginada(0, datos, DUMP);
+				flushSegmentacionPaginada(0, datos, AccionDUMP);
 				break;
 			default:
 				printf("Modo de ejecución inexistente, verifique el archivo de configuracion y vuelva a iniciar el proceso.");

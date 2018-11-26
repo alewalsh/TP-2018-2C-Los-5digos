@@ -29,8 +29,6 @@ extern configFM9 * config;
 
 void manejarConsolaFM9();
 void ejecutarDumpSegunEsquemaMemoria(char * pidString);
-void dumpEnTPI(int pid);
-void dumpEnSegPag(int pid);
 int esUnNumeroIDProceso(char * numero);
 
 #endif /* SRC_CONSOLAFM9_H_ */

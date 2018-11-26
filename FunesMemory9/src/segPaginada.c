@@ -173,7 +173,7 @@ int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int acci
 	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
 	if(cantidadSegmentos > 0)
 	{
-		if (accion == FLUSH)
+		if (accion == AccionFLUSH)
 		{
 			// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO
 			int cantidadLineas = obtenerLineasProceso(data->pid);
@@ -204,12 +204,12 @@ int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int acci
 						if (strcmp(pagina->path, data->path) == 0)
 						{
 							char * linea = obtenerLinea(direccion(pagina->nroPagina, idLinea));
-							if (accion == DUMP)
+							if (accion == AccionDUMP)
 							{
 								printf("Linea %d PID %d: %s\n", j, data->pid, linea);
 								log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
 							}
-							if (accion == FLUSH)
+							if (accion == AccionFLUSH)
 							{
 								realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
 							}

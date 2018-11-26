@@ -127,7 +127,7 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
 	if(cantidadSegmentos > 0)
 	{
-		if (accion == FLUSH)
+		if (accion == AccionFLUSH)
 		{
 			// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO
 			int cantidadLineas = obtenerLineasProceso(data->pid);
@@ -151,12 +151,12 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 				while(j < segmento->limite)
 				{
 					char * linea = obtenerLinea(direccion(segmento->base, j));
-					if (accion == DUMP)
+					if (accion == AccionDUMP)
 					{
 						printf("Linea %d PID %d: %s\n", j, data->pid, linea);
 						log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
 					}
-					if (accion == FLUSH)
+					if (accion == AccionFLUSH)
 					{
 						realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
 					}
