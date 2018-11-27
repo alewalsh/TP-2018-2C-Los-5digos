@@ -63,9 +63,7 @@ enum accionEjecutada
 /*
  * Semaforos
  */
-sem_t * sem_nuevoDummy;
 pthread_mutex_t mutexQuantum;
-//pthread_mutex_t mutexDesalojo;
 
 /*
  * Funciones
@@ -112,4 +110,17 @@ int manejarRecursosSAFA(char * recurso, int idGDT, int accion);
 int setQuantum(t_package paquete);
 
 t_dtb * transformarPaqueteADTB(t_package paquete);
+t_package transformarDTBAPaquete(t_dtb * dtb);
+
+void liberarMemoriaTSocket(t_socket * TSocket);
+
+int realizarEjecucion(t_dtb * dtb);
+
+int finalizoEjecucionDTB(t_dtb * dtb);
+
+int eventoSAFA(t_dtb ** dtb, int code);
+
+int ejecucionDAM(t_dtb ** dtb);
+
+int ejecucionFM9(t_dtb ** dtb, int socket);
 #endif /* CPU_H_ */

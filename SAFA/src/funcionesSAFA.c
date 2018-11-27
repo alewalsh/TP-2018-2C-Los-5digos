@@ -9,6 +9,7 @@
 #include <grantp/structCommons.h>
 #include <grantp/configuracion.h>
 
+
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA EL MANEJO DEL SELECT
 //------------------------------------------------------------------------------------------------------------------
@@ -60,6 +61,133 @@ int isSetted(int socket) {
     return s;
 }
 
+
+//======================================================================================================================================
+//============================================FUNCIONES Consola=========================================================================
+//======================================================================================================================================
+
+void setPlay() {
+    pthread_mutex_lock(&mutexConsole);
+    console = 1;
+    pthread_mutex_unlock(&mutexConsole);
+}
+
+void setPause() {
+    pthread_mutex_lock(&mutexConsole);
+    console = 0;
+    pthread_mutex_unlock(&mutexConsole);
+}
+
+int getConsoleStatus() {
+    int aux = 0;
+    pthread_mutex_lock(&mutexConsole);
+    aux = console;
+    pthread_mutex_unlock(&mutexConsole);
+    return aux;
+}
+
+void playExecute() {
+    pthread_mutex_lock(&mutexConsole);
+    scheduler = 1;
+    pthread_mutex_unlock(&mutexConsole);
+}
+
+void stopExecute() {
+    pthread_mutex_lock(&mutexConsole);
+    scheduler = 0;
+    pthread_mutex_unlock(&mutexConsole);
+}
+
+int getExecute() {
+    int aux = 0;
+    pthread_mutex_lock(&mutexConsole);
+    aux = scheduler;
+    pthread_mutex_unlock(&mutexConsole);
+    return aux;
+}
+
+
+
+//------------------------------------------------------------------------------------------------------------------
+//		FUNCIONES GDT y DTB
+//------------------------------------------------------------------------------------------------------------------
+
+//TODO: HACER LOS FREE PARA CUANDO SE TENGAN QUE LIBTERAR LOS DTBS!!!!!
+
+t_dtb *crearNuevoDTB(char *dirScript) {
+
+	//TODO: Por ahora inicializo la tabla y lineas en nada. se va a cambiar?
+	sumarGDTCounter();
+	int aux = obtenerGDTCounter();
+    t_dtb *newDTB = malloc(sizeof(t_dtb));
+	newDTB->idGDT = aux;
+	newDTB->dirEscriptorio = dirScript;
+	newDTB->programCounter = 0;
+	newDTB->flagInicializado = true;
+	newDTB->tablaDirecciones = NULL;
+	newDTB->cantidadLineas = 0;
+	return newDTB;
+}
+
+int agregarDTBaNEW(t_dtb *dtb) {
+    pthread_mutex_lock(&mutexNewList);
+    int i = colaNew->elements_count;
+    if (list_add(colaNew, dtb) != i) {
+        log_info_mutex(logger, "no se pudo agregar el elemento a la lista");
+        pthread_mutex_unlock(&mutexNewList);
+        return EXIT_FAILURE;
+    }
+    pthread_mutex_unlock(&mutexNewList);
+    return EXIT_SUCCESS;
+}
+
+void sumarGDTCounter() {
+    pthread_mutex_lock(&mutexgdtCounter);
+    gdtCounter++;
+    pthread_mutex_unlock(&mutexgdtCounter);
+}
+
+int obtenerGDTCounter() {
+    int aux = 0;
+    pthread_mutex_lock(&mutexgdtCounter);
+    aux = gdtCounter;
+    pthread_mutex_unlock(&mutexgdtCounter);
+    return aux;
+}
+
+
+t_dtb *crearDummyDTB() {
+	//Se inicializa vacio, despues el PLP lo rellena cuando le pide al PCP
+    t_dtb *newDTB = malloc(sizeof(t_dtb));
+	newDTB->idGDT = 0;
+	newDTB->dirEscriptorio = NULL;
+	newDTB->programCounter = 0;
+	newDTB->flagInicializado = false;
+	newDTB->tablaDirecciones = NULL;
+	newDTB->cantidadLineas = 0;
+	return newDTB;
+}
+
+
+void desbloquearDummy(){
+    pthread_mutex_lock(&mutexDummy);
+    dummyBloqueado = 0;
+    pthread_mutex_unlock(&mutexDummy);
+}
+
+void bloquearDummy(){
+    pthread_mutex_lock(&mutexDummy);
+    dummyBloqueado = 1;
+    pthread_mutex_unlock(&mutexDummy);
+}
+
+int obtenerEstadoDummy() {
+    int aux = 0;
+    pthread_mutex_lock(&mutexDummy);
+    aux = dummyBloqueado;
+    pthread_mutex_unlock(&mutexDummy);
+    return aux;
+}
 
 
 //------------------------------------------------------------------------------------------------------------------

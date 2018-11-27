@@ -12,6 +12,7 @@
 #include <grantp/mutex_log.h>
 #include <grantp/socket.h>
 //#include "executer.h"
+#include "planificadorLargo.h"
 #include <grantp/compression.h>
 //#include "blockedKeyFunctions.h"
 
@@ -19,29 +20,96 @@
 // ----------------------------------------------------------------------------------------------------------------------
 
 
-int cantComandos = 6;
-const char *functions[] = {"EJECUTAR", "STATUS", "FINALIZAR", "METRICAS", "EXIT", "HELP"};
+int cantComandos = 7;
+const char *functions[] = {"EJECUTAR", "STATUS", "FINALIZAR", "METRICAS", "EXIT", "HELP", "CLEAR"};
 
 
 const char *descriptions[] = {"Ejecutara el Script indicado.",
                               "Detallara los estados de las colas de planificacion.",
                               "Se enviara el proceso indicado a la cola de EXIT, liberando lugar en READY.",
                               "Se brindara informacion de las metricas solicitadas",
-                              "SE TE VA A CERRAR LA CONSOLA!",
-                              "I NEED SOMEBODY HELP, NOT JUST ANYBODY HELP, I NEED SOMEONE HEEEEELP!"};
+                              "SE VA A CERRAR LA CONSOLA!",
+							  "I NEED SOMEBODY HELP, NOT JUST ANYBODY HELP, I NEED SOMEONE HEEEEELP!",
+                              "Console Clear"};
 
-////TODO: tiene que tener un man?
-//void consolePrintMan() {
-//    printf("Sintaxis de comandos que requieren parametros:\n");
-//    printf("\n");
-//    printf("BLOCK:    block <clave> <ID>\n");
-//    printf("UNBLOCK:   unlock <clave>\n");
-//    printf("LIST:     list <recurso>\n");
-//    printf("KILL:     kill <ID>\n");
-//    printf("STATUS:   status <clave>\n");
-//    printf("\n\n");
-//}
+
+void consolaEjecutar(char *args) {
+
+    log_info_mutex(logger, "Se solicitara al PLP crear el DTB asociado al nuevo programa.");
+    if(consolaNuevoGDT(args)){
+        log_error_mutex(logger, "NO SE HA PODIDO CREAR EL DTB CORRESPONDIENTE.");
+        return;
+    }
+	log_info_mutex(logger, "DTB creado satisfactoriamente y enviado a NEW.");
+}
+
+
+void consolaStatus() {
+
+	//TODO: Separar en si tiene argumento o no tiene argumento. Hacer una funcion para printear cada cola
+
+	if(list_size(colaNew) != 0){
+		imprimirNEW();
+	} else {printf("Cola NEW sin elementos\n");}
+	if(list_size(colaReady) != 0){
+		imprimirREADY();
+	} else{printf("Cola READY sin elementos\n");}
+	if(list_size(colaEjecutando) != 0){
+		imprimirEJECUTANDO();
+	} else{printf("Cola EJECUTANDO sin elementos\n");}
+//	if(list_size(colaBloqueados) != 0){
 //
+//} else{printf("Cola BLOCKED sin elementos\n");}
+//	if(list_size(colaExit) != 0){
+//
+//} else{printf("Cola EXIT sin elementos\n");}
+
+}
+
+
+void imprimirNEW(){
+    pthread_mutex_lock(&mutexNewList);
+	int size = list_size(colaNew);
+    printf("*---------------------COLA NEW -----------------------*\n");
+    int i;
+    for (i = 0; i < size; i++) {
+        t_dtb *dtb = (t_dtb *) list_get(colaNew, i);
+        printf("DTB numero: (%d) \n", dtb->idGDT);
+    }
+    printf("*-----------------------------------------------------*\n\n");
+    pthread_mutex_unlock(&mutexNewList);
+}
+
+void imprimirREADY(){
+	pthread_mutex_lock(&mutexReadyList);
+	int size = list_size(colaReady);
+    printf("*---------------------COLA READY ---------------------*\n");
+    int i;
+    for (i = 0; i < size; i++) {
+        t_dtb *dtb = (t_dtb *) list_get(colaReady, i);
+        printf("DTB numero: (%d) \n", dtb->idGDT);
+    }
+    printf("*-----------------------------------------------------*\n\n");
+	pthread_mutex_unlock(&mutexReadyList);
+}
+
+void imprimirEJECUTANDO(){
+    pthread_mutex_lock(&mutexEjecutandoList);
+	int size = list_size(colaEjecutando);
+    printf("*---------------------COLA EJECUTANDO -----------------------*\n");
+    int i;
+    for (i = 0; i < size; i++) {
+        t_dtb *dtb = (t_dtb *) list_get(colaEjecutando, i);
+        printf("DTB numero: (%d) \n", dtb->idGDT);
+    }
+    printf("*-----------------------------------------------------*\n\n");
+    pthread_mutex_unlock(&mutexEjecutandoList);
+}
+
+
+void consolaLiberar(){
+	bloquearDummy();
+}
 
 
 
@@ -53,26 +121,6 @@ const char *descriptions[] = {"Ejecutara el Script indicado.",
 //    return compress;
 //}
 //
-//void consoleStop() {
-//    //sem_wait(&sem_console);
-//    setPause();
-//    pthread_mutex_lock(&mutexStop);
-//    log_info_mutex(logger, "La planificacion esta pausada");
-//}
-//
-
-
-//void consolePlay(char *args) {
-//
-// ACA LE AGREGUE YO EL ARGS PORQUE LO VOY A NECESITAR
-//
-//    //sem_post(&sem_console);
-//    setPlay();
-//    pthread_mutex_unlock(&mutexStop);
-//    log_info_mutex(logger, "La planificacion esta en ejecucion");
-//}
-//
-
 //void consoleBlock(char *args) {
 //
 //    if (args == NULL) {
@@ -209,11 +257,11 @@ const char *descriptions[] = {"Ejecutara el Script indicado.",
 //    log_debug_mutex(logger, "Se movio el esi a finalizado");
 //
 //}
-//
-//void consoleClear() {
-//    system("clear");
-//}
-//
+
+void consoleClear() {
+    system("clear");
+}
+
 //void consoleStatus(char *key) {
 //
 //    t_package pkg;

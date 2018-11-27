@@ -16,6 +16,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "funcionesConsola.h"
+#include "handlerConexiones.h"
 #include <grantp/javaStrings.h>
 #include <commons/collections/list.h>
 
@@ -23,6 +24,10 @@
 // pero ahora si no lo pongo no me toma los case
 //TODO: Probar comentando el include este
 #include <grantp/structCommons.h>
+
+
+extern int estadoSAFA;
+
 
 //TODO:CHEKEAR LOS ORDENES DE LOS INCLUDE
 void mainConsola();

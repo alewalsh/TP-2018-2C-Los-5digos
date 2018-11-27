@@ -11,21 +11,20 @@
 #include "SAFA.h"
 #include <grantp/configuracion.h>
 
-
-
 pthread_attr_t tattr;
 
 
 int main(int argc, char ** argv) {
 
-	//TODO: CREAR EL ESTADO CORRUPTO Y OPERATIVO DEL SAFA
-
 	//Creo las Variables locales
     pthread_t threadConsola;
     pthread_t threadConexiones;
-    pthread_t threadCambioConfig;
+//    pthread_t threadCambioConfig;
+    pthread_t threadCortoPlazo;
+    pthread_t threadLargoPlazo;
 
-    //inicializacion de recursos y carga de configuracion
+    /*inicializacion de recursos y carga de configuracion
+     /home/utnso/git/tp-2018-2c-Los-5digos/SAFA/config"*/
     inicializarRecursos(argv[1]);
 
     printf("Recursos incializados");
@@ -34,10 +33,13 @@ int main(int argc, char ** argv) {
 	inotifyFd = inotify_init();
 	inotifyWd = inotify_add_watch(inotifyFd,argv[1],IN_CLOSE_WRITE);
 
-	printf("Se crean los hilos de safa");
-    //Inicializo la consola del Planificador y los threads correspondientes
+	printf("Se crearan los hilos de safa");
+
+	//Inicializo la consola del Planificador y los threads correspondientes
     pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
-    pthread_create(&threadCambioConfig, &tattr, (void *) cambiosConfig, NULL);
+//    pthread_create(&threadCambioConfig, &tattr, (void *) cambiosConfig, NULL);
+    pthread_create(&threadCortoPlazo, &tattr, (void *) manejoCortoPlazo, NULL);
+    pthread_create(&threadLargoPlazo, &tattr, (void *) manejoLargoPlazo, NULL);
     pthread_create(&threadConsola, &tattr, (void *) mainConsola, NULL);
 
     printf("Hilos creados");
@@ -65,12 +67,12 @@ void inicializarRecursos(char * pathConfig){
         exit(1);
     }
 
-    log_info_mutex(logger, "Algoritmo de Planificacion: %d", conf->algoritmo);
+    log_info_mutex(logger, "Algoritmo de Planificacion leido de configuracion: %d", conf->algoritmo);
 
     pthread_attr_init(&tattr);
     pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
 
-//    initList();
+    initList();
     initMutexs();
 //    initSems();
     FD_ZERO(&master);
@@ -82,20 +84,26 @@ void inicializarRecursos(char * pathConfig){
 
 
 void liberarRecursos(){
-
-
+	//TODO: Ver que elemento es el que va a estar dentro de la lista, entiendo va a ser un DTB
 //    list_destroy_and_destroy_elements(statusList, freeEsi);
 //    list_destroy_and_destroy_elements(blockedKeys, freeBlockedKey);
-//
-//    pthread_mutex_destroy(&mutexStatusList);
-//    pthread_mutex_destroy(&mutexBlockedKeys);
+
+    pthread_mutex_destroy(&mutexNewList);
+    pthread_mutex_destroy(&mutexReadyList);
+    pthread_mutex_destroy(&mutexBloqueadosList);
+    pthread_mutex_destroy(&mutexEjecutandoList);
+    pthread_mutex_destroy(&mutexExitList);
+
     pthread_mutex_destroy(&mutexMaster);
     pthread_mutex_destroy(&mutexReadset);
+
 //    pthread_mutex_destroy(&mutexTime);
     pthread_mutex_destroy(&mutexExit);
-//    pthread_mutex_destroy(&mutexStop);
+    pthread_mutex_destroy(&mutexStop);
 //    pthread_mutex_destroy(&mutexReadyExecute);
-//    pthread_mutex_destroy(&mutexConsole);
+    pthread_mutex_destroy(&mutexConsole);
+    pthread_mutex_destroy(&mutexgdtCounter);
+    pthread_mutex_destroy(&mutexDummy);
 //
 //    sem_destroy(&sem_shouldScheduler);
 //    sem_destroy(&sem_newEsi);
@@ -108,21 +116,35 @@ void liberarRecursos(){
 
 
 void initMutexs(){
+
 	//Se inicializan todos los semaforos MUTEX a ser utilizados
 	pthread_mutex_init(&mutexMaster, NULL);
-//	pthread_mutex_init(&mutexStatusList, NULL);
-//	pthread_mutex_init(&mutexBlockedKeys, NULL);
 	pthread_mutex_init(&mutexReadset, NULL);
-//	pthread_mutex_init(&mutexTime, NULL);
 
+	//Mutex para las listas
+	pthread_mutex_init(&mutexNewList, NULL);
+	pthread_mutex_init(&mutexReadyList, NULL);
+	pthread_mutex_init(&mutexBloqueadosList, NULL);
+	pthread_mutex_init(&mutexEjecutandoList, NULL);
+	pthread_mutex_init(&mutexExitList, NULL);
+
+	//	pthread_mutex_init(&mutexTime, NULL);
 	pthread_mutex_init(&mutexExit, NULL);
-
-//	pthread_mutex_init(&mutexStop, NULL);
+	pthread_mutex_init(&mutexStop, NULL);
 //	pthread_mutex_init(&mutexReadyExecute, NULL);
-//	pthread_mutex_init(&mutexConsole, NULL);
+	pthread_mutex_init(&mutexConsole, NULL);
+	pthread_mutex_init(&mutexgdtCounter, NULL);
+	pthread_mutex_init(&mutexDummy, NULL);
 }
 
 
+void initList() {
+	colaNew = list_create();
+	colaReady = list_create();
+	colaBloqueados = list_create();
+	colaEjecutando = list_create();
+	colaExit = list_create();
+}
 
 void cambiosConfig(){
 	//TODO: Por ahora, si hay cambios me avisa. Tengo que ver como pausar la ejecucion
@@ -132,17 +154,23 @@ void cambiosConfig(){
 }
 
 
-////Se inicializan las listas de Estado y Claves Bloqueadas
-//void initList() {
-//    statusList = list_create();
-//    blockedKeys = list_create();
-//}
-//
+
 ////Se inicializan todos los semaforos a ser utilizados
 //void initSems() {
-//    sem_init(&sem_shouldScheduler, 0, 1);
-//    sem_init(&sem_newEsi, 0, 0);
-//    sem_init(&sem_shouldExecute, 0, 0);
-//    sem_init(&sem_preemptive, 0, 0);
+//
+////    sem_init(&sem_shouldScheduler, 0, 1);
+////    sem_init(&sem_newEsi, 0, 0);
+////    sem_init(&sem_shouldExecute, 0, 0);
+////    sem_init(&sem_preemptive, 0, 0);
 //}
+
+
+void manejoLargoPlazo() {
+	planificadorLP();
+}
+
+void manejoCortoPlazo() {
+	planificadorCP();
+}
+
 
