@@ -23,20 +23,24 @@
 
 //libreria para comando ls
 #include <dirent.h>
+#include <openssl/md5.h> // Para calcular el MD5
 
 pthread_t threadDAM;
 pthread_t threadConsola;
 
 pthread_attr_t tattr;
-t_socket* socketEscucha;
 
-t_log* logger;
+t_log* loggerMDJ;
+t_log* loggerAtencionDAM;
 configMDJ* configuracion;
 
 int * socketDAM;
+t_socket* socketEscucha;
+int trasnfer_size;
 
 //componentes FIFA
 t_bitarray *bitarray;
+pthread_mutex_t semaforoBitarray;
 
 enum codigosError
 {
@@ -45,6 +49,11 @@ enum codigosError
 	ERROR_CONFIG,
 	FIN_EXITOSO
 };
+
+typedef struct metadataArchivo{
+	int tamanio;
+	char * bloques;
+}metadataArchivo;
 
 int fileSystemAvtivo;
 
@@ -60,18 +69,22 @@ int cuantosBitsLibres();
 //FUNCIONES CONSOLA
 
 void inicializarCosnola();
-void detectaIngresoConsola(char* const mensaje, char[3][40]);
-void leerComandos(void);
-void menuConsola(void);
-
+void eleESE(char *);
+int lenUltimaCarpeta(char *);
 
 //FUNCIONES DAM
 int shouldExit;
 pthread_mutex_t mutexExit;
 
 void responderDAM();
-//void responderDAM(t_package, int);
+//void responderDAM(t_package);
 int validarArchivo(char *);
+void escribirStringEnArchivo(char *, char *);
+void escribirMetadata(char*, struct metadataArchivo *);
+void leerMetadata(char *, struct metadataArchivo *);
+char* obtenerDatos(char*,int ,int);
+void borrarArchivo(char *);
+
 
 void consoleExit();
 
