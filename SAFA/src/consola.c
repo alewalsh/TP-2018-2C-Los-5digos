@@ -16,14 +16,15 @@ int seguirEjecutando = 1;
 void executeCommand(int comando, char *args) {
     switch (comando) {
         case EJECUTAR:
-//            consolePlay(args);
-            printf("Comando EJECUTAR (%d) seleccionado.\n", comando);
+        	//printf("(%d)", estadoSAFA);
+            consolaEjecutar(args);
             break;
         case STATUS:
-//            consoleStop();
-            printf("Comando STATUS seleccionado.\n");
+            consolaStatus();
+//            printf("Comando STATUS seleccionado.\n");
             break;
         case FINALIZAR:
+            consolaLiberar();
 //            consoleBlock(args);
             printf("Comando FINALIZAR seleccionado.\n");
             break;
@@ -33,12 +34,16 @@ void executeCommand(int comando, char *args) {
             break;
         case EXIT:
             printf("Comando EXIT seleccionado.\n");
+            printf("Se procedera a cerrar el programa.\n");
         	seguirEjecutando = 0;
             consoleExit();
             break;
         case HELP:
             printf("Comando HELP seleccionado.\n");
             consoleHelp();
+            break;
+        case CLEAR:
+            consoleClear();
             break;
         default:
             printf("El comando igresado no es valido.\n");
@@ -49,6 +54,8 @@ void executeCommand(int comando, char *args) {
 
 
 void mainConsola() {
+
+	//TODO: HACER UNA WAIT DE QUE ESTE EN OPERATIVO EL THREAD DE CONEX
 
     char *rawline;
     char *comando;

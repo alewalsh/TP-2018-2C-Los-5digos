@@ -11,13 +11,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-//#include "schedulerFunctions.h"
+#include "funcionesSAFA.h"
 #include <semaphore.h>
 //#include "handlerConnections.h"
 
 
 extern int shouldExit;
 extern pthread_mutex_t mutexExit;
+
+extern t_list* colaNew;			// Lista New.
+extern t_list* colaReady;			// Lista Ready.
+extern t_list* colaBloqueados;		// Lista Bloqueados.
+extern t_list* colaEjecutando;     // Lista DTBs en ejec
+extern t_list* colaExit;		// Lista Terminados.
 
 //extern pthread_mutex_t mutexReadyExecute;
 //
@@ -27,9 +33,15 @@ extern pthread_mutex_t mutexExit;
 
 
 //void consoleStop();
-//
-//void consolePlay();
-//
+
+void consolaEjecutar(char *args);
+void consolaLiberar();
+
+void consolaStatus();
+void imprimirNEW();
+void imprimirREADY();
+void imprimirEJECUTANDO();
+
 //void consoleBlock(char *args);
 //
 //void consoleUnblock(char *esi);
@@ -37,8 +49,6 @@ extern pthread_mutex_t mutexExit;
 //void consoleList(char *key);
 //
 //void consoleKill(char *id);
-//
-//void consoleStatus(char *key);
 //
 //void consoleDeadlock();
 //
@@ -50,9 +60,9 @@ void consoleExit();
 void consoleHelp();
 
 //void consoleStatusAllESI();
-//
-//void consoleClear();
-//
+
+void consoleClear();
+
 //char *statusToString(uint16_t status);
 //
 //char *statusKeyToSting(uint16_t status);
