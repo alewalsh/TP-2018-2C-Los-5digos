@@ -153,6 +153,7 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 					char * linea = obtenerLinea(direccion(segmento->base, j));
 					if (accion == AccionDUMP)
 					{
+						imprimirInfoAdministrativaSegmentacion(data->pid);
 						printf("Linea %d PID %d: %s\n", j, data->pid, linea);
 						log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
 					}
@@ -172,6 +173,20 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 		return FM9_CPU_FALLO_SEGMENTO_MEMORIA;
 	}
 	return EXIT_SUCCESS;
+}
+
+void imprimirInfoAdministrativaSegmentacion(int pid)
+{
+	t_gdt * gdt = dictionary_get(tablaProcesos,intToString(pid));
+	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
+	int i = 0;
+	while(i < cantidadSegmentos)
+	{
+		t_segmento * segmento = dictionary_get(gdt->tablaSegmentos,intToString(i));
+		printf("PID %d: Nro Segmento %d - Base %d - Límite %d \n", pid, segmento->nroSegmento, segmento->base, segmento->limite);
+		log_info_mutex(logger, "PID %d: Nro Segmento %d - Base %d - Límite %d", pid, segmento->nroSegmento, segmento->base, segmento->limite);
+		i++;
+	}
 }
 
 t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo)

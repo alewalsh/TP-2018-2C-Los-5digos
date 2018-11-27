@@ -20,6 +20,7 @@ extern t_log_mutex * logger;
 extern configFM9 * config;
 
 int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion);
+void imprimirInfoAdministrativaSegmentacion(int pid);
 int cerrarArchivoSegmentacion(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socketSolicitud);
 int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud);
 t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo);

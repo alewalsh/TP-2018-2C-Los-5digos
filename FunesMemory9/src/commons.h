@@ -26,6 +26,7 @@ extern char * storage;
 extern t_log_mutex * logger;
 extern pthread_mutex_t mutexMaster;
 extern pthread_mutex_t mutexReadset;
+extern pthread_mutex_t mutexPIDBuscado;
 extern t_list * tablaPaginasInvertida;
 
 char * intToString(int numero);

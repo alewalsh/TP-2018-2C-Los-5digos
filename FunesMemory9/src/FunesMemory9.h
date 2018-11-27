@@ -45,7 +45,10 @@ pthread_mutex_t mutexMaster;
 pthread_mutex_t mutexReadset;
 pthread_mutex_t mutexMaxfd;
 pthread_mutex_t mutexExit;
+pthread_mutex_t mutexPaginaBuscada;
+pthread_mutex_t mutexPIDBuscado;
 
+void inicializarSemaforos();
 void inicializarContadores();
 void manejarConexiones();
 void manejarSolicitud(t_package pkg, int socketFD);

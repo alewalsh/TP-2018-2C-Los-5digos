@@ -9,8 +9,10 @@
 
 int flushTPI(int socketSolicitud, t_datosFlush * data, int accion)
 {
+	pthread_mutex_lock(&mutexPIDBuscado);
 	pidBuscado = data->pid;
 	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+	pthread_mutex_unlock(&mutexPIDBuscado);
 	int cantidadPaginas = list_size(paginasProceso);
 	if (cantidadPaginas <= 0)
 	{
@@ -53,6 +55,7 @@ int flushTPI(int socketSolicitud, t_datosFlush * data, int accion)
 					char * linea = obtenerLinea(direccion(pagina->nroPagina, j));
 					if (accion == AccionDUMP)
 					{
+						imprimirInfoAdministrativaTPI(data->pid);
 						printf("Linea %d PID %d: %s\n", j, data->pid, linea);
 						log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
 					}
@@ -72,6 +75,20 @@ int flushTPI(int socketSolicitud, t_datosFlush * data, int accion)
 		return FM9_CPU_FALLO_SEGMENTO_MEMORIA;
 	}
 	return EXIT_SUCCESS;
+}
+
+void imprimirInfoAdministrativaTPI(int pid)
+{
+	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+	int cantidadPaginas = list_size(paginasProceso);
+	int i = 0;
+	while(i < cantidadPaginas)
+	{
+		t_pagina * pagina = list_get(paginasProceso, i);
+		printf("PID %d: Nro Marco %d - Lineas utilizadas %d \n", pid, pagina->nroPagina, pagina->lineasUtilizadas);
+		log_info_mutex(logger, "PID %d: Nro Marco %d - Lineas utilizadas %d", pid, pagina->nroPagina, pagina->lineasUtilizadas);
+		i++;
+	}
 }
 
 int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud){
@@ -96,8 +113,10 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 		logPosicionesLibres(estadoMarcos,TPI);
 		return code;
 	}
+	pthread_mutex_lock(&mutexPIDBuscado);
 	pidBuscado = datosPaquete->pid;
 	t_list * paginasProceso = list_filter(tablaPaginasInvertida, (void *) filtrarPorPid);
+	pthread_mutex_unlock(&mutexPIDBuscado);
 	// ESTO PARA QUE ESTA?????
 	contLineasUsadas += cantLineas;
 
@@ -160,8 +179,10 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 int ejecutarGuardarEsquemaTPI(t_package pkg, t_infoGuardadoLinea* datosPaquete, int socket){
 
 	bool pudeGuardar = false;
+	pthread_mutex_lock(&mutexPIDBuscado);
 	pidBuscado = datosPaquete->pid;
 	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+	pthread_mutex_unlock(&mutexPIDBuscado);
 	int cantidadPaginas = list_size(paginasProceso);
 	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid);
 	if (cantidadPaginas <= 0)
@@ -210,8 +231,10 @@ int ejecutarGuardarEsquemaTPI(t_package pkg, t_infoGuardadoLinea* datosPaquete, 
 
 int cerrarArchivoTPI(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socketSolicitud)
 {
+	pthread_mutex_lock(&mutexPIDBuscado);
 	pidBuscado = datosPaquete->pid;
 	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+	pthread_mutex_unlock(&mutexPIDBuscado);
 	int cantidadPaginas = list_size(paginasProceso);
 	if (list_is_empty(paginasProceso))
 	{

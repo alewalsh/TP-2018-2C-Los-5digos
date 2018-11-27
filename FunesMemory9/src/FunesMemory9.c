@@ -23,6 +23,7 @@ int main(int argc, char** argv) {
 }
 
 void inicializarContadores(){
+	inicializarSemaforos();
 	contLineasUsadas = 0;
 	cantLineas = config->tamMemoria / config->tamMaxLinea;
 	cantPaginas = config->tamMemoria / config->tamPagina;
@@ -31,6 +32,16 @@ void inicializarContadores(){
 	tablaPaginasInvertida = list_create();
 	inicializarBitmap(estadoLineas);
 	inicializarBitmap(estadoMarcos);
+}
+
+void inicializarSemaforos()
+{
+	pthread_mutex_init(&mutexExit, NULL);
+	pthread_mutex_init(&mutexMaster, NULL);
+	pthread_mutex_init(&mutexMaxfd, NULL);
+	pthread_mutex_init(&mutexPaginaBuscada, NULL);
+	pthread_mutex_init(&mutexPIDBuscado, NULL);
+	pthread_mutex_init(&mutexReadset, NULL);
 }
 
 void manejarConexiones(){

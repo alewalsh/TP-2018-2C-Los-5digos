@@ -18,10 +18,6 @@
 #include <grantp/mutex_log.h>
 #include <stdbool.h>
 
-
-extern t_list *statusList;
-extern pthread_mutex_t mutexStatusList;
-
 extern pthread_mutex_t mutexMaster;
 extern pthread_mutex_t mutexReadset;
 extern pthread_mutex_t mutexMaxfd;

@@ -131,10 +131,12 @@ void realizarFlush(char * linea, int nroLinea, int transferSize, int socket)
 
 bool filtrarPorPid(t_pagina * pagina)
 {
+	pthread_mutex_lock(&mutexPIDBuscado);
 	if (pagina->pid == pidBuscado)
 	{
 		return true;
 	}
+	pthread_mutex_unlock(&mutexPIDBuscado);
 	return false;
 }
 
@@ -343,8 +345,10 @@ int obtenerLineasProceso(int pid)
 	}
 	if (config->modoEjecucion == TPI)
 	{
+		pthread_mutex_lock(&mutexPIDBuscado);
 		pidBuscado = pid;
 		t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+		pthread_mutex_unlock(&mutexPIDBuscado);
 		int i = 0, cantPaginas = list_size(paginasProceso);
 		while(i < cantPaginas)
 		{

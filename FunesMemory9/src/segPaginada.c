@@ -72,8 +72,10 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 			char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
 			if (nroLinea != lineaLeida)
 			{
+				pthread_mutex_lock(&mutexPaginaBuscada);
 				paginaBuscada = paginaActual;
 				t_pagina * pagina = list_find(gdt->tablaPaginas, (void *)filtrarPorNroPagina);
+				pthread_mutex_unlock(&mutexPaginaBuscada);
 				int tamanioBuffer = strlen(bufferGuardado);
 				bufferGuardado[tamanioBuffer] = '\n';
 				guardarLinea(direccion(pagina->nroPagina,lineasGuardadas), bufferGuardado);
@@ -197,8 +199,10 @@ int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int acci
 				while(j < (segmento->base+segmento->limite))
 				{
 					int idLinea = 0;
+					pthread_mutex_lock(&mutexPaginaBuscada);
 					paginaBuscada = j;
 					t_pagina * pagina = list_find(gdt->tablaPaginas, (void *) filtrarPorNroPagina);
+					pthread_mutex_unlock(&mutexPaginaBuscada);
 					while (idLinea < pagina->lineasUtilizadas)
 					{
 						if (strcmp(pagina->path, data->path) == 0)
@@ -206,6 +210,7 @@ int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int acci
 							char * linea = obtenerLinea(direccion(pagina->nroPagina, idLinea));
 							if (accion == AccionDUMP)
 							{
+								imprimirInfoAdministrativaSegPag(data->pid);
 								printf("Linea %d PID %d: %s\n", j, data->pid, linea);
 								log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
 							}
@@ -228,6 +233,31 @@ int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int acci
 		return FM9_CPU_FALLO_SEGMENTO_MEMORIA;
 	}
 	return EXIT_SUCCESS;
+}
+
+void imprimirInfoAdministrativaSegPag(int pid)
+{
+	t_gdt * gdt = dictionary_get(tablaProcesos,intToString(pid));
+	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
+	int i = 0;
+	while(i < cantidadSegmentos)
+	{
+		t_segmento * segmento = dictionary_get(gdt->tablaSegmentos,intToString(i));
+		printf("PID %d: Nro Segmento %d - Base %d - Límite %d \n", pid, segmento->nroSegmento, segmento->base, segmento->limite);
+		log_info_mutex(logger, "PID %d: Nro Segmento %d - Base %d - Límite %d", pid, segmento->nroSegmento, segmento->base, segmento->limite);
+		int j = segmento->base;
+		while (j < (segmento->base + segmento->limite))
+		{
+			pthread_mutex_lock(&mutexPaginaBuscada);
+			paginaBuscada = j;
+			t_pagina * pagina = list_find(gdt->tablaPaginas,(void * )filtrarPorNroPagina);
+			pthread_mutex_unlock(&mutexPaginaBuscada);
+			printf("PID %d: Nro Marco %d - Lineas utilizadas %d \n", pid, pagina->nroPagina, pagina->lineasUtilizadas);
+			log_info_mutex(logger, "PID %d: Nro Marco %d - Lineas utilizadas %d", pid, pagina->nroPagina, pagina->lineasUtilizadas);
+			j++;
+		}
+		i++;
+	}
 }
 
 int ejecutarGuardarEsquemaSegPag(t_package pkg, t_infoGuardadoLinea* datosPaquete, int socket)
@@ -262,8 +292,10 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg, t_infoGuardadoLinea* datosPaquet
 				}
 				else
 				{
+					pthread_mutex_lock(&mutexPaginaBuscada);
 					paginaBuscada = j;
 					t_pagina * pagina = list_find(gdt->tablaPaginas,(void * )filtrarPorNroPagina);
+					pthread_mutex_unlock(&mutexPaginaBuscada);
 					if (strcmp(pagina->path,datosPaquete->path) == 0)
 					{
 						guardarLinea(direccion(pagina->nroPagina, lineaBuscada), datosPaquete->datos);
@@ -301,10 +333,12 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg, t_infoGuardadoLinea* datosPaquet
 
 bool filtrarPorNroPagina(t_pagina * pagina)
 {
+	pthread_mutex_lock(&mutexPaginaBuscada);
 	if (pagina->nroPagina == paginaBuscada)
 	{
 		return true;
 	}
+	pthread_mutex_unlock(&mutexPaginaBuscada);
 	return false;
 }
 
@@ -327,8 +361,10 @@ int cerrarArchivoSegPag(t_package pkg, t_infoCerrarArchivo* datosPaquete, int so
 				int j = segmento->base;
 				while(i < (segmento->base + segmento->limite))
 				{
+					pthread_mutex_lock(&mutexPaginaBuscada);
 					paginaBuscada = j;
 					t_pagina * pagina = list_find(gdt->tablaPaginas, (void *)filtrarPorNroPagina);
+					pthread_mutex_unlock(&mutexPaginaBuscada);
 					liberarMarco(pagina);
 				}
 			}
