@@ -74,6 +74,7 @@ void manejarConexiones(){
     addNewSocketToMaster(socketListen);
 
     //TODO: Voy a tener que agregar que no se empiece a planificar hasta esto
+    //TODO: NO DEBERIA FUNCIONAR LA CONSOLA HASTA QUE SE LEVANTE, PONER
 
     while(estadoSAFA != Operativo){
 

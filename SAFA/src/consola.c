@@ -55,6 +55,8 @@ void executeCommand(int comando, char *args) {
 
 void mainConsola() {
 
+	//TODO: HACER UNA WAIT DE QUE ESTE EN OPERATIVO EL THREAD DE CONEX
+
     char *rawline;
     char *comando;
 	char *args;
