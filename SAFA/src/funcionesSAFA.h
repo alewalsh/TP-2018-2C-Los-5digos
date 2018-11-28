@@ -19,7 +19,7 @@
 #include "stdbool.h"
 
 //DTB DUMMY
-t_dtb *dummyDTB;
+t_dtb * dummyDTB;
 
 //extern t_list *statusList;
 //extern pthread_mutex_t mutexStatusList;
@@ -89,17 +89,21 @@ t_dtb *crearNuevoDTB(char *dirScript);
 int agregarDTBaNEW(t_dtb *dtb);
 void sumarGDTCounter();
 int obtenerGDTCounter();
+t_dtb * transformarPaqueteADTB(t_package paquete);
+t_package transformarDTBAPaquete(t_dtb * dtb);
+int bloquearDTB(t_dtb * dtb);
+int desbloquearDTB(t_dtb * dtb);
+int abortarDTB(t_dtb * dtb);
+//------------------------------------------------------------------------------------------------------------------
+//		FUNCIONES PARA MANEJO DEL DUMMY
+//------------------------------------------------------------------------------------------------------------------
 t_dtb *crearDummyDTB();
 void desbloquearDummy();
 void bloquearDummy();
 int obtenerEstadoDummy();
 void setearFlagInicializacionDummy(int num);
 void setearPathEnDummy(char * path);
-t_dtb * transformarPaqueteADTB(t_package paquete);
-t_package transformarDTBAPaquete(t_dtb * dtb);
-int bloquearDTB(t_dtb * dtb);
-int desbloquearDTB(t_dtb * dtb);
-int abortarDTB(t_dtb * dtb);
+int obtenerFlagDummy();
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA PLANIFICADOR CP
 //------------------------------------------------------------------------------------------------------------------

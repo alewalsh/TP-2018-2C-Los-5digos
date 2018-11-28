@@ -155,75 +155,12 @@ int obtenerGDTCounter() {
     return aux;
 }
 
-
-/*
- * DTB PARA EL DUMMY
- * Se inicializa en bloqueado
- */
-t_dtb *crearDummyDTB() {
-
-	//Se inicializa vacio, despues el PLP lo rellena cuando le pide al PCP
-	dummyDTB = malloc(sizeof(t_dtb));
-	dummyDTB->idGDT = 0;
-	dummyDTB->dirEscriptorio = NULL;
-	dummyDTB->programCounter = 0;
-	dummyDTB->flagInicializado = false;
-	dummyDTB->tablaDirecciones = NULL;
-	dummyDTB->cantidadLineas = 0;
-
-	list_add(colaBloqueados,dummyDTB);
-	return dummyDTB;
-}
-
 t_cpus *crearCpu() {
 	//Se inicializa vacio, despues el PLP lo rellena cuando le pide al PCP
     t_cpus *cpu = malloc(sizeof(t_cpus));
 	cpu->socket = 0;
 	cpu->libre = 0;//0 = libre, 1= en uso
 	return cpu;
-}
-
-void desbloquearDummy(){
-    pthread_mutex_lock(&mutexDummy);
-    dummyBloqueado = 0;
-    //desbloquear dummy
-    desbloquearDTB(dummyDTB);
-    pthread_mutex_unlock(&mutexDummy);
-}
-
-void bloquearDummy(){
-    pthread_mutex_lock(&mutexDummy);
-    dummyBloqueado = 1;
-    //bloquear dummy
-    bloquearDTB(dummyDTB);
-    pthread_mutex_unlock(&mutexDummy);
-}
-
-/*
- * Funcion para setear el path del scriptorio en el dummy
- * params: (char *) path a cargar
- */
-void setearPathEnDummy(char * path){
-	pthread_mutex_lock(&mutexDummy);
-	dummyDTB->dirEscriptorio = path;
-	pthread_mutex_unlock(&mutexDummy);
-}
-
-/*
- * Funcion para setear el flag de inicializacion del dummy
- * Params:(int) 1 o 0
- */
-void setearFlagInicializacionDummy(int num){
-	pthread_mutex_lock(&mutexDummy);
-	dummyDTB->flagInicializado = num;
-	pthread_mutex_unlock(&mutexDummy);
-}
-int obtenerEstadoDummy() {
-    int aux = 0;
-    pthread_mutex_lock(&mutexDummy);
-    aux = dummyBloqueado;
-    pthread_mutex_unlock(&mutexDummy);
-    return aux;
 }
 
 t_dtb * transformarPaqueteADTB(t_package paquete)
@@ -277,10 +214,6 @@ int abortarDTB(t_dtb * dtb){
 	return EXIT_SUCCESS;
 }
 
-//------------------------------------------------------------------------------------------------------------------
-//		FUNCIONES PARA .....
-//------------------------------------------------------------------------------------------------------------------
-
 int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){
 	int index = -1;
 	for(int i = 0; i<list_size(cola);i++){
@@ -293,3 +226,77 @@ int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){
 	return index;
 }
 
+//------------------------------------------------------------------------------------------------------------------
+//		FUNCIONES PARA MANEJO DEL DUMMY
+//------------------------------------------------------------------------------------------------------------------
+
+/*
+ * DTB PARA EL DUMMY
+ * Se inicializa en bloqueado
+ */
+t_dtb *crearDummyDTB() {
+
+	//Se inicializa vacio, despues el PLP lo rellena cuando le pide al PCP
+	dummyDTB = malloc(sizeof(t_dtb));
+	dummyDTB->idGDT = 0;
+	dummyDTB->dirEscriptorio = NULL;
+	dummyDTB->programCounter = 0;
+	dummyDTB->flagInicializado = false;
+	dummyDTB->tablaDirecciones = NULL;
+	dummyDTB->cantidadLineas = 0;
+
+	list_add(colaBloqueados,dummyDTB);
+	return dummyDTB;
+}
+
+
+void desbloquearDummy(){
+    pthread_mutex_lock(&mutexDummy);
+    dummyBloqueado = 0;
+    //desbloquear dummy
+    desbloquearDTB(dummyDTB);
+    pthread_mutex_unlock(&mutexDummy);
+}
+
+void bloquearDummy(){
+    pthread_mutex_lock(&mutexDummy);
+    dummyBloqueado = 1;
+    //bloquear dummy
+    bloquearDTB(dummyDTB);
+    pthread_mutex_unlock(&mutexDummy);
+}
+
+/*
+ * Funcion para setear el path del scriptorio en el dummy
+ * params: (char *) path a cargar
+ */
+void setearPathEnDummy(char * path){
+	pthread_mutex_lock(&mutexDummy);
+	dummyDTB->dirEscriptorio = path;
+	pthread_mutex_unlock(&mutexDummy);
+}
+
+/*
+ * Funcion para setear el flag de inicializacion del dummy
+ * Params:(int) 1 o 0
+ */
+void setearFlagInicializacionDummy(int num){
+	pthread_mutex_lock(&mutexDummy);
+	dummyDTB->flagInicializado = num;
+	pthread_mutex_unlock(&mutexDummy);
+}
+int obtenerEstadoDummy() {
+    int aux = 0;
+    pthread_mutex_lock(&mutexDummy);
+    aux = dummyBloqueado;
+    pthread_mutex_unlock(&mutexDummy);
+    return aux;
+}
+
+int obtenerFlagDummy() {
+    int aux = 0;
+    pthread_mutex_lock(&mutexDummy);
+    aux = dummyDTB->flagInicializado;
+    pthread_mutex_unlock(&mutexDummy);
+    return aux;
+}
