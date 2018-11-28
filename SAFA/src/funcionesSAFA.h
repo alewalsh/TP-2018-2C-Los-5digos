@@ -18,6 +18,8 @@
 #include <grantp/mutex_log.h>
 #include "stdbool.h"
 
+//DTB DUMMY
+t_dtb *dummyDTB;
 
 //extern t_list *statusList;
 //extern pthread_mutex_t mutexStatusList;
@@ -91,10 +93,13 @@ t_dtb *crearDummyDTB();
 void desbloquearDummy();
 void bloquearDummy();
 int obtenerEstadoDummy();
+void setearFlagInicializacionDummy(int num);
+void setearPathEnDummy(char * path);
 t_dtb * transformarPaqueteADTB(t_package paquete);
 t_package transformarDTBAPaquete(t_dtb * dtb);
-int bloquearDTB(t_package pkg);
-int abortarDTB(t_package pkg);
+int bloquearDTB(t_dtb * dtb);
+int desbloquearDTB(t_dtb * dtb);
+int abortarDTB(t_dtb * dtb);
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA PLANIFICADOR CP
 //------------------------------------------------------------------------------------------------------------------

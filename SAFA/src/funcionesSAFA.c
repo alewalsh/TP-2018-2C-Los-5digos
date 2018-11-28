@@ -156,16 +156,23 @@ int obtenerGDTCounter() {
 }
 
 
+/*
+ * DTB PARA EL DUMMY
+ * Se inicializa en bloqueado
+ */
 t_dtb *crearDummyDTB() {
+
 	//Se inicializa vacio, despues el PLP lo rellena cuando le pide al PCP
-    t_dtb *newDTB = malloc(sizeof(t_dtb));
-	newDTB->idGDT = 0;
-	newDTB->dirEscriptorio = NULL;
-	newDTB->programCounter = 0;
-	newDTB->flagInicializado = false;
-	newDTB->tablaDirecciones = NULL;
-	newDTB->cantidadLineas = 0;
-	return newDTB;
+	dummyDTB = malloc(sizeof(t_dtb));
+	dummyDTB->idGDT = 0;
+	dummyDTB->dirEscriptorio = NULL;
+	dummyDTB->programCounter = 0;
+	dummyDTB->flagInicializado = false;
+	dummyDTB->tablaDirecciones = NULL;
+	dummyDTB->cantidadLineas = 0;
+
+	list_add(colaBloqueados,dummyDTB);
+	return dummyDTB;
 }
 
 t_cpus *crearCpu() {
@@ -179,15 +186,38 @@ t_cpus *crearCpu() {
 void desbloquearDummy(){
     pthread_mutex_lock(&mutexDummy);
     dummyBloqueado = 0;
+    //desbloquear dummy
+    desbloquearDTB(dummyDTB);
     pthread_mutex_unlock(&mutexDummy);
 }
 
 void bloquearDummy(){
     pthread_mutex_lock(&mutexDummy);
     dummyBloqueado = 1;
+    //bloquear dummy
+    bloquearDTB(dummyDTB);
     pthread_mutex_unlock(&mutexDummy);
 }
 
+/*
+ * Funcion para setear el path del scriptorio en el dummy
+ * params: (char *) path a cargar
+ */
+void setearPathEnDummy(char * path){
+	pthread_mutex_lock(&mutexDummy);
+	dummyDTB->dirEscriptorio = path;
+	pthread_mutex_unlock(&mutexDummy);
+}
+
+/*
+ * Funcion para setear el flag de inicializacion del dummy
+ * Params:(int) 1 o 0
+ */
+void setearFlagInicializacionDummy(int num){
+	pthread_mutex_lock(&mutexDummy);
+	dummyDTB->flagInicializado = num;
+	pthread_mutex_unlock(&mutexDummy);
+}
 int obtenerEstadoDummy() {
     int aux = 0;
     pthread_mutex_lock(&mutexDummy);
@@ -226,15 +256,24 @@ t_package transformarDTBAPaquete(t_dtb * dtb)
 	return paquete;
 }
 
-int bloquearDTB(t_package pkg){
+int bloquearDTB(t_dtb * dtb){
 	//logica para bloquear dtb
-	t_dtb * dtb = transformarPaqueteADTB(pkg);
+	int i = buscarDTBEnCola(colaEjecutando,dtb);
+	t_dtb * dtbABloquear = list_remove(colaEjecutando,i);
+	list_add(colaBloqueados,dtbABloquear);
 	return EXIT_SUCCESS;
 }
 
-int abortarDTB(t_package pkg){
+int desbloquearDTB(t_dtb * dtb){
+	//logica para desbloquear dtb
+	int i = buscarDTBEnCola(colaBloqueados,dtb);
+	t_dtb * dtbADesbloquear = list_remove(colaBloqueados,i);
+	list_add(colaReady,dtbADesbloquear);
+	return EXIT_SUCCESS;
+}
+
+int abortarDTB(t_dtb * dtb){
 	//logica para abortar dtb
-	t_dtb * dtb = transformarPaqueteADTB(pkg);
 	return EXIT_SUCCESS;
 }
 

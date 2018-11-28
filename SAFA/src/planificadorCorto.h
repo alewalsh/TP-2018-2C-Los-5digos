@@ -20,7 +20,6 @@ extern t_list* colaBloqueados;		// Lista Bloqueados.
 extern t_list* colaEjecutando;     // Lista DTBs en ejec
 extern t_list* colaExit;		// Lista Terminados.
 
-t_dtb *dummyDTB;
 int dummyBloqueado;
 
 pthread_mutex_t mutexPlanificando;
@@ -30,6 +29,7 @@ void planificadorCP();
 void ejecutarRR();
 void enviarDTBaCPU(t_dtb *dtbAEnviar);
 int buscarCPULibre();
+int buscarDtbParaInicializar();
 
 t_dtb *pasarDTBdeREADYaEXEC();
 int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq);

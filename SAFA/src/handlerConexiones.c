@@ -174,17 +174,17 @@ void manejarConexiones(){
 
 
 void manejarSolicitud(t_package pkg, int socketFD) {
-
+	t_dtb * dtb = transformarPaqueteADTB(pkg);
     switch (pkg.code) {
         case CPU_SAFA_BLOQUEAR_DTB:
-        	if(bloquearDTB(pkg))
+        	if(bloquearDTB(dtb))
         	{
         		log_error_mutex(logger, "Hubo un error al bloquear el DTB");
         		break;
         	}
         	break;
         case CPU_SAFA_ABORTAR_DTB:
-        	if(abortarDTB(pkg))
+        	if(abortarDTB(dtb))
         	{
         		log_error_mutex(logger, "Hubo un error al abortar el DTB.");
         		break;
@@ -192,6 +192,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	break;
 
         case CPU_SAFA_BLOQUEAR_DUMMMY:
+        	//EL PCP DEBE BLOQUEAR EL DUMMY
 			bloquearDummy();
 			break;
         case CPU_SAFA_FIN_EJECUCION_DTB:

@@ -23,6 +23,20 @@ void planificadorCP() {
 
     while(1){
 
+    	/**
+    	 * FUNCIONALIDAD 1:
+    	 * Si hay un proceso en new y tiene el flag de inicializacion en 1:
+    	 *      -> Debo desbloquear el dtbdummy y agregarlo al a lista de ready
+    	 */
+
+    	if(list_size(colaNew) > 0){
+    		int index = buscarDtbParaInicializar();
+    		if(index > 0){
+    			//Desbloquear dtb dummy
+    			desbloquearDummy();
+    		}
+    	}
+
     	//SI HAY PROCESOS EN READY Y HAY CPUS LIBRES SE MANDAN A EJECUTAR S/ALGORITMO
     	if( (list_size(colaReady) > 0) && (planificando == 0) ){
 
@@ -47,6 +61,17 @@ void planificadorCP() {
 
     	}
     }
+}
+
+int buscarDtbParaInicializar(){
+	int index = -1;
+	for(int i = 0; i<list_size(colaNew);i++){
+		t_dtb * dtb = list_get(colaNew,0);
+		if(dtb->flagInicializado == 1){
+			return index;
+		}
+	}
+	return index;
 }
 
 void planificadorCPdesbloquearDummy(int idGDT, char *dirScript){
