@@ -196,6 +196,10 @@ t_package transformarDTBAPaquete(t_dtb * dtb)
 int bloquearDTB(t_dtb * dtb){
 	//logica para bloquear dtb
 	int i = buscarDTBEnCola(colaEjecutando,dtb);
+	if(i<0){
+		log_error_mutex(logger, "Error al bloquear el dtb: %d", dtb->idGDT);
+		return EXIT_FAILURE;
+	}
 	t_dtb * dtbABloquear = list_remove(colaEjecutando,i);
 	list_add(colaBloqueados,dtbABloquear);
 	return EXIT_SUCCESS;
@@ -204,6 +208,10 @@ int bloquearDTB(t_dtb * dtb){
 int desbloquearDTB(t_dtb * dtb){
 	//logica para desbloquear dtb
 	int i = buscarDTBEnCola(colaBloqueados,dtb);
+	if(i<0){
+		log_error_mutex(logger, "Error al desbloquear el dtb: %d", dtb->idGDT);
+		return EXIT_FAILURE;
+	}
 	t_dtb * dtbADesbloquear = list_remove(colaBloqueados,i);
 	list_add(colaReady,dtbADesbloquear);
 	return EXIT_SUCCESS;
@@ -216,7 +224,10 @@ int abortarDTB(t_dtb * dtb){
 
 int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){
 	int index = -1;
-	for(int i = 0; i<list_size(cola);i++){
+	int listSize = list_size(cola);
+	if(listSize<= 0) return index;
+
+	for(int i = 0; i<listSize;i++){
 		t_dtb * dtb = list_get(cola,i);
 		if(dtb->idGDT == dtbABuscar->idGDT){
 			index = i;

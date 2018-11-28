@@ -177,6 +177,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 	t_dtb * dtb = transformarPaqueteADTB(pkg);
     switch (pkg.code) {
         case CPU_SAFA_BLOQUEAR_DTB:
+        	//TODO:Aca debería tomar los quantums que sobraron para el algoritmo VRR
         	if(bloquearDTB(dtb))
         	{
         		log_error_mutex(logger, "Hubo un error al bloquear el DTB");
@@ -192,9 +193,9 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	break;
 
         case CPU_SAFA_BLOQUEAR_DUMMMY:
-        	//EL PCP DEBE BLOQUEAR EL DUMMY
-			bloquearDummy();
-			break;
+        	//Se bloquea el dummy
+        	bloquearDummy();
+        	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:
         	break;
         case CPU_SAFA_SIGNAL_RECURSO: break; case CPU_SAFA_WAIT_RECURSO: break;

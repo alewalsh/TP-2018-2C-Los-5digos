@@ -32,25 +32,27 @@ void planificadorCP() {
     	if(list_size(colaNew) > 0){
     		int index = buscarDtbParaInicializar();
     		if(index > 0){
-    			//Desbloquear dtb dummy
+    			//Se desbloquea el dummy y se agrega a la lista de ready
     			desbloquearDummy();
     		}
     	}
 
-    	//SI HAY PROCESOS EN READY Y HAY CPUS LIBRES SE MANDAN A EJECUTAR S/ALGORITMO
-    	if( (list_size(colaReady) > 0) && (planificando == 0) ){
+    	/* FUNCIONALIDAD 2:
+    	 * Si hay procesos en la cola de ready y hay cpus libres
+    	 * 		->Se manda a ejecutar s/ el algoritmo
+    	 */
+    	if( (list_size(colaReady) > 0)){
 
             switch (conf->algoritmo) {
                 case RR:
                     log_info_mutex(logger, "PCP mediante Round Robin");
                     pthread_mutex_lock(&mutexPlanificando);
-                    planificando=1;
                     ejecutarRR();
                     pthread_mutex_unlock(&mutexPlanificando);
                     break;
                 case VRR:
                 	log_info_mutex(logger, "PCP mediante Virtual Round Robin");
-        //            planificarVRR();
+        //          planificarVRR();
                     break;
                 default:
                 	log_info_mutex(logger, "PCP mediante Propio");
@@ -65,7 +67,11 @@ void planificadorCP() {
 
 int buscarDtbParaInicializar(){
 	int index = -1;
-	for(int i = 0; i<list_size(colaNew);i++){
+	int sizeList = list_size(colaNew);
+
+	if(sizeList<=0) return index;
+
+	for(int i = 0; i<sizeList;i++){
 		t_dtb * dtb = list_get(colaNew,0);
 		if(dtb->flagInicializado == 1){
 			return index;
