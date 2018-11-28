@@ -27,12 +27,13 @@ pthread_mutex_t mutexPlanificando;
 
 
 void planificadorCP();
-void planificadorCPdesbloquearDummy(int idGDT, char *dirScript);
 void ejecutarRR();
-t_dtb *pasarDTBdeREADYaEXEC();
 void enviarDTBaCPU(t_dtb *dtbAEnviar);
-void pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq);
 int buscarCPULibre();
+
+t_dtb *pasarDTBdeREADYaEXEC();
+int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq);
+int pasarDTBdeEXECaREADY(t_dtb * dtbABloq);
 void planificadorCPdesbloquearDummy(int idGDT, char *dirScript);
 //variable global
 

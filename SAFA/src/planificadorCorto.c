@@ -82,28 +82,56 @@ t_dtb *pasarDTBdeREADYaEXEC(){
     return primerDTBenReady;
 }
 
-void pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq){
+int pasarDTBdeEXECaREADY(t_dtb * dtbABloq){
+
+	pthread_mutex_lock(&mutexBloqueadosList);
+	pthread_mutex_lock(&mutexEjecutandoList);
+
+	int index = buscarDTBEnCola(colaEjecutando,dtbABloq);
+
+	if(index > 0){
+		t_dtb * dtbEjecutandoABloquear = (t_dtb *) list_remove(colaEjecutando,index);
+		list_add(colaReady, dtbEjecutandoABloquear);
+	}else{
+		//Error
+		pthread_mutex_unlock(&mutexEjecutandoList);
+		pthread_mutex_unlock(&mutexBloqueadosList);
+		return EXIT_FAILURE;
+	}
+
+	pthread_mutex_unlock(&mutexEjecutandoList);
+	pthread_mutex_unlock(&mutexBloqueadosList);
+	return EXIT_SUCCESS;
+}
+
+int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq){
 
     pthread_mutex_lock(&mutexBloqueadosList);
     pthread_mutex_lock(&mutexEjecutandoList);
 
-    int dtbABloquear;
+    int index = buscarDTBEnCola(colaEjecutando,dtbABloq);
 
-	for(int i = 0; i<list_size(colaEjecutando);i++){
-		t_dtb * dtb = list_get(colaEjecutando,i);
-		if(dtb->idGDT == dtbABloq->idGDT){
-			dtbABloquear = i;
-		}
+	if(index > 0){
+		t_dtb * dtbEjecutandoABloquear = (t_dtb *) list_remove(colaEjecutando,index);
+	    list_add(colaBloqueados, dtbEjecutandoABloquear);
+	}else{
+		//Error
+		pthread_mutex_unlock(&mutexEjecutandoList);
+		pthread_mutex_unlock(&mutexBloqueadosList);
+		return EXIT_FAILURE;
 	}
-
-	t_dtb * dtbEjecutandoABloquear = (t_dtb *) list_remove(colaEjecutando,dtbABloquear);
-    list_add(colaBloqueados, dtbEjecutandoABloquear);
 
     pthread_mutex_unlock(&mutexEjecutandoList);
 	pthread_mutex_unlock(&mutexBloqueadosList);
+	return EXIT_SUCCESS;
 }
 
 void enviarDTBaCPU(t_dtb *dtbAEnviar){
+
+	int socketCPU = buscarCPULibre();
+	if(socketCPU < 0){
+		//NO HAY CPUS LIBRES -> TODO: VER QUE DEBERÍA PASAR
+	}
 
     log_info_mutex(logger, "PCP: Se enviara un DTB a CPU");
 
@@ -121,19 +149,16 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar){
     		(strlen(dtbAEnviar->dirEscriptorio) + strlen(dtbAEnviar->tablaDirecciones)) * sizeof(char);
 
     //MANDO EL PAQUETE CON EL MENSAJE A LA CPU LIBRE
-    int socketCPU = buscarCPULibre();
+	if(enviar(socketCPU,SAFA_CPU_EJECUTAR,paquete,pqtSize,logger->logger)){
+		//Error al enviar
+		log_error_mutex(logger, "No se pudo enviar el DTB al CPU..");
+		int result = pasarDTBdeEXECaBLOQUED(dtbAEnviar);
+		if(result == EXIT_FAILURE){
+			log_error_mutex(logger, "Error al bloquear el DTB..");
+	   }
+	}
+	log_info_mutex(logger, "Se envió el DTB a ejecutar a la CPU: %d",socketCPU);
 
-    if(socketCPU > 0){
-    	if(enviar(socketCPU,SAFA_CPU_EJECUTAR,paquete,pqtSize,logger->logger)){
-			//Error al enviar
-			log_error_mutex(logger, "No se pudo enviar el DTB al CPU..");
-			//TODO: se deberia pasar el proceso a bloqueado
-			pasarDTBdeEXECaBLOQUED(dtbAEnviar);
-		}
-    }else{
-    	//NO HAY CPUS LIBRES -> no debería pasar
-
-    }
 
     free(paquete);
 }

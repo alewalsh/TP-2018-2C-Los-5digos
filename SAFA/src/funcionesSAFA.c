@@ -242,5 +242,15 @@ int abortarDTB(t_package pkg){
 //		FUNCIONES PARA .....
 //------------------------------------------------------------------------------------------------------------------
 
-
+int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){
+	int index = -1;
+	for(int i = 0; i<list_size(cola);i++){
+		t_dtb * dtb = list_get(cola,i);
+		if(dtb->idGDT == dtbABuscar->idGDT){
+			index = i;
+			break;
+		}
+	}
+	return index;
+}
 
