@@ -168,6 +168,13 @@ t_dtb *crearDummyDTB() {
 	return newDTB;
 }
 
+t_cpus *crearCpu() {
+	//Se inicializa vacio, despues el PLP lo rellena cuando le pide al PCP
+    t_cpus *cpu = malloc(sizeof(t_cpus));
+	cpu->socket = 0;
+	cpu->libre = 0;//0 = libre, 1= en uso
+	return cpu;
+}
 
 void desbloquearDummy(){
     pthread_mutex_lock(&mutexDummy);
@@ -189,6 +196,47 @@ int obtenerEstadoDummy() {
     return aux;
 }
 
+t_dtb * transformarPaqueteADTB(t_package paquete)
+{
+	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
+	t_dtb * dtb = malloc(sizeof(t_dtb));
+	char *buffer = paquete.data;
+	dtb->idGDT = copyIntFromBuffer(&buffer);
+	dtb->dirEscriptorio = copyStringFromBuffer(&buffer);
+	dtb->programCounter = copyIntFromBuffer(&buffer);
+	dtb->flagInicializado = copyIntFromBuffer(&buffer);
+	dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
+	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
+	return dtb;
+}
+
+t_package transformarDTBAPaquete(t_dtb * dtb)
+{
+	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
+	t_package paquete;
+	char *buffer;
+	copyIntToBuffer(&buffer, dtb->idGDT);
+	copyStringToBuffer(&buffer, dtb->dirEscriptorio);
+	copyIntToBuffer(&buffer, dtb->programCounter);
+	copyIntToBuffer(&buffer, dtb->flagInicializado);
+	copyStringToBuffer(&buffer, dtb->tablaDirecciones);
+	copyIntToBuffer(&buffer, dtb->cantidadLineas);
+	paquete.data = buffer;
+	paquete.size = 4*sizeof(int)+strlen(dtb->dirEscriptorio)+strlen(dtb->tablaDirecciones);
+	return paquete;
+}
+
+int bloquearDTB(t_package pkg){
+	//logica para bloquear dtb
+	t_dtb * dtb = transformarPaqueteADTB(pkg);
+	return EXIT_SUCCESS;
+}
+
+int abortarDTB(t_package pkg){
+	//logica para abortar dtb
+	t_dtb * dtb = transformarPaqueteADTB(pkg);
+	return EXIT_SUCCESS;
+}
 
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA .....

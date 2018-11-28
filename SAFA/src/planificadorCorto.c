@@ -22,8 +22,8 @@ void planificadorCP() {
 	int planificando = 0; // 0=No planificando  1=planificando
 
     while(1){
-    	//TODO: Esto va a tener que estar ejecutando siempre que haya elementos en la cola de READY!!!!
 
+    	//SI HAY PROCESOS EN READY Y HAY CPUS LIBRES SE MANDAN A EJECUTAR S/ALGORITMO
     	if( (list_size(colaReady) > 0) && (planificando == 0) ){
 
             switch (conf->algoritmo) {
@@ -62,8 +62,11 @@ void planificadorCPdesbloquearDummy(int idGDT, char *dirScript){
 
 void ejecutarRR(){
 
+	//Se pasa el primer proceso de los Ready a CPU a Ejecutar
+	//Se cambia de cola
 	t_dtb *dtb = pasarDTBdeREADYaEXEC();
 
+	//Se envía a cpu
 	enviarDTBaCPU(dtb);
 
 }
@@ -79,7 +82,7 @@ t_dtb *pasarDTBdeREADYaEXEC(){
     return primerDTBenReady;
 }
 
-void pasarDTBdeEXECaBLOQUED(t_dtb dtbABloq){
+void pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq){
 
     pthread_mutex_lock(&mutexBloqueadosList);
     pthread_mutex_lock(&mutexEjecutandoList);
@@ -87,8 +90,8 @@ void pasarDTBdeEXECaBLOQUED(t_dtb dtbABloq){
     int dtbABloquear;
 
 	for(int i = 0; i<list_size(colaEjecutando);i++){
-		t_dtb dtb = list_get(colaEjecutando,i);
-		if(dtb.idGDT == dtbABloq.idGDT){
+		t_dtb * dtb = list_get(colaEjecutando,i);
+		if(dtb->idGDT == dtbABloq->idGDT){
 			dtbABloquear = i;
 		}
 	}
@@ -121,7 +124,7 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar){
     int socketCPU = buscarCPULibre();
 
     if(socketCPU > 0){
-    	if(enviar(socketCPU,SAFA_CPU_EJECUTAR,&paquete,pqtSize,logger)){
+    	if(enviar(socketCPU,SAFA_CPU_EJECUTAR,paquete,pqtSize,logger->logger)){
 			//Error al enviar
 			log_error_mutex(logger, "No se pudo enviar el DTB al CPU..");
 			//TODO: se deberia pasar el proceso a bloqueado
@@ -138,9 +141,9 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar){
 int buscarCPULibre(){
 	int socketLibre;
 	for(int i = 0; i<list_size(listaCpus);i++){
-		t_cpus cpu = list_get(listaCpus,i);
-		if(cpu.libre == 0){
-			return socketLibre = cpu.socket;
+		t_cpus * cpu = list_get(listaCpus,i);
+		if(cpu->libre== 0){
+			return socketLibre = cpu->socket;
 		}
 	}
 	return -1;

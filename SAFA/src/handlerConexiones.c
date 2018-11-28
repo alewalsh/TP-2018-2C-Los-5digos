@@ -62,6 +62,8 @@ void manejarConexiones(){
 	int CPUConectado, DAMConectado = 0;
 	log_trace_mutex(logger, "Se inicializa SAFA en estado Corrupto");
 
+	initCpuList();
+
     //Creo el socket y me quedo escuchando
 	if (escuchar(conf->puerto, &socketListen, logger->logger)) {
 		liberarRecursos();
@@ -75,7 +77,6 @@ void manejarConexiones(){
 
     //TODO: Voy a tener que agregar que no se empiece a planificar hasta esto
     //TODO: NO DEBERIA FUNCIONAR LA CONSOLA HASTA QUE SE LEVANTE, PONER
-
     while(estadoSAFA != Operativo){
 
         if (acceptConnection(socketListen, &nuevoFd, SAFA_HSK, &handshake, logger->logger)) {
@@ -94,10 +95,10 @@ void manejarConexiones(){
                 CPUConectado++;
 
                 //agregar socket a lista de cpus
-                t_cpus cpu;
-                cpu.libre = 0;
-                cpu.socket = nuevoFd;
-                list_add(listaCpus,cpu);
+                t_cpus * cpu = crearCpu();
+                cpu->libre= 0;
+                cpu->socket= nuevoFd;
+                list_add(listaCpus, cpu);
 
                 char *buffer = copyIntToBuffer(&buffer,conf->quantum);
             	int size;
@@ -161,7 +162,7 @@ void manejarConexiones(){
                         log_error_mutex(logger, "No se pudo recibir el mensaje");
                         //handlerDisconnect(i);
                     } else {
-                        //manejarSolicitud(pkg, i);
+                        manejarSolicitud(pkg, i);
                     }
 
                 }
@@ -169,4 +170,50 @@ void manejarConexiones(){
         }
     }
 
+}
+
+
+void manejarSolicitud(t_package pkg, int socketFD) {
+
+    switch (pkg.code) {
+        case CPU_SAFA_BLOQUEAR_DTB:
+        	if(bloquearDTB(pkg))
+        	{
+        		log_error_mutex(logger, "Hubo un error al bloquear el DTB");
+        		break;
+        	}
+        	break;
+        case CPU_SAFA_ABORTAR_DTB:
+        	if(abortarDTB(pkg))
+        	{
+        		log_error_mutex(logger, "Hubo un error al abortar el DTB.");
+        		break;
+        	}
+        	break;
+
+        case CPU_SAFA_BLOQUEAR_DUMMMY:
+			bloquearDummy();
+			break;
+        case CPU_SAFA_FIN_EJECUCION_DTB:
+        	break;
+        case CPU_SAFA_SIGNAL_RECURSO: break; case CPU_SAFA_WAIT_RECURSO: break;
+
+        case SOCKET_DISCONECT:
+//            handlerDisconnect(socketFD);
+            close(socketFD);
+//            deleteSocketFromMaster(socketFD);
+            break;
+        default:
+            log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
+            log_warning_mutex(logger, "Ojo, estas recibiendo un mensaje que no esperabas.");
+            break;
+
+    }
+
+    free(pkg.data);
+
+}
+
+void initCpuList(){
+	listaCpus = list_create();
 }

@@ -91,7 +91,15 @@ t_dtb *crearDummyDTB();
 void desbloquearDummy();
 void bloquearDummy();
 int obtenerEstadoDummy();
+t_dtb * transformarPaqueteADTB(t_package paquete);
+t_package transformarDTBAPaquete(t_dtb * dtb);
+int bloquearDTB(t_package pkg);
+int abortarDTB(t_package pkg);
+//------------------------------------------------------------------------------------------------------------------
+//		FUNCIONES PARA PLANIFICADOR CP
+//------------------------------------------------------------------------------------------------------------------
 
+t_cpus *crearCpu();
 
 
 #endif /* FUNCIONESSAFA_H_ */
