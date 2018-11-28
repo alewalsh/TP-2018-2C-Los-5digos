@@ -37,6 +37,12 @@ typedef struct{
 } t_datosFlush;
 
 typedef struct{
+	int socket;
+	int libre; //0 = libre, 1= en uso
+} t_cpus;
+
+
+typedef struct{
 	int nroSegmento;
 	int base;
 	int limite;

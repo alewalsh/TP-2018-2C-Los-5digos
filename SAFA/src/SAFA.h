@@ -67,6 +67,7 @@ t_list* colaBloqueados;		// Lista Bloqueados.
 t_list* colaEjecutando;     // Lista DTBs en ejec
 t_list* colaExit;		// Lista Terminados.
 
+t_cpus* listaCpus;
 
 ////informa que se corrio un EJECUTAR y hay dtbs en NEW
 //sem_t sem_DTBenNEW;

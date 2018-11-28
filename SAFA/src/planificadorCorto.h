@@ -32,4 +32,6 @@ void ejecutarRR();
 t_dtb *pasarDTBdeREADYaEXEC();
 void enviarDTBaCPU(t_dtb *dtbAEnviar);
 
+//variable global
+
 #endif /* PLANIFICADORCORTO_H_ */

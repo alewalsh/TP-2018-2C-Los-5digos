@@ -60,14 +60,11 @@ void planificadorCPdesbloquearDummy(int idGDT, char *dirScript){
 	list_add(colaReady, dummyDTB);
 }
 
-
-
 void ejecutarRR(){
 
 	t_dtb *dtb = pasarDTBdeREADYaEXEC();
 
 	enviarDTBaCPU(dtb);
-
 
 }
 
@@ -82,13 +79,33 @@ t_dtb *pasarDTBdeREADYaEXEC(){
     return primerDTBenReady;
 }
 
+void pasarDTBdeEXECaBLOQUED(t_dtb dtbABloq){
+
+    pthread_mutex_lock(&mutexBloqueadosList);
+    pthread_mutex_lock(&mutexEjecutandoList);
+
+    int dtbABloquear;
+
+	for(int i = 0; i<list_size(colaEjecutando);i++){
+		t_dtb dtb = list_get(colaEjecutando,i);
+		if(dtb.idGDT == dtbABloq.idGDT){
+			dtbABloquear = i;
+		}
+	}
+
+	t_dtb * dtbEjecutandoABloquear = (t_dtb *) list_remove(colaEjecutando,dtbABloquear);
+    list_add(colaBloqueados, dtbEjecutandoABloquear);
+
+    pthread_mutex_unlock(&mutexEjecutandoList);
+	pthread_mutex_unlock(&mutexBloqueadosList);
+}
+
 void enviarDTBaCPU(t_dtb *dtbAEnviar){
 
     log_info_mutex(logger, "PCP: Se enviara un DTB a CPU");
 
     //CREO EL PAQUETE Y LO COMPRIMO
     char *paquete;
-    int pqtSize = sizeof(int);
 
     copyIntToBuffer(&paquete,dtbAEnviar->idGDT);
     copyStringToBuffer(&paquete,dtbAEnviar->dirEscriptorio);
@@ -97,41 +114,37 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar){
     copyStringToBuffer(&paquete,dtbAEnviar->tablaDirecciones);
     copyIntToBuffer(&paquete,dtbAEnviar->cantidadLineas);
 
-    pqtSize = pqtSize + strlen(paquete);
+    int pqtSize = sizeof(int)*4 +
+    		(strlen(dtbAEnviar->dirEscriptorio) + strlen(dtbAEnviar->tablaDirecciones)) * sizeof(char);
 
-    //MANDO EL PAQUETE CON EL MENSAJE
+    //MANDO EL PAQUETE CON EL MENSAJE A LA CPU LIBRE
+    int socketCPU = buscarCPULibre();
 
-    //TODO: Crear una lista con los int de los socketCpus, cuando vot a mandar, tengo que sacar el socket
-    // del masterSet, hacer un update del readset, y mandar a ese socket.
-    // Una vez que se mando, tengo que agregar el socket denuevo al master y update denuevo.
+    if(socketCPU > 0){
+    	if(enviar(socketCPU,SAFA_CPU_EJECUTAR,&paquete,pqtSize,logger)){
+			//Error al enviar
+			log_error_mutex(logger, "No se pudo enviar el DTB al CPU..");
+			//TODO: se deberia pasar el proceso a bloqueado
+			pasarDTBdeEXECaBLOQUED(dtbAEnviar);
+		}
+    }else{
+    	//NO HAY CPUS LIBRES -> no debería pasar
 
-    //SI TODO OK, HAGO EL FREE, SINO, HAGO EL FREE EN EL FAIL
+    }
 
+    free(paquete);
 }
 
-
-
-//int enviar(int socket, uint16_t code, char *data, uint32_t size, t_log *logger) {
-
-//char* copyStringToBuffer(char **buffer, char* origin) {
-//char* copyIntToBuffer(char** buffer, int value) {
-//char *copySizeToBuffer(char**buffer, char*data, int size) {
-
-// Enviar la informacion del recurso y del idGDT que lo bloquea (o desbloquea) al SAFA
-//	int size = strlen(recurso) + sizeof(int);
-//	char * buffer;
-//	copyStringToBuffer(&buffer, recurso);
-//	copyIntToBuffer(&buffer,idGDT);
-//	size = strlen(buffer);
-//	if(enviar(t_socketSAFA->socket,code,buffer, size, loggerCPU->logger))
-//	{
-//		log_error_mutex(loggerCPU, "No se pudo enviar el bloqueo o desbloqueo del recurso al SAFA..");
-//		free(buffer);
-//		return EXIT_FAILURE;
-//	}
-//	free(buffer);
-//	return EXIT_SUCCESS;
-
+int buscarCPULibre(){
+	int socketLibre;
+	for(int i = 0; i<list_size(listaCpus);i++){
+		t_cpus cpu = list_get(listaCpus,i);
+		if(cpu.libre == 0){
+			return socketLibre = cpu.socket;
+		}
+	}
+	return -1;
+}
 
 
 

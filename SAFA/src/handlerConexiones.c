@@ -93,6 +93,12 @@ void manejarConexiones(){
                 addNewSocketToMaster(nuevoFd);
                 CPUConectado++;
 
+                //agregar socket a lista de cpus
+                t_cpus cpu;
+                cpu.libre = 0;
+                cpu.socket = nuevoFd;
+                list_add(listaCpus,cpu);
+
                 char *buffer = copyIntToBuffer(&buffer,conf->quantum);
             	int size;
             	char *keyCompress = compressKey(buffer, &size);
