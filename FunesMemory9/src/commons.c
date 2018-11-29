@@ -68,7 +68,7 @@ void liberarLineas(int base, int limite)
 int tengoMemoriaDisponible(int cantACargar)
 {
 	int memoriaDisponible = 0;
-	if (config->modoEjecucion == SEG)
+	if (config->modoEjecucion == SEG || config->modoEjecucion == SPA)
 		memoriaDisponible = posicionesLibres(estadoLineas);
 	else
 		memoriaDisponible = posicionesLibres(estadoMarcos);

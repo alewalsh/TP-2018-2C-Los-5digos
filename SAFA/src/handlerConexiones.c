@@ -197,6 +197,12 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	bloquearDummy();
         	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:
+        	if(abortarDTB(dtb))
+			{
+				log_error_mutex(logger, "Hubo un error al abortar el DTB.");
+				break;
+			}
+			break;
         	break;
         case CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB:
         	break;
