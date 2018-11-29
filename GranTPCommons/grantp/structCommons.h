@@ -25,6 +25,7 @@ typedef struct {
     char *dirEscriptorio;
     int programCounter;
     int flagInicializado;
+    int realizOpDummy;
     char *tablaDirecciones;
     int cantidadLineas;
 } t_dtb;
