@@ -32,5 +32,5 @@ int estadoSAFA;
 
 void manejarConexiones();
 void manejarSolicitud(t_package pkg, int socketFD);
-
+void initCpuList();
 #endif /* HANDLERCONEXIONES_H_ */

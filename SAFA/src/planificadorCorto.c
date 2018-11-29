@@ -19,7 +19,6 @@ void planificadorCP() {
 	bloquearDummy();
 
 	pthread_mutex_init(&mutexPlanificando, NULL);
-	int planificando = 0; // 0=No planificando  1=planificando
 
     while(1){
 
@@ -159,6 +158,52 @@ int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq){
 	return EXIT_SUCCESS;
 }
 
+int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq){
+
+    pthread_mutex_lock(&mutexEjecutandoList);
+    pthread_mutex_lock(&mutexExitList);
+
+    int index = buscarDTBEnCola(colaEjecutando,dtbABloq);
+
+	if(index > 0){
+		t_dtb * dtbEjecutandoAFinalizar = (t_dtb *) list_remove(colaEjecutando,index);
+	    list_add(colaExit, dtbEjecutandoAFinalizar);
+	    //TODO: SE DEBE HACER UN SIGNAL DEL MUTEX PARA EL GRADO DE MULTIPROGRAMACION
+	}else{
+		//Error
+		pthread_mutex_unlock(&mutexExitList);
+		pthread_mutex_unlock(&mutexEjecutandoList);
+		return EXIT_FAILURE;
+	}
+
+    pthread_mutex_unlock(&mutexExitList);
+	pthread_mutex_unlock(&mutexEjecutandoList);
+	return EXIT_SUCCESS;
+}
+
+int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq){
+
+    pthread_mutex_lock(&mutexBloqueadosList);
+    pthread_mutex_lock(&mutexExitList);
+
+    int index = buscarDTBEnCola(colaBloqueados,dtbABloq);
+
+	if(index > 0){
+		t_dtb * dtbBloqueadoAFinalizar = (t_dtb *) list_remove(colaBloqueados,index);
+	    list_add(colaExit, dtbBloqueadoAFinalizar);
+	    //TODO: SE DEBE HACER UN SIGNAL DEL MUTEX PARA EL GRADO DE MULTIPROGRAMACION
+	}else{
+		//Error
+		pthread_mutex_unlock(&mutexExitList);
+		pthread_mutex_unlock(&mutexBloqueadosList);
+		return EXIT_FAILURE;
+	}
+
+    pthread_mutex_unlock(&mutexExitList);
+	pthread_mutex_unlock(&mutexBloqueadosList);
+	return EXIT_SUCCESS;
+}
+
 void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 
     log_info_mutex(logger, "PCP: Se enviara un DTB a CPU");
@@ -180,9 +225,9 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 	if(enviar(socketCpu,SAFA_CPU_EJECUTAR,paquete,pqtSize,logger->logger)){
 		//Error al enviar
 		log_error_mutex(logger, "No se pudo enviar el DTB al CPU..");
-		int result = pasarDTBdeEXECaBLOQUED(dtbAEnviar);
+		int result = pasarDTBdeEXECaFINALIZADO(dtbAEnviar);
 		if(result == EXIT_FAILURE){
-			log_error_mutex(logger, "Error al bloquear el DTB..");
+			log_error_mutex(logger, "Error al finalizar el DTB..");
 	   }
 	}
 	log_info_mutex(logger, "Se envió el DTB a ejecutar a la CPU: %d",socketCpu);

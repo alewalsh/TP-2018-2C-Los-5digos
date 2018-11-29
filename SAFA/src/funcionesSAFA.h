@@ -94,6 +94,7 @@ t_package transformarDTBAPaquete(t_dtb * dtb);
 int bloquearDTB(t_dtb * dtb);
 int desbloquearDTB(t_dtb * dtb);
 int abortarDTB(t_dtb * dtb);
+int finEjecucionPorQuantum(t_dtb * dtb);
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA MANEJO DEL DUMMY
 //------------------------------------------------------------------------------------------------------------------
@@ -109,6 +110,7 @@ int obtenerFlagDummy();
 //------------------------------------------------------------------------------------------------------------------
 int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar);
 t_cpus *crearCpu();
-
+int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq);
+int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq);
 
 #endif /* FUNCIONESSAFA_H_ */
