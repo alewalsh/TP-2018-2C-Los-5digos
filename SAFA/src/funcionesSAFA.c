@@ -209,7 +209,6 @@ int desbloquearDTB(t_dtb * dtb){
 	//logica para desbloquear dtb
 	int i = buscarDTBEnCola(colaBloqueados,dtb);
 	if(i<0){
-		log_error_mutex(logger, "Error al desbloquear el dtb: %d", dtb->idGDT);
 		return EXIT_FAILURE;
 	}
 	t_dtb * dtbADesbloquear = list_remove(colaBloqueados,i);
@@ -219,8 +218,24 @@ int desbloquearDTB(t_dtb * dtb){
 
 int abortarDTB(t_dtb * dtb){
 	//logica para abortar dtb
-	//todo: BUSCAR EN LAS LISTAS DE BLOQUEADO Y EJECUTANDO Y mandarlo a FINALIZAR
-	return EXIT_SUCCESS;
+	int i; int j;
+	//primero busco en la cola de ejecutando
+	i = buscarDTBEnCola(colaEjecutando,dtb);
+	if(i){
+		t_dtb * dtbAAbortar = list_remove(colaEjecutando,i);
+		list_add(colaExit,dtbAAbortar);
+		return EXIT_SUCCESS;
+	}
+	//si no está ejecutnado lo busco en la cola de bloqueados
+	j = buscarDTBEnCola(colaBloqueados,dtb);
+	if(j){
+		t_dtb * dtbAAbortar = list_remove(colaBloqueados,i);
+		list_add(colaExit,dtbAAbortar);
+		return EXIT_SUCCESS;
+	}
+
+	//No se encontró el dtb
+	return EXIT_FAILURE;
 }
 
 int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){

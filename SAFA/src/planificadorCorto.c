@@ -42,24 +42,25 @@ void planificadorCP() {
     	 * 		->Se manda a ejecutar s/ el algoritmo
     	 */
     	if( (list_size(colaReady) > 0)){
-
-            switch (conf->algoritmo) {
-                case RR:
-                    log_info_mutex(logger, "PCP mediante Round Robin");
-                    pthread_mutex_lock(&mutexPlanificando);
-                    ejecutarRR();
-                    pthread_mutex_unlock(&mutexPlanificando);
-                    break;
-                case VRR:
-                	log_info_mutex(logger, "PCP mediante Virtual Round Robin");
-        //          planificarVRR();
-                    break;
-                default:
-                	log_info_mutex(logger, "PCP mediante Propio");
-        //            playExecute();
-                    break;
-            }
-
+    		int socketCPU = buscarCPULibre();
+    			if(socketCPU > 0){
+				switch (conf->algoritmo) {
+					case RR:
+						log_info_mutex(logger, "PCP mediante Round Robin");
+						pthread_mutex_lock(&mutexPlanificando);
+						ejecutarRR(socketCPU);
+						pthread_mutex_unlock(&mutexPlanificando);
+						break;
+					case VRR:
+						log_info_mutex(logger, "PCP mediante Virtual Round Robin");
+			//          planificarVRR();
+						break;
+					default:
+						log_info_mutex(logger, "PCP mediante Propio");
+			//            playExecute();
+						break;
+				}
+			}
 
     	}
     }
@@ -91,14 +92,14 @@ void planificadorCPdesbloquearDummy(int idGDT, char *dirScript){
 	list_add(colaReady, dummyDTB);
 }
 
-void ejecutarRR(){
+void ejecutarRR(int socketCpu){
 
 	//Se pasa el primer proceso de los Ready a CPU a Ejecutar
 	//Se cambia de cola
 	t_dtb *dtb = pasarDTBdeREADYaEXEC();
 
 	//Se envía a cpu
-	enviarDTBaCPU(dtb);
+	enviarDTBaCPU(dtb,socketCpu);
 
 }
 
@@ -157,12 +158,7 @@ int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq){
 	return EXIT_SUCCESS;
 }
 
-void enviarDTBaCPU(t_dtb *dtbAEnviar){
-
-	int socketCPU = buscarCPULibre();
-	if(socketCPU < 0){
-		//NO HAY CPUS LIBRES -> TODO: VER QUE DEBERÍA PASAR
-	}
+void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 
     log_info_mutex(logger, "PCP: Se enviara un DTB a CPU");
 
@@ -180,7 +176,7 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar){
     		(strlen(dtbAEnviar->dirEscriptorio) + strlen(dtbAEnviar->tablaDirecciones)) * sizeof(char);
 
     //MANDO EL PAQUETE CON EL MENSAJE A LA CPU LIBRE
-	if(enviar(socketCPU,SAFA_CPU_EJECUTAR,paquete,pqtSize,logger->logger)){
+	if(enviar(socketCpu,SAFA_CPU_EJECUTAR,paquete,pqtSize,logger->logger)){
 		//Error al enviar
 		log_error_mutex(logger, "No se pudo enviar el DTB al CPU..");
 		int result = pasarDTBdeEXECaBLOQUED(dtbAEnviar);

@@ -26,8 +26,8 @@ pthread_mutex_t mutexPlanificando;
 
 
 void planificadorCP();
-void ejecutarRR();
-void enviarDTBaCPU(t_dtb *dtbAEnviar);
+void ejecutarRR(int socketCpu);
+void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu);
 int buscarCPULibre();
 int buscarDtbParaInicializar();
 

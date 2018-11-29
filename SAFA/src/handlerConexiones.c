@@ -13,44 +13,6 @@
 //#include "SAFA.h"
 #include "funcionesSAFA.h"
 
-//void manejarSolicitud(t_package pkg, int socketFD) {
-//
-//    switch (pkg.code) {
-//        case ESI_PLAN_CONNECT:
-//            if (esiConnection(socketFD, pkg, logger)) {
-//                log_error_mutex(logger, "Hubo un error en la conexion con el esi");
-//                break;
-//            }
-//            sem_post(&sem_newEsi);
-//            break;
-//        case COORD_PLAN_BLOCK:
-//            //log_info_mutex(logger, "El coordinador me pide que bloquee un recurso");
-//            if (blockKey(socketFD, pkg, logger)) {
-//                log_error_mutex(logger, "No se pudo completar la operacion de bloqueo");
-//            }
-//            break;
-//        case COORD_PLAN_STORE:
-//            //log_info_mutex(logger, "El coordinador me pide que desbloque un recurso");
-//            if (storeKey(socketFD, pkg, logger)) {
-//                log_error_mutex(logger, "No se pudo completar la operacion de desbloqueo");
-//            }
-//            break;
-//        case SOCKET_DISCONECT:
-//            handlerDisconnect(socketFD);
-//            close(socketFD);
-//            deleteSocketFromMaster(socketFD);
-//            break;
-//        default:
-//            log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
-//            log_warning_mutex(logger, "Ojo, estas recibiendo un mensaje que no esperabas.");
-//            break;
-//
-//    }
-//
-//    free(pkg.data);
-//
-//}
-
 
 void manejarConexiones(){
 
@@ -75,8 +37,7 @@ void manejarConexiones(){
 
     addNewSocketToMaster(socketListen);
 
-    //TODO: Voy a tener que agregar que no se empiece a planificar hasta esto
-    //TODO: NO DEBERIA FUNCIONAR LA CONSOLA HASTA QUE SE LEVANTE, PONER
+    //Se queda escuchando conexiones hasta estar en estado operativo (DAM CONECTADO Y 1 CPU CONECTADA)
     while(estadoSAFA != Operativo){
 
         if (acceptConnection(socketListen, &nuevoFd, SAFA_HSK, &handshake, logger->logger)) {
