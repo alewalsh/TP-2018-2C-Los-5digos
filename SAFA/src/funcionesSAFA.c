@@ -123,7 +123,7 @@ t_dtb *crearNuevoDTB(char *dirScript) {
 	newDTB->idGDT = aux;
 	newDTB->dirEscriptorio = dirScript;
 	newDTB->programCounter = 0;
-	newDTB->flagInicializado = true;
+	newDTB->flagInicializado = 1;
 	newDTB->tablaDirecciones = NULL;
 	newDTB->cantidadLineas = 0;
 	return newDTB;
@@ -219,6 +219,7 @@ int desbloquearDTB(t_dtb * dtb){
 
 int abortarDTB(t_dtb * dtb){
 	//logica para abortar dtb
+	//todo: BUSCAR EN LAS LISTAS DE BLOQUEADO Y EJECUTANDO Y mandarlo a FINALIZAR
 	return EXIT_SUCCESS;
 }
 

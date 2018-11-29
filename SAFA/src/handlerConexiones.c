@@ -198,6 +198,8 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:
         	break;
+        case CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB:
+        	break;
         case CPU_SAFA_SIGNAL_RECURSO: break; case CPU_SAFA_WAIT_RECURSO: break;
 
         case SOCKET_DISCONECT:

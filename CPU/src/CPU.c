@@ -55,6 +55,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	{
         		log_error_mutex(loggerCPU, "Hubo un error en la ejecucion del Escriptorio");
         		break;
+        		//TODO : Agregar mensaje al SAFA de error y que aborte el DTB
         	}
         	//sem_post(&sem_comienzaEjecucion);
         	break;

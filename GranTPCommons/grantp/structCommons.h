@@ -24,7 +24,7 @@ typedef struct {
 	int idGDT;
     char *dirEscriptorio;
     int programCounter;
-    bool flagInicializado;
+    int flagInicializado;
     char *tablaDirecciones;
     int cantidadLineas;
 } t_dtb;
