@@ -185,7 +185,7 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 			log_error_mutex(logger, "Error al bloquear el DTB..");
 	   }
 	}
-	log_info_mutex(logger, "Se envió el DTB a ejecutar a la CPU: %d",socketCPU);
+	log_info_mutex(logger, "Se envió el DTB a ejecutar a la CPU: %d",socketCpu);
 
 
     free(paquete);
