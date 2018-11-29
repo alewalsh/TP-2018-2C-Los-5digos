@@ -116,7 +116,6 @@ int getExecute() {
 
 t_dtb *crearNuevoDTB(char *dirScript) {
 
-	//TODO: Por ahora inicializo la tabla y lineas en nada. se va a cambiar?
 	sumarGDTCounter();
 	int aux = obtenerGDTCounter();
     t_dtb *newDTB = malloc(sizeof(t_dtb));
@@ -126,6 +125,7 @@ t_dtb *crearNuevoDTB(char *dirScript) {
 	newDTB->flagInicializado = 1;
 	newDTB->tablaDirecciones = NULL;
 	newDTB->cantidadLineas = 0;
+	newDTB->realizOpDummy = 0;
 	return newDTB;
 }
 

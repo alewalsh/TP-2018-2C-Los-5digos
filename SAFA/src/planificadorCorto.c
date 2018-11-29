@@ -67,18 +67,19 @@ void planificadorCP() {
 }
 
 int buscarDtbParaInicializar(){
-	int index = -1;
 	int sizeList = list_size(colaNew);
 
-	if(sizeList<=0) return index;
+	if(sizeList<=0) return -1;
 
 	for(int i = 0; i<sizeList;i++){
-		t_dtb * dtb = list_get(colaNew,0);
-		if(dtb->flagInicializado == 1){
-			return index;
+		t_dtb * dtb = list_get(colaNew,i);
+		if(dtb->flagInicializado == 1 && dtb->realizOpDummy == 0){
+			dtb->realizOpDummy = 1;
+			list_add_in_index(colaNew,i,dtb);
+			return i;
 		}
 	}
-	return index;
+	return -1;
 }
 
 void planificadorCPdesbloquearDummy(int idGDT, char *dirScript){
