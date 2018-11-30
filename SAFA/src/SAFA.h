@@ -45,6 +45,8 @@ pthread_mutex_t mutexExit;
 pthread_mutex_t mutexStop;
 //pthread_mutex_t mutexReadyExecute;
 pthread_mutex_t mutexConsole;
+sem_t semaforpGradoMultiprgramacion;
+sem_t mandadosPorConsola;
 
 
 // ------------------------------------------------------------------------------
@@ -100,6 +102,6 @@ void manejoLargoPlazo();
 
 void sig_handler(int signo);
 void exit_gracefully(int error);
-
+void liberarRecursos();
 
 #endif /* SAFA_H_ */

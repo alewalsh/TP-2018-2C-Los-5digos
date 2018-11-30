@@ -218,26 +218,20 @@ int desbloquearDTB(t_dtb * dtb){
 
 int abortarDTB(t_dtb * dtb){
 	//logica para abortar dtb
-	int i; int j;
-	//primero busco en la cola de ejecutando
-	i = buscarDTBEnCola(colaEjecutando,dtb);
-	if(i){
-		t_dtb * dtbAAbortar = list_remove(colaEjecutando,i);
-		list_add(colaExit,dtbAAbortar);
-		return EXIT_SUCCESS;
-	}
-	//si no está ejecutnado lo busco en la cola de bloqueados
-	j = buscarDTBEnCola(colaBloqueados,dtb);
-	if(j){
-		t_dtb * dtbAAbortar = list_remove(colaBloqueados,i);
-		list_add(colaExit,dtbAAbortar);
-		return EXIT_SUCCESS;
-	}
 
-	//No se encontró el dtb
-	return EXIT_FAILURE;
+	//primero busco en la cola de ejecutando
+	int result = pasarDTBdeEXECaFINALIZADO(dtb);
+
+	//si no estaba ejecutando lo busco en la lista de bloqueados
+	if(result == EXIT_FAILURE){
+		result = pasarDTBdeBLOQUEADOaFINALIZADO(dtb);
+	}
+	return result;
 }
 
+int finEjecucionPorQuantum(t_dtb * dtb){
+	return pasarDTBdeEXECaREADY(dtb);
+}
 int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){
 	int index = -1;
 	int listSize = list_size(cola);

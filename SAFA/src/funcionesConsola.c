@@ -41,6 +41,7 @@ void consolaEjecutar(char *args) {
         return;
     }
 	log_info_mutex(logger, "DTB creado satisfactoriamente y enviado a NEW.");
+	sem_post(&mandadosPorConsola);
 }
 
 

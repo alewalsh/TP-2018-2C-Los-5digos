@@ -109,6 +109,8 @@ void liberarRecursos(){
 //    sem_destroy(&sem_newEsi);
 //    sem_destroy(&sem_shouldExecute);
 //    sem_destroy(&sem_preemptive);
+    sem_destroy(&semaforpGradoMultiprgramacion);
+    sem_destroy(&mandadosPorConsola);
 
     log_destroy_mutex(logger);
     freeConfig(conf, SAFA);
@@ -135,6 +137,9 @@ void initMutexs(){
 	pthread_mutex_init(&mutexConsole, NULL);
 	pthread_mutex_init(&mutexgdtCounter, NULL);
 	pthread_mutex_init(&mutexDummy, NULL);
+
+	sem_init(&semaforpGradoMultiprgramacion, 0 ,conf->grado_mp);
+	sem_init(&mandadosPorConsola, 0, 0);
 }
 
 

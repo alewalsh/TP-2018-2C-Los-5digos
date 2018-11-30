@@ -142,14 +142,12 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	if(bloquearDTB(dtb))
         	{
         		log_error_mutex(logger, "Hubo un error al bloquear el DTB");
-        		break;
         	}
         	break;
         case CPU_SAFA_ABORTAR_DTB:
         	if(abortarDTB(dtb))
         	{
         		log_error_mutex(logger, "Hubo un error al abortar el DTB.");
-        		break;
         	}
         	break;
 
@@ -161,18 +159,19 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	if(abortarDTB(dtb))
 			{
 				log_error_mutex(logger, "Hubo un error al abortar el DTB.");
-				break;
 			}
-			break;
         	break;
         case CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB:
+        	if(finEjecucionPorQuantum(dtb)){
+        		log_error_mutex(logger, "Hubo un error al llevar el DTB a la cola de READY por finalizacion de quantum.");
+        	}
         	break;
-        case CPU_SAFA_SIGNAL_RECURSO: break; case CPU_SAFA_WAIT_RECURSO: break;
+
+        case CPU_SAFA_SIGNAL_RECURSO: break;
+        case CPU_SAFA_WAIT_RECURSO: break;
 
         case SOCKET_DISCONECT:
-//            handlerDisconnect(socketFD);
             close(socketFD);
-//            deleteSocketFromMaster(socketFD);
             break;
         default:
             log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
