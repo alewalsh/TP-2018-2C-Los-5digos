@@ -20,6 +20,7 @@ void manejarConexiones(){
     uint16_t handshake;
     t_package pkg;
 
+    listaRecursoAsignados = list_create();
     estadoSAFA = Corrupto;
 	int CPUConectado, DAMConectado = 0;
 	log_trace_mutex(logger, "Se inicializa SAFA en estado Corrupto");
@@ -158,7 +159,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         case CPU_SAFA_BLOQUEAR_DUMMMY:
         	//Se bloquea el dummy
         	bloquearDummy();
-        	sem_post(&semDummy);
+        	pthread_mutex_unlock(&semDummy);
         	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:{
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
@@ -182,7 +183,17 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 
         //EL SCRIPTORIO SE INCIALIZÓ
         case DAM_SAFA_CONFIRMACION_SCRIPT_INICIALIZADO:{
-        	//TODO: VER QUE SE HACE CON EL PLANIFICADOR DE LARGO PLAZO CUANDO SE INCIALIZÓ EL SCRIPTORIO
+        	int pid = copyIntFromBuffer(&pkg.data);
+			int result = copyIntFromBuffer(&pkg.data);
+
+			if(result == EXIT_SUCCESS){
+				pasarDTBdeNEWaREADY(); //Se cargó en memoria correctamente
+				log_info_mutex(logger, "Se cargó correctamente en memoria el proceso: %d", pid);
+			}else{
+				pasarDTBdeNEWaEXIT(); //No se pudo cargar a memoria
+				log_error_mutex(logger, "No se pudo cargar en memoria el proceso: %d", pid);
+			}
+
         	break;
         }
 
@@ -206,8 +217,17 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 			break;
 	   }
 
-        case CPU_SAFA_SIGNAL_RECURSO: break;
-        case CPU_SAFA_WAIT_RECURSO: break;
+        case CPU_SAFA_SIGNAL_RECURSO:{
+        	char * recurso = copyStringFromBuffer(&pkg.data);
+			hacerSignalDeRecurso(recurso);
+			break;
+        }
+        case CPU_SAFA_WAIT_RECURSO:{
+        	char * recurso = copyStringFromBuffer(&pkg.data);
+			int pid = copyIntFromBuffer(&pkg.data);
+			hacerWaitDeRecurso(recurso,pid);
+			break;
+        }
 
         case SOCKET_DISCONECT:
             close(socketFD);
@@ -225,4 +245,75 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 
 void initCpuList(){
 	listaCpus = list_create();
+}
+
+void hacerSignalDeRecurso(char * recursoSolicitado){
+
+	for(int i =0; i<list_size(listaRecursoAsignados); i++){
+
+		t_recurso * recurso = list_get(listaRecursoAsignados,i);
+		int estaEnLaLista = strcmp(recurso->recursoId, recursoSolicitado);
+		if(estaEnLaLista == 0){
+			t_recurso * recursoUsado = list_remove(listaRecursoAsignados, i);
+			if(list_size(recursoUsado->listProcesos)>0){
+				//TIENE RECURSOS SOLICITANDOLO -> Se toma el primero y se desbloquea
+				int pidSolicitante = (int) list_remove(recursoUsado->listProcesos,0);
+				recursoUsado->procesoDuenio = pidSolicitante;
+
+				//Se desbloquea el proceso pid
+				desbloquearDTBsegunAlgoritmo(pidSolicitante);
+			}else{
+				//NO TIENE RECURSOS SOLICITANDOLO
+				recursoUsado->procesoDuenio = 0;
+			}
+			list_add_in_index(listaRecursoAsignados, i, recursoUsado);
+		}
+	}
+}
+
+void hacerWaitDeRecurso(char * recursoSolicitado, int pid){
+
+	int posicion = -1;
+
+	for(int i =0; i<list_size(listaRecursoAsignados); i++){
+
+		t_recurso * recurso = list_get(listaRecursoAsignados,i);
+		int estaEnLaLista = strcmp(recurso->recursoId, recursoSolicitado);
+		if(estaEnLaLista == 0){
+			posicion = i;
+			t_recurso * recursoUsado = list_remove(listaRecursoAsignados, posicion);
+			if(recursoUsado->procesoDuenio == 0){
+				//EXISTE Y NO ESTA SIENDO USADO
+				//el recurso no se está utilizando
+				recursoUsado->procesoDuenio = pid;
+			}else{
+				//EXISTE Y ESTA SIENDO USADO
+				//Esta siendo usado y lo tengo que bloquear
+				list_add(recursoUsado->listProcesos,&pid);
+
+				//Se bloquea el proceso
+				t_dtb * dtb = buscarDTBPorPIDenCola(colaEjecutando,pid);
+				pasarDTBdeEXECaBLOQUED(dtb);
+			}
+			list_add_in_index(listaRecursoAsignados, posicion, recursoUsado);
+		}
+	}
+
+
+	if(posicion >= 0){
+		//NO EXISTE
+		//Si no estaba en la lista lo tengo que crear
+		t_recurso * recursoCreado = crearRecurso(recursoSolicitado,pid);
+		list_add(listaRecursoAsignados, recursoCreado);
+	}
+
+}
+
+t_recurso* crearRecurso(char * recurso, int pid){
+	t_list * listaProcesos = list_create();
+	t_recurso * recursoStruct = malloc(sizeof(t_recurso));
+	recursoStruct->recursoId =recurso;
+	recursoStruct->procesoDuenio = pid;
+	recursoStruct->listProcesos = listaProcesos;
+	return recursoStruct;
 }

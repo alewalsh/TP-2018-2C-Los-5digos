@@ -30,7 +30,6 @@ void planificadorCP() {
     		int index = buscarDtbParaInicializar();
     		if(index > 0){
     			//Se desbloquea el dummy y se agrega a la lista de ready
-    			sem_wait(&semDummy);
     			desbloquearDummy();
     		}
     	}
@@ -84,6 +83,9 @@ int buscarDtbParaInicializar(){
 
 void planificadorCPdesbloquearDummy(int idGDT, char *dirScript){
 
+
+	dummyDTB->idGDT = idGDT;
+	dummyDTB->dirEscriptorio = dirScript;
 	//Recibo la solicitud y desbloqueo el dummy.
 	dummyBloqueado = 1;
 }
@@ -263,7 +265,7 @@ void pasarDTBdeBLOQaREADY(t_dtb * dtbAReady){
 	pthread_mutex_lock(&mutexBloqueadosList);
 	pthread_mutex_lock(&mutexReadyList);
 
-	int index = buscarDTBEnCola(colaReadyEspecial,dtbAReady);
+	int index = buscarDTBEnCola(colaBloqueados,dtbAReady);
 
 	if(index > 0){
 		t_dtb * dtbBloqAReady = (t_dtb *) list_remove(colaBloqueados,index);
@@ -272,6 +274,38 @@ void pasarDTBdeBLOQaREADY(t_dtb * dtbAReady){
 
 	pthread_mutex_unlock(&mutexReadyList);
 	pthread_mutex_unlock(&mutexBloqueadosList);
+}
+
+void pasarDTBdeNEWaREADY(t_dtb * dtbAReady){
+
+	pthread_mutex_lock(&mutexNewList);
+	pthread_mutex_lock(&mutexReadyList);
+
+	int index = buscarDTBEnCola(colaNew,dtbAReady);
+
+	if(index > 0){
+		t_dtb * dtbNewAReady = (t_dtb *) list_remove(colaNew,index);
+		list_add(colaReady, dtbNewAReady);
+	}
+
+	pthread_mutex_unlock(&mutexReadyList);
+	pthread_mutex_unlock(&mutexNewList);
+}
+
+void pasarDTBdeNEWaEXIT(t_dtb * dtbAExit){
+
+	pthread_mutex_lock(&mutexNewList);
+	pthread_mutex_lock(&mutexExitList);
+
+	int index = buscarDTBEnCola(colaNew,dtbAExit);
+
+	if(index > 0){
+		t_dtb * dtbNewAExit = (t_dtb *) list_remove(colaNew,index);
+		list_add(colaReady, dtbNewAExit);
+	}
+
+	pthread_mutex_unlock(&mutexExitList);
+	pthread_mutex_unlock(&mutexNewList);
 }
 
 void pasarDTBSegunQuantumRestante(t_dtb * dtb){

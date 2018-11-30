@@ -45,6 +45,12 @@ typedef struct{
 
 
 typedef struct{
+	char * recursoId;
+	int procesoDuenio;
+	t_list * listProcesos;
+} t_recurso;
+
+typedef struct{
 	int nroSegmento;
 	int base;
 	int limite;

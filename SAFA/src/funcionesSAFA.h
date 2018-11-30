@@ -16,10 +16,15 @@
 #include <commons/string.h>
 #include <grantp/configuracion.h>
 #include <grantp/mutex_log.h>
+#include "semaphore.h"
 #include "stdbool.h"
 
 //DTB DUMMY
 t_dtb * dummyDTB;
+//Semaforo para el dummy
+pthread_mutex_t semDummy;
+pthread_mutex_t semCargadoEnMemoria;
+sem_t semaforpGradoMultiprgramacion;
 
 //extern t_list *statusList;
 //extern pthread_mutex_t mutexStatusList;
@@ -107,6 +112,7 @@ int obtenerEstadoDummy();
 void setearFlagInicializacionDummy(int num);
 void setearPathEnDummy(char * path);
 int obtenerFlagDummy();
+void planificadorCPdesbloquearDummy(int idGDT, char *dirScript);
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA PLANIFICADOR CP
 //------------------------------------------------------------------------------------------------------------------
