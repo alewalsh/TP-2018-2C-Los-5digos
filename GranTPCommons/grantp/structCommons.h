@@ -28,6 +28,7 @@ typedef struct {
     int realizOpDummy;
     char *tablaDirecciones;
     int cantidadLineas;
+    int quantumRestante;
 } t_dtb;
 
 

@@ -52,7 +52,7 @@ void planificadorCP() {
 						break;
 					case VRR:
 						log_info_mutex(logger, "PCP mediante Virtual Round Robin");
-			//          planificarVRR();
+			            ejecutarVRR(socketCPU);
 						break;
 					default:
 						log_info_mutex(logger, "PCP mediante Propio");
@@ -100,6 +100,32 @@ void ejecutarRR(int socketCpu){
 
 	//Se envía a cpu
 	enviarDTBaCPU(dtb,socketCpu);
+
+}
+
+void ejecutarVRR(int socketCPU){
+	t_package package;
+	t_dtb *dtb = pasarDTBdeREADYaEXEC();
+
+	enviarDTBaCPU(dtb,socketCPU);
+
+	if(recibir(socketCPU,&package,logger->logger)){
+
+		log_info_mutex(logger,"No se pudo recibir el paquete");
+
+	}else{
+
+		t_dtb * dtbRecibidoDeCPU = transformarPaqueteADTB(package);
+
+		pasarDTBSegunQuantumRestante(dtbRecibidoDeCPU);
+
+		if(list_size(colaReadyEspecial) > 0){
+
+			pasarDTBdeREADYESPaEXEC(dtbRecibidoDeCPU);
+
+		}
+
+	}
 
 }
 
@@ -202,6 +228,70 @@ int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq){
     pthread_mutex_unlock(&mutexExitList);
 	pthread_mutex_unlock(&mutexBloqueadosList);
 	return EXIT_SUCCESS;
+}
+
+void pasarDTBdeREADYESPaEXEC(t_dtb * dtbAEjecutar){
+
+	pthread_mutex_lock(&mutexReadyEspList);
+	pthread_mutex_lock(&mutexEjecutandoList);
+
+	int index = buscarDTBEnCola(colaReadyEspecial,dtbAEjecutar);
+
+	if(index > 0){
+		t_dtb * dtbReadyEspAExec = (t_dtb *) list_remove(colaReadyEspecial,index);
+		list_add(colaEjecutando, dtbReadyEspAExec);
+	}
+
+	pthread_mutex_unlock(&mutexEjecutandoList);
+	pthread_mutex_unlock(&mutexReadyEspList);
+}
+
+void pasarDTBdeBLOQaREADYESP(t_dtb * dtbAReadyEsp){
+
+	pthread_mutex_lock(&mutexBloqueadosList);
+	pthread_mutex_lock(&mutexReadyEspList);
+
+	int index = buscarDTBEnCola(colaReadyEspecial,dtbAReadyEsp);
+
+	if(index > 0){
+		t_dtb * dtbBloqAReadyEsp = (t_dtb *) list_remove(colaBloqueados,index);
+		list_add(colaReadyEspecial, dtbBloqAReadyEsp);
+	}
+
+	pthread_mutex_unlock(&mutexReadyEspList);
+	pthread_mutex_unlock(&mutexBloqueadosList);
+}
+
+void pasarDTBdeBLOQaREADY(t_dtb * dtbAReady){
+
+	pthread_mutex_lock(&mutexBloqueadosList);
+	pthread_mutex_lock(&mutexReadyList);
+
+	int index = buscarDTBEnCola(colaReadyEspecial,dtbAReady);
+
+	if(index > 0){
+		t_dtb * dtbBloqAReady = (t_dtb *) list_remove(colaBloqueados,index);
+		list_add(colaReady, dtbBloqAReady);
+	}
+
+	pthread_mutex_unlock(&mutexReadyList);
+	pthread_mutex_unlock(&mutexBloqueadosList);
+}
+
+void pasarDTBSegunQuantumRestante(t_dtb * dtb){
+
+	if(dtb->quantumRestante > 0){
+
+				pasarDTBdeBLOQaREADYESP(dtb);
+
+			}else{
+
+				if(dtb->quantumRestante == 0){
+
+					pasarDTBdeBLOQaREADY(dtb);
+				}
+			}
+
 }
 
 void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){

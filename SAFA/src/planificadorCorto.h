@@ -19,6 +19,7 @@ extern t_list* colaReady;			// Lista Ready.
 extern t_list* colaBloqueados;		// Lista Bloqueados.
 extern t_list* colaEjecutando;     // Lista DTBs en ejec
 extern t_list* colaExit;		// Lista Terminados.
+extern t_list* colaReadyEspecial; // Lista Ready Especial
 
 int dummyBloqueado;
 
@@ -27,6 +28,7 @@ pthread_mutex_t mutexPlanificando;
 
 void planificadorCP();
 void ejecutarRR(int socketCpu);
+void ejecutarVRR(int socketCpu);
 void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu);
 int buscarCPULibre();
 int buscarDtbParaInicializar();
@@ -34,6 +36,12 @@ int buscarDtbParaInicializar();
 t_dtb *pasarDTBdeREADYaEXEC();
 int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq);
 int pasarDTBdeEXECaREADY(t_dtb * dtbABloq);
+int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq);
+int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq);
+void pasarDTBdeBLOQaREADY(t_dtb * dtbAReady);
+void pasarDTBdeREADYESPaEXEC(t_dtb * dtbAEjecutar);
+void pasarDTBdeBLOQaREADYESP(t_dtb * dtbAReadyEsp);
+void pasarDTBSegunQuantumRestante(t_dtb * dtb);
 void planificadorCPdesbloquearDummy(int idGDT, char *dirScript);
 //variable global
 

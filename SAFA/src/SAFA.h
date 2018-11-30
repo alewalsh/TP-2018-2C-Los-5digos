@@ -34,6 +34,7 @@ pthread_mutex_t mutexReadyList;
 pthread_mutex_t mutexBloqueadosList;
 pthread_mutex_t mutexEjecutandoList;
 pthread_mutex_t mutexExitList;
+pthread_mutex_t mutexReadyEspList;
 pthread_mutex_t mutexReadset;
 pthread_mutex_t mutexMaxfd;
 //pthread_mutex_t mutexTime;
@@ -68,6 +69,7 @@ t_list* colaReady;			// Lista Ready.
 t_list* colaBloqueados;		// Lista Bloqueados.
 t_list* colaEjecutando;     // Lista DTBs en ejec
 t_list* colaExit;		// Lista Terminados.
+t_list* colaReadyEspecial;
 
 
 ////informa que se corrio un EJECUTAR y hay dtbs en NEW
