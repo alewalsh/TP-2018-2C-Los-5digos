@@ -45,6 +45,8 @@ pthread_mutex_t mutexExit;
 pthread_mutex_t mutexStop;
 //pthread_mutex_t mutexReadyExecute;
 pthread_mutex_t mutexConsole;
+sem_t semaforpGradoMultiprgramacion;
+sem_t mandadosPorConsola;
 
 
 // ------------------------------------------------------------------------------

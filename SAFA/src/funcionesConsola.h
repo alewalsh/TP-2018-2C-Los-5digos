@@ -25,6 +25,8 @@ extern t_list* colaBloqueados;		// Lista Bloqueados.
 extern t_list* colaEjecutando;     // Lista DTBs en ejec
 extern t_list* colaExit;		// Lista Terminados.
 
+extern sem_t mandadosPorConsola;
+
 //extern pthread_mutex_t mutexReadyExecute;
 //
 //extern sem_t sem_newEsi;
