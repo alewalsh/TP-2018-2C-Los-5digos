@@ -31,16 +31,29 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 	int size;
 	char *keyCompress = compressKey(path, &size);
 
-	if (enviar(t_socketMdj->socket, DAM_MDJ_CARGAR_ESCRIPTORIO, keyCompress,
+	//CONFIRMO EXISTENCIA DEL ARCHIVO
+	//mando un msj para saber si el archivo existe
+	if (enviar(t_socketMdj->socket, DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO, keyCompress,
 			size, logger->logger)) {
 		log_error_mutex(logger,
 				"No se pudo enviar la busqueda del escriptorio al MDJ");
 		free(keyCompress);
 		return false;
 	}
+	//recibo la confirmacion
+	int sizeOfFile = confirmarExistenciaFile();
+	int result;
 
-	//Se reciben los paquetes del mdj y se envian al fm9
-	int result = enviarPkgDeMdjAFm9(pid, path);
+	if(sizeOfFile >=0){
+		//Se reciben los paquetes del mdj y se envian al fm9
+		result = enviarPkgDeMdjAFm9(pid, path, 0 , sizeOfFile );
+	}else{
+		//no existe el archivo -> Se envia error al safa
+		result = EXIT_FAILURE;
+		enviarConfirmacionSafa(pid, result, ARCHIVO_INICIALIZADO);
+		free(keyCompress);
+		return false;
+	}
 
 	enviarConfirmacionSafa(pid, result, ARCHIVO_INICIALIZADO);
 
@@ -51,45 +64,40 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 
 //Se recibe uno o varios paquetes del MDJ y se envian al FM9
 //Return: Base en memoria de los paquetes guardados.
-int enviarPkgDeMdjAFm9(int pid, char * path) {
-	//Se recibe el archivo desde filesystem
-	t_package package;
-	int result = EXIT_FAILURE;
-
-	//Recibo un primer mensaje para saber cuanto pesa el archivo
-	if (recibir(t_socketMdj->socket, &package, logger->logger)) {
-		log_error_mutex(logger, "No se pudo recibir el mensaje del MDJ");
-		return EXIT_FAILURE;
-	}
-
-	if (package.code == DAM_MDJ_FAIL) {
-		return EXIT_FAILURE;
-	}
-
-	//Recibo el tamaño del archivo a cargar
-	int sizeOfFile = atoi(package.data);
+int enviarPkgDeMdjAFm9(int pid, char * path, int inicio, int size) {
 
 	//Calculo cuantos paquetes voy a recibir del fm9 segun mi transfer size
-	int cantPkg = calcularCantidadPaquetes(sizeOfFile);
+	int cantPkg = calcularCantidadPaquetes(size);
 
 	//Ahora se reciben los paquetes y se concatena todo el archivo
 	//(Si el archivo es mayor que mi Transfersize recibo n paquetes del tamaño de mi transfersize)
 
+	//todo: ENVIAR LA PETICION DEL ARCHIVO. DESDE INICIO HASTA FIN
+	char * pkg;
+	copyStringToBuffer(&pkg,path);//path
+	copyStringToBuffer(&pkg,inicio);//inicio
+	copyStringToBuffer(&pkg,size);//size
+	int sizeOfPkg = strlen(path)*sizeof(char) + sizeof(int)*2;
+
+	if(enviar(t_socketMdj->socket,DAM_MDJ_CARGAR_ESCRIPTORIO, pkg, sizeOfPkg, logger->logger)){
+		//error
+		log_error_mutex(logger,
+				"No se pudo enviar la busqueda del escriptorio al MDJ");
+		free(pkg);
+		return false;
+	}
+
 	char * bufferConcatenado = malloc(configDMA->transferSize * cantPkg);
-	int sizeOfBuffer = 0;
 	//Recibo x cantPkg del mdj y se concatenan en un bufferConcatenado
 	for (int i = 0; i < cantPkg; i++) {
 		t_package pkgTransferSize;
-		pkgTransferSize.size = configDMA->transferSize; //TODO VER SI ESTO ESTA BIEN!!------------------------------------
 
 		if (recibir(t_socketMdj->socket, &pkgTransferSize,
 				logger->logger)) {
 			log_error_mutex(logger, "Error al recibir el paquete %d", i);
 		} else {
-			//Concatenar y recalcular sizeOfBuffer
+			//Concatenar buffer
 			copyStringToBuffer(&bufferConcatenado, pkgTransferSize.data);
-			sizeOfBuffer = sizeOfBuffer
-					+ (strlen(pkgTransferSize.data) * sizeof(char));
 		}
 	}
 
@@ -106,10 +114,10 @@ int enviarPkgDeMdjAFm9(int pid, char * path) {
 	copyIntToBuffer(&buffer, pid); //ProcesID
 	copyIntToBuffer(&buffer, cantLineas); //Cantidad De lineas
 	copyStringToBuffer(&buffer, path); //Path del archivo
-	int size = sizeof(int) * 3 + (strlen(path) * sizeof(char));
+	int sizeOfBuffer= sizeof(int) * 3 + (strlen(path) * sizeof(char));
 
 	if (enviar(t_socketFm9->socket, DAM_FM9_CARGAR_ESCRIPTORIO, buffer,
-			size, logger->logger)) {
+			sizeOfBuffer, logger->logger)) {
 		log_error_mutex(logger,
 				"Error al enviar info del escriptorio a FM9");
 		free(buffer);
@@ -131,29 +139,24 @@ int enviarPkgDeMdjAFm9(int pid, char * path) {
 
 			//por cada paquete...
 			for (i = 0; i < cantPaquetes; i++) {
-				char sub[configDMA->transferSize]; //substring a enviar
+				char * sub[configDMA->transferSize]; //substring a enviar
 				int inicio = configDMA->transferSize * i, //posicion inicial del substring
-				fin = configDMA->transferSize * (i + 1); //posicion final del substring
+				fin = (configDMA->transferSize * (i + 1))-1; //posicion final del substring
 
 				//Si es el ultimo paquete a enviar el fin es el tamanio de linea
 				if (i + 1 == cantPaquetes) {
 					fin = tamanioLinea;
 				}
 
-				int count = 0;
-				while (inicio < fin) {
-					sub[count] = buffer[inicio];
-					inicio++;
-					count++;
-				}
-				//sub[c] = '\0'; <-----------------------TODO VER SI HACE FALTA ESTO
+				sub = string_substring(buffer,inicio,fin);
 
 				char * bufferAEnviar;
-				copyIntToBuffer(&bufferAEnviar, i + 1);
-				copyIntToBuffer(&bufferAEnviar, count * sizeof(char));
-				copyStringToBuffer(&bufferAEnviar, sub);
-				int size = sizeof(int) * 2 + count * sizeof(char);
+				copyIntToBuffer(&bufferAEnviar, i + 1); //NRO LINEA
+				copyIntToBuffer(&bufferAEnviar, strlen(sub) * sizeof(char)); //SIZE
+				copyStringToBuffer(&bufferAEnviar, sub); //BUFFER
+				int size = sizeof(int) * 2 + strlen(sub) * sizeof(char);
 
+				//enviar
 				if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG,
 						bufferAEnviar, size, logger->logger)) {
 					log_error_mutex(logger,
@@ -161,7 +164,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path) {
 					free(bufferAEnviar);
 					return EXIT_FAILURE;
 				}
-				//enviar
+
 				free(bufferAEnviar);
 				free(buffer);
 			}
@@ -190,7 +193,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path) {
 			"Se enviaron todos los datos a memoria del proceso: %d", pid);
 
 	//Se recibe confirmacion de datos guardados en memoria del FM9
-	result = recibirConfirmacionMemoria();
+	int result = recibirConfirmacionMemoria();
 
 	return result;
 }
@@ -204,6 +207,9 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 	char *buffer = paquete.data;
 	int pid = copyIntFromBuffer(&buffer);
 	char * path = copyStringFromBuffer(&buffer);
+	//TODO: VER CON ALE SI RECIBO EL INICIO Y EL FIN DEL ARCHIVO A ABRIR Y VER EN QUE FORMATO LOS RECIBO
+	int inicio = copyIntFromBuffer(&buffer);
+	int tamanioAPedir = copyIntFromBuffer(&buffer);
 
 	free(buffer);
 	printf("Ehhh, voy a buscar %s para %d", path, pid);
@@ -212,19 +218,31 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 	int size;
 	char *keyCompress = compressKey(path, &size);
 
-	if (enviar(t_socketMdj->socket, DAM_MDJ_CARGAR_ESCRIPTORIO, keyCompress,
+	//CONFIRMO EXISTENCIA DEL ARCHIVO
+	//mando un msj para saber si el archivo existe
+	if (enviar(t_socketMdj->socket, DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO, keyCompress,
 			size, logger->logger)) {
 		log_error_mutex(logger,
 				"No se pudo enviar la busqueda del escriptorio al MDJ");
 		free(keyCompress);
 		return false;
 	}
+	//recibo la confirmacion
+	int sizeOfFile = confirmarExistenciaFile();
+	int result;
 
-	//Se reciben los paquetes del mdj y se envian al fm9
-	int result = enviarPkgDeMdjAFm9(pid, path);
+	if(sizeOfFile >=0){
+		//Se reciben los paquetes del mdj y se envian al fm9
+		result = enviarPkgDeMdjAFm9(pid, path, inicio , tamanioAPedir );
+	}else{
+		//no existe el archivo -> Se envia error al safa
+		result = EXIT_FAILURE;
+		enviarConfirmacionSafa(pid, result, ARCHIVO_CARGADO);
+		free(keyCompress);
+		return false;
+	}
 
 	enviarConfirmacionSafa(pid, result, ARCHIVO_CARGADO);
-
 	free(keyCompress);
 
 	return true;
@@ -239,7 +257,11 @@ bool hacerFlush(t_package paquete, int socketEnUso) {
 	char *buffer = paquete.data;
 	int pid = copyIntFromBuffer(&buffer);
 	char * path = copyStringFromBuffer(&buffer);
+	//Todo: recibir inicio y size del cpu
+	int inicio = copyIntFromBuffer(&buffer);
+	int sizeAGuardar = copyIntFromBuffer(&buffer);
 	free(buffer);
+
 
 	//Se envia el path del archivo al Fm9
 	int size;
@@ -260,23 +282,24 @@ bool hacerFlush(t_package paquete, int socketEnUso) {
 	free(bufferToFm9);
 
 	//Se reciben los paquetes del mdj y se envian al fm9
-	int result = enviarPkgDeFm9AMdj(pid);
+	int result = enviarPkgDeFm9AMdj(path, inicio, sizeAGuardar);
 	enviarConfirmacionSafa(pid, result, ARCHIVO_GUARDADO);
 	return true;
 }
 
-int enviarPkgDeFm9AMdj(int pid) {
+int enviarPkgDeFm9AMdj(char * path, int inicio, int sizeAGuardar) {
 	//Se recibe el archivo desde FUNES MEMORY
 	t_package pkgCantLineas;
 	int cantLineasARecibir;
-	//Recibo un primer mensaje para saber cuantas lineas voy a recibir
-	if (recibir(t_socketMdj->socket, &pkgCantLineas, logger->logger)) {
+	//Recibo un primer mensaje para saber cuantas lineas voy a recibir del FM9
+	if (recibir(t_socketFm9->socket, &pkgCantLineas, logger->logger)) {
 		log_error_mutex(logger, "No se pudo recibir el mensaje del MDJ");
 		return EXIT_FAILURE;
 	} else {
 		cantLineasARecibir = atoi(pkgCantLineas.data);
 	}
 
+	char * bufferTotal;
 	//realizo una iteracion por cada linea
 	for (int linea = 0; linea < cantLineasARecibir; linea++) {
 		t_package package;
@@ -302,19 +325,8 @@ int enviarPkgDeFm9AMdj(int pid) {
 					cantidadPaquetes);
 		}
 
-		//ENVIAR DATOS A MDJ: le envio la linea y la cantidad de paquetes de esta linea
-		char * pkgToMdj;
-		copyIntToBuffer(&pkgToMdj, nroLinea);
-		copyIntToBuffer(&pkgToMdj, cantidadPaquetes);
-		int sizeOfBuffer = sizeof(int) * 2; //calculo el size
-		if (enviar(t_socketMdj->socket, DAM_MDJ_HACER_FLUSH, pkgToMdj,
-				sizeOfBuffer, logger->logger)) {
-			log_error_mutex(logger,
-					"Error al enviar cantidad de paquetes a MDJ");
-			return EXIT_FAILURE;
-		}
-		free(pkgToMdj);
 
+		char * bufferLineaConcatenada;
 		//Ahora se reciben los paquetes y se envia a FILESYSTEM
 		for (int i = 0; i < cantidadPaquetes; i++) {
 			t_package pkgTransferSize;
@@ -325,23 +337,55 @@ int enviarPkgDeFm9AMdj(int pid) {
 				return EXIT_FAILURE;
 			} else {
 				//Envío el paquete al MDJ
-				char * buffer;
-				copyStringToBuffer(&buffer, pkgTransferSize.data);
-				int size = strlen(buffer) * sizeof(char);
-				if (enviar(t_socketMdj->socket, DAM_MDJ_GUARDAR_DATOS, buffer,
-						size, logger->logger)) {
-					log_error_mutex(logger,
-							"Error al enviar el archivo a guardar al MDJ");
-					free(buffer);
-					return EXIT_FAILURE;
-				}
-				free(buffer);
+				copyStringToBuffer(&bufferLineaConcatenada, pkgTransferSize.data);
 			}
 		}
-		log_info_mutex(logger,
-				"Se enviaron todos los datos  del proceso %d,al FileSystem.",
-				pid);
+		copyStringToBuffer(&bufferTotal, bufferLineaConcatenada);
+		free(bufferLineaConcatenada);
 	}
+
+	log_info_mutex(logger,
+					"Se enviaron todos los datos  del proceso %s,al FileSystem.",
+					path);
+
+	//ENVIO A MDJ
+	//ENVIAR DATOS A MDJ: le envio EL PATH, EL INICIO Y EL SIZE A GUARDAR PARA QUE CALCULE LA CANTIDAD DE PAQUETES A ENVIAR
+	char * pkgToMdj;
+	copyStringToBuffer(&pkgToMdj, path);
+	copyIntToBuffer(&pkgToMdj, inicio);
+	copyIntToBuffer(&pkgToMdj,sizeAGuardar);
+
+	int sizeOfBuffer = sizeof(int) * 3;
+	if (enviar(t_socketMdj->socket, DAM_MDJ_HACER_FLUSH, pkgToMdj,
+			sizeOfBuffer, logger->logger)) {
+		log_error_mutex(logger,
+				"Error al enviar cantidad de paquetes a MDJ");
+		free(pkgToMdj);
+		free(bufferTotal);
+		return EXIT_FAILURE;
+	}
+	free(pkgToMdj);
+
+
+	int cantPaquetesAEnviar = calcularCantidadPaquetes(strlen(bufferTotal));
+	for(int i= 0; i<cantPaquetesAEnviar; i++){
+		//tomo el paquete de un tamaño del transfer size
+		char * bufferOfTransferSize = string_substring(bufferTotal,i*configDMA->transferSize,((i+1)*configDMA->transferSize-1));
+
+		char * bufferToMdj;
+		copyStringToBuffer(&bufferToMdj,bufferOfTransferSize);
+
+		if (enviar(t_socketMdj->socket, DAM_MDJ_GUARDAR_DATOS, bufferToMdj,
+				configDMA->transferSize, logger->logger)) {
+			log_error_mutex(logger,
+					"Error al enviar el archivo a guardar al MDJ");
+			free(bufferToMdj);
+			free(bufferTotal);
+			return EXIT_FAILURE;
+		}
+		free(bufferToMdj);
+	}
+	free(bufferTotal);
 
 	return EXIT_SUCCESS;
 
@@ -666,9 +710,32 @@ int contarCantidadLineas(char * string) {
 	return cantidadLineas;
 }
 
+
+int confirmarExistenciaFile(){
+	//Se recibe el archivo desde filesystem
+	t_package package;
+	int result = EXIT_FAILURE;
+
+	//Recibo un primer mensaje para saber cuanto pesa el archivo
+	if (recibir(t_socketMdj->socket, &package, logger->logger)) {
+		log_error_mutex(logger, "No se pudo recibir el mensaje del MDJ");
+		return EXIT_FAILURE;
+	}
+
+	if (package.code == DAM_MDJ_FAIL) {
+		return EXIT_FAILURE;
+	}
+
+	//Recibo el tamaño del archivo a cargar
+	result = atoi(package.data);
+
+	return result;
+}
+
 int recibirConfirmacionMemoria() {
 
 	t_package package;
+	//TODO: ACA ME DEBERIA ENVIAR LA POSICION EN MEMORIA DONDE SE CARGO EL ARCHIVO O PARTE DE ARCHIVO
 
 	if (recibir(t_socketFm9->socket, &package, logger->logger)) {
 		log_error_mutex(logger,
