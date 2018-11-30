@@ -26,7 +26,7 @@ void planificadorCP() {
     	 *      -> Debo desbloquear el dtbdummy y agregarlo al a lista de ready
     	 */
 
-    	if(list_size(colaNew) > 0){
+    	if(list_size(colaNew) > 0 && dummyBloqueado == 1){
     		int index = buscarDtbParaInicializar();
     		if(index > 0){
     			//Se desbloquea el dummy y se agrega a la lista de ready
@@ -71,6 +71,8 @@ int buscarDtbParaInicializar(){
 	for(int i = 0; i<sizeList;i++){
 		t_dtb * dtb = list_get(colaNew,i);
 		if(dtb->flagInicializado == 1 && dtb->realizOpDummy == 0){
+			//Actualizar dummy con el path
+			dummyDTB->dirEscriptorio = dtb->dirEscriptorio;
 			dtb->realizOpDummy = 1;
 			list_add_in_index(colaNew,i,dtb);
 			return i;
@@ -81,13 +83,8 @@ int buscarDtbParaInicializar(){
 
 void planificadorCPdesbloquearDummy(int idGDT, char *dirScript){
 
-	//Recibo la solicitud y desbloqueo el dummy. Lo pongo en READY
-	// No hace falta verificar si ready tiene lugar porque lo mutexeo el de Largo Plazo
-	desbloquearDummy();
-	dummyDTB->idGDT = idGDT;
-	dummyDTB->dirEscriptorio = dirScript;
-
-	list_add(colaReady, dummyDTB);
+	//Recibo la solicitud y desbloqueo el dummy.
+	dummyBloqueado = 1;
 }
 
 void ejecutarRR(int socketCpu){
@@ -95,16 +92,15 @@ void ejecutarRR(int socketCpu){
 	//Se pasa el primer proceso de los Ready a CPU a Ejecutar
 	//Se cambia de cola
 	t_dtb *dtb;
-	if(list_size(colaReady)>0){
-
-		dtb = pasarDTBdeREADYaEXEC();
-
-	}else if(list_size(colaReadyEspecial)>0){
+	if(list_size(colaReadyEspecial)>0){
 		//contemplo el caso de que se haya cambiado de algoritmo en medio de la ejecucion y
 		//haya quedado algun proceso en la cola de ready especial
 		dtb = pasarDTBdeREADYESPaEXEC();
-	}
+	} else if(list_size(colaReady)>0){
 
+		dtb = pasarDTBdeREADYaEXEC();
+
+	}
 
 	//Se envía a cpu
 	enviarDTBaCPU(dtb,socketCpu);

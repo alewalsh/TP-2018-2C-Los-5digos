@@ -75,8 +75,8 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int inicio, int size) {
 	//todo: ENVIAR LA PETICION DEL ARCHIVO. DESDE INICIO HASTA FIN
 	char * pkg;
 	copyStringToBuffer(&pkg,path);//path
-	copyStringToBuffer(&pkg,inicio);//inicio
-	copyStringToBuffer(&pkg,size);//size
+	copyIntToBuffer(&pkg,inicio);//inicio
+	copyIntToBuffer(&pkg,size);//size
 	int sizeOfPkg = strlen(path)*sizeof(char) + sizeof(int)*2;
 
 	if(enviar(t_socketMdj->socket,DAM_MDJ_CARGAR_ESCRIPTORIO, pkg, sizeOfPkg, logger->logger)){
@@ -139,7 +139,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int inicio, int size) {
 
 			//por cada paquete...
 			for (i = 0; i < cantPaquetes; i++) {
-				char * sub[configDMA->transferSize]; //substring a enviar
+				char * sub; //substring a enviar
 				int inicio = configDMA->transferSize * i, //posicion inicial del substring
 				fin = (configDMA->transferSize * (i + 1))-1; //posicion final del substring
 
