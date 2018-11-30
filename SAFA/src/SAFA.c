@@ -111,6 +111,7 @@ void liberarRecursos(){
 //    sem_destroy(&sem_preemptive);
     sem_destroy(&semaforpGradoMultiprgramacion);
     sem_destroy(&mandadosPorConsola);
+    sem_destroy(&semDummy);
 
     log_destroy_mutex(logger);
     freeConfig(conf, SAFA);
@@ -140,6 +141,7 @@ void initMutexs(){
 
 	sem_init(&semaforpGradoMultiprgramacion, 0 ,conf->grado_mp);
 	sem_init(&mandadosPorConsola, 0, 0);
+	sem_init(&semDummy, 0, 0);
 }
 
 

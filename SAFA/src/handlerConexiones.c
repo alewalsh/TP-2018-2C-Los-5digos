@@ -158,6 +158,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         case CPU_SAFA_BLOQUEAR_DUMMMY:
         	//Se bloquea el dummy
         	bloquearDummy();
+        	sem_post(&semDummy);
         	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:{
         	t_dtb * dtb = transformarPaqueteADTB(pkg);

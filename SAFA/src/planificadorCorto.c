@@ -30,6 +30,7 @@ void planificadorCP() {
     		int index = buscarDtbParaInicializar();
     		if(index > 0){
     			//Se desbloquea el dummy y se agrega a la lista de ready
+    			sem_wait(&semDummy);
     			desbloquearDummy();
     		}
     	}
@@ -212,6 +213,8 @@ int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq){
 
     pthread_mutex_unlock(&mutexExitList);
 	pthread_mutex_unlock(&mutexEjecutandoList);
+
+	sem_post(&semaforpGradoMultiprgramacion);
 	return EXIT_SUCCESS;
 }
 
@@ -235,6 +238,7 @@ int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq){
 
     pthread_mutex_unlock(&mutexExitList);
 	pthread_mutex_unlock(&mutexBloqueadosList);
+	sem_post(&semaforpGradoMultiprgramacion);
 	return EXIT_SUCCESS;
 }
 
