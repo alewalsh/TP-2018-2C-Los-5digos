@@ -502,7 +502,7 @@ t_dtb * transformarPaqueteADTB(t_package paquete)
 
 t_package transformarDTBAPaquete(t_dtb * dtb)
 {
-	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
+	// Se realiza lo que sería una serializacion de la info dentro de paquete->data
 	t_package paquete;
 	char *buffer;
 	copyIntToBuffer(&buffer, dtb->idGDT);

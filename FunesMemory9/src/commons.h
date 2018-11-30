@@ -49,10 +49,14 @@ void liberarRecursos();
 bool existeProceso(int pid);
 void crearProceso(int pid);
 
-int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar);
+int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar, int nroSegmento);
 
 void logPosicionesLibres(t_bitarray * bitarray, int modo);
 int obtenerLineasProceso(int pid);
 void liberarMarco(t_pagina * pagina);
+bool hayXMarcosLibres(int cantidad);
+
+t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo, int paginasAReservar);
+void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarray * bitArray);
 
 #endif /* SRC_COMMONS_H_ */

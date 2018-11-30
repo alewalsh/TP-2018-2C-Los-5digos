@@ -52,7 +52,7 @@ int flushTPI(int socketSolicitud, t_datosFlush * data, int accion)
 			{
 				while(j < pagina->lineasUtilizadas)
 				{
-					char * linea = obtenerLinea(direccion(pagina->nroPagina, j));
+					char * linea = obtenerLinea(direccion(pagina->nroMarco, j));
 					if (accion == AccionDUMP)
 					{
 						imprimirInfoAdministrativaTPI(data->pid);
@@ -85,8 +85,8 @@ void imprimirInfoAdministrativaTPI(int pid)
 	while(i < cantidadPaginas)
 	{
 		t_pagina * pagina = list_get(paginasProceso, i);
-		printf("PID %d: Nro Marco %d - Lineas utilizadas %d \n", pid, pagina->nroPagina, pagina->lineasUtilizadas);
-		log_info_mutex(logger, "PID %d: Nro Marco %d - Lineas utilizadas %d", pid, pagina->nroPagina, pagina->lineasUtilizadas);
+		printf("PID %d: Nro Marco %d - Lineas utilizadas %d \n", pid, pagina->nroMarco, pagina->lineasUtilizadas);
+		log_info_mutex(logger, "PID %d: Nro Marco %d - Lineas utilizadas %d", pid, pagina->nroMarco, pagina->lineasUtilizadas);
 		i++;
 	}
 }
@@ -107,7 +107,7 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 		}
 	}
 
-	int code = reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, cantLineas);
+	int code = reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, cantLineas, 0);
 	if (code == FM9_DAM_MEMORIA_INSUFICIENTE)
 	{
 		logPosicionesLibres(estadoMarcos,TPI);
@@ -144,7 +144,7 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 			t_pagina * pagina = list_get(paginasProceso,paginaActual);
 			int tamanioBuffer = strlen(bufferGuardado);
 			bufferGuardado[tamanioBuffer] = '\n';
-			guardarLinea(direccion(pagina->nroPagina,lineasGuardadas), bufferGuardado);
+			guardarLinea(direccion(pagina->nroMarco,lineasGuardadas), bufferGuardado);
 			lineasGuardadas++;
 			if (lineasGuardadas == lineasXPagina)
 			{
@@ -200,7 +200,7 @@ int ejecutarGuardarEsquemaTPI(t_package pkg, t_infoGuardadoLinea* datosPaquete, 
 				while (datosPaquete->linea >= lineasXPagina){
 					datosPaquete->linea -= lineasXPagina;
 				}
-				guardarLinea(direccion(paginaCorrespondiente->nroPagina,datosPaquete->linea), datosPaquete->datos);
+				guardarLinea(direccion(paginaCorrespondiente->nroMarco,datosPaquete->linea), datosPaquete->datos);
 				pudeGuardar = true;
 			}
 		}
