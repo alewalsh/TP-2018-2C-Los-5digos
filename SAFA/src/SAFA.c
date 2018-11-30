@@ -151,6 +151,7 @@ void initMutexs(){
 void initList() {
 	colaNew = list_create();
 	colaReady = list_create();
+	colaReadyEspecial = list_create();
 	colaBloqueados = list_create();
 	colaEjecutando = list_create();
 	colaExit = list_create();

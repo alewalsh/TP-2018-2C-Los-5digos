@@ -62,7 +62,8 @@ void manejarConexiones(){
                 cpu->socket= nuevoFd;
                 list_add(listaCpus, cpu);
 
-                char *buffer = copyIntToBuffer(&buffer,conf->quantum);
+                char *buffer = malloc(sizeof(int));
+                copyIntToBuffer(&buffer,conf->quantum);
             	int size;
             	char *keyCompress = compressKey(buffer, &size);
             	if(enviar(nuevoFd, SAFA_CPU_QUANTUM, keyCompress, size, logger->logger))
