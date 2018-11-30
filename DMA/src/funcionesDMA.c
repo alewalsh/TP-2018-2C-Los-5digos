@@ -42,7 +42,7 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 	//Se reciben los paquetes del mdj y se envian al fm9
 	int result = enviarPkgDeMdjAFm9(pid, path);
 
-	enviarConfirmacionSafa(pid, result, ARCHIVO_CARGADO);
+	enviarConfirmacionSafa(pid, result, ARCHIVO_INICIALIZADO);
 
 	free(keyCompress);
 
@@ -580,6 +580,9 @@ void enviarConfirmacionSafa(int pid, int result, int code){
 	copyIntToBuffer(&buffer, result);
 
 	switch(code){
+	case ARCHIVO_INICIALIZADO:
+		msjCode = DAM_SAFA_CONFIRMACION_SCRIPT_INICIALIZADO;
+		break;
 	case ARCHIVO_CREADO:
 		msjCode = DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO;
 		break;

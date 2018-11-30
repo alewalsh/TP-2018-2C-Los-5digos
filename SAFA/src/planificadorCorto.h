@@ -34,12 +34,12 @@ int buscarCPULibre();
 int buscarDtbParaInicializar();
 
 t_dtb *pasarDTBdeREADYaEXEC();
+t_dtb *pasarDTBdeREADYESPaEXEC();
 int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq);
 int pasarDTBdeEXECaREADY(t_dtb * dtbABloq);
 int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq);
 int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq);
 void pasarDTBdeBLOQaREADY(t_dtb * dtbAReady);
-void pasarDTBdeREADYESPaEXEC(t_dtb * dtbAEjecutar);
 void pasarDTBdeBLOQaREADYESP(t_dtb * dtbAReadyEsp);
 void pasarDTBSegunQuantumRestante(t_dtb * dtb);
 void planificadorCPdesbloquearDummy(int idGDT, char *dirScript);

@@ -29,7 +29,7 @@ t_list* listaCpus;
 //	VARIABLES GLOBALES
 // ------------------------------------------------------------------------------
 int estadoSAFA;
-
+void liberarRecursos();
 void manejarConexiones();
 void manejarSolicitud(t_package pkg, int socketFD);
 void initCpuList();

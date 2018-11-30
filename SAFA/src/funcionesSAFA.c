@@ -174,6 +174,7 @@ t_dtb * transformarPaqueteADTB(t_package paquete)
 	dtb->flagInicializado = copyIntFromBuffer(&buffer);
 	dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
 	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
+	dtb->quantumRestante = copyIntFromBuffer(&buffer);
 	return dtb;
 }
 
@@ -188,8 +189,10 @@ t_package transformarDTBAPaquete(t_dtb * dtb)
 	copyIntToBuffer(&buffer, dtb->flagInicializado);
 	copyStringToBuffer(&buffer, dtb->tablaDirecciones);
 	copyIntToBuffer(&buffer, dtb->cantidadLineas);
+	copyIntToBuffer(&buffer, dtb->quantumRestante);
 	paquete.data = buffer;
-	paquete.size = 4*sizeof(int)+strlen(dtb->dirEscriptorio)+strlen(dtb->tablaDirecciones);
+	paquete.size = 5*sizeof(int)+
+			(strlen(dtb->dirEscriptorio)+strlen(dtb->tablaDirecciones))*sizeof(char);
 	return paquete;
 }
 
@@ -201,6 +204,8 @@ int bloquearDTB(t_dtb * dtb){
 		return EXIT_FAILURE;
 	}
 	t_dtb * dtbABloquear = list_remove(colaEjecutando,i);
+	//actualizo el quantum restante
+	dtbABloquear->quantumRestante = dtb->quantumRestante;
 	list_add(colaBloqueados,dtbABloquear);
 	return EXIT_SUCCESS;
 }
@@ -232,6 +237,18 @@ int abortarDTB(t_dtb * dtb){
 int finEjecucionPorQuantum(t_dtb * dtb){
 	return pasarDTBdeEXECaREADY(dtb);
 }
+
+int confirmacionDMA(int pid, int result){
+	if(result == EXIT_SUCCESS){ //SE CARGÓ CORRECTAMENTE
+		//desbloqueo el proceso segun el algoritmo
+		result = desbloquearDTBsegunAlgoritmo(pid);
+	}else{ //HUBO UN ERROR AL CARGAR EL PROCESO EN MEMORIA
+		//se finaliza el proceso
+		t_dtb * dtb = buscarDTBPorPIDenCola(colaBloqueados, pid);
+		pasarDTBdeBLOQUEADOaFINALIZADO(dtb);
+	}
+	return result;
+}
 int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){
 	int index = -1;
 	int listSize = list_size(cola);
@@ -246,7 +263,44 @@ int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){
 	}
 	return index;
 }
+t_dtb * buscarDTBPorPIDenCola(t_list * cola, int pid){
+	t_dtb * dtb;
+	int index = -1;
+	int listSize = list_size(cola);
+	if(listSize<= 0) return dtb;
 
+	for(int i = 0; i<listSize;i++){
+		dtb = list_get(cola,i);
+		if(dtb->idGDT == pid){
+			return dtb;
+			break;
+		}
+	}
+	return dtb;
+}
+
+
+int desbloquearDTBsegunAlgoritmo(int pid){
+	//desbloqueo el proceso dependiendo del algoritmo indicado
+	t_dtb * dtb = buscarDTBPorPIDenCola(colaBloqueados,pid);
+
+	if(index > 0){
+		switch(conf->algoritmo){
+		case RR:
+			pasarDTBdeBLOQaREADY(dtb);
+			break;
+		case VRR:
+			pasarDTBSegunQuantumRestante(dtb);
+			break;
+		}
+	}else{
+		//el proceso no está bloqueado
+		log_error_mutex(logger, "Error al desbloquear el proceso pid: %d. No se encontró en la lista de bloqueados", pid);
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
+}
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA MANEJO DEL DUMMY
 //------------------------------------------------------------------------------------------------------------------
@@ -286,6 +340,7 @@ void bloquearDummy(){
     bloquearDTB(dummyDTB);
     pthread_mutex_unlock(&mutexDummy);
 }
+
 
 /*
  * Funcion para setear el path del scriptorio en el dummy

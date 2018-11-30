@@ -96,6 +96,7 @@ int bloquearDTB(t_dtb * dtb);
 int desbloquearDTB(t_dtb * dtb);
 int abortarDTB(t_dtb * dtb);
 int finEjecucionPorQuantum(t_dtb * dtb);
+int confirmacionDMA(int pid, int result);
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA MANEJO DEL DUMMY
 //------------------------------------------------------------------------------------------------------------------
@@ -110,8 +111,10 @@ int obtenerFlagDummy();
 //		FUNCIONES PARA PLANIFICADOR CP
 //------------------------------------------------------------------------------------------------------------------
 int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar);
+t_dtb * buscarDTBPorPIDenCola(t_list * cola, int pid);
 t_cpus *crearCpu();
 int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq);
 int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq);
+int desbloquearDTBsegunAlgoritmo(int pid);
 
 #endif /* FUNCIONESSAFA_H_ */

@@ -80,7 +80,6 @@ void manejarConexiones(){
 
         if ((CPUConectado != 0) && (DAMConectado != 0)){
         	estadoSAFA = Operativo;
-        	//TODO: Aca deberia mandar el dummy
         }
     }
 
@@ -135,37 +134,76 @@ void manejarConexiones(){
 
 
 void manejarSolicitud(t_package pkg, int socketFD) {
-	t_dtb * dtb = transformarPaqueteADTB(pkg);
     switch (pkg.code) {
-        case CPU_SAFA_BLOQUEAR_DTB:
-        	//TODO:Aca debería tomar los quantums que sobraron para el algoritmo VRR
+
+    	  /*
+           * -----------------CONFIRMACIONES DEL CPU-----------------
+           */
+        case CPU_SAFA_BLOQUEAR_DTB:{
+        	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	if(bloquearDTB(dtb))
         	{
         		log_error_mutex(logger, "Hubo un error al bloquear el DTB");
         	}
         	break;
-        case CPU_SAFA_ABORTAR_DTB:
+        }
+        case CPU_SAFA_ABORTAR_DTB:{
+        	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	if(abortarDTB(dtb))
         	{
         		log_error_mutex(logger, "Hubo un error al abortar el DTB.");
         	}
         	break;
-
+        }
         case CPU_SAFA_BLOQUEAR_DUMMMY:
         	//Se bloquea el dummy
         	bloquearDummy();
         	break;
-        case CPU_SAFA_FIN_EJECUCION_DTB:
+        case CPU_SAFA_FIN_EJECUCION_DTB:{
+        	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	if(abortarDTB(dtb))
 			{
 				log_error_mutex(logger, "Hubo un error al abortar el DTB.");
 			}
         	break;
-        case CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB:
+        }
+        case CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB:{
+        	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	if(finEjecucionPorQuantum(dtb)){
         		log_error_mutex(logger, "Hubo un error al llevar el DTB a la cola de READY por finalizacion de quantum.");
         	}
         	break;
+        }
+
+        /*
+         * -----------------CONFIRMACIONES DEL DMA-------------------------------
+         */
+
+        //EL SCRIPTORIO SE INCIALIZÓ
+        case DAM_SAFA_CONFIRMACION_SCRIPT_INICIALIZADO:{
+        	//TODO: VER QUE SE HACE CON EL PLANIFICADOR DE LARGO PLAZO CUANDO SE INCIALIZÓ EL SCRIPTORIO
+        	break;
+        }
+
+		//LA PETICION "ABRIR" SE FINALIZO
+        //LA PETICION "FLUSH" SE FINALIZÓ
+        //LA PETICION "CREAR ARCHIVO" SE FINALIZÓ
+        //LA PETICION "BORRAR ARCHIVO" SE FINALIZÓ
+		case (DAM_SAFA_CONFIRMACION_PID_CARGADO||
+		DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS||
+		DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO||
+		DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO):{
+			int pid = copyIntFromBuffer(&pkg.data);
+			int result = copyIntFromBuffer(&pkg.data);
+
+			if(confirmacionDMA(pid, result)){
+				//Error
+				log_error_mutex(logger, "No se pudo cargar el proceso pid: %d en memoria", pid);
+			}
+			log_info_mutex(logger,"Se cargó en memoria y se desbloqueó el proceso pid: %d", pid);
+
+			break;
+	   }
 
         case CPU_SAFA_SIGNAL_RECURSO: break;
         case CPU_SAFA_WAIT_RECURSO: break;

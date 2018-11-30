@@ -12,8 +12,6 @@
 
 void planificadorCP() {
 
-	//TODO: Si llego a crear alguna lista, acordarme de hacer los list destroy
-
 	log_info_mutex(logger, "Hilo planificador Corto Plazo iniciado");
 	dummyDTB = (t_dtb *) crearDummyDTB();
 	bloquearDummy();
@@ -40,7 +38,7 @@ void planificadorCP() {
     	 * Si hay procesos en la cola de ready y hay cpus libres
     	 * 		->Se manda a ejecutar s/ el algoritmo
     	 */
-    	if( (list_size(colaReady) > 0)){
+    	if(list_size(colaReady) > 0 || list_size(colaReadyEspecial) >0){
     		int socketCPU = buscarCPULibre();
     			if(socketCPU > 0){
 				switch (conf->algoritmo) {
@@ -96,7 +94,17 @@ void ejecutarRR(int socketCpu){
 
 	//Se pasa el primer proceso de los Ready a CPU a Ejecutar
 	//Se cambia de cola
-	t_dtb *dtb = pasarDTBdeREADYaEXEC();
+	t_dtb *dtb;
+	if(list_size(colaReady)>0){
+
+		dtb = pasarDTBdeREADYaEXEC();
+
+	}else if(list_size(colaReadyEspecial)>0){
+		//contemplo el caso de que se haya cambiado de algoritmo en medio de la ejecucion y
+		//haya quedado algun proceso en la cola de ready especial
+		dtb = pasarDTBdeREADYESPaEXEC();
+	}
+
 
 	//Se envía a cpu
 	enviarDTBaCPU(dtb,socketCpu);
@@ -104,31 +112,21 @@ void ejecutarRR(int socketCpu){
 }
 
 void ejecutarVRR(int socketCPU){
-	t_package package;
-	t_dtb *dtb = pasarDTBdeREADYaEXEC();
+	t_dtb *dtb ;
+
+	if(list_size(colaReadyEspecial) > 0){
+		dtb= pasarDTBdeREADYESPaEXEC();
+	}else{
+		dtb = pasarDTBdeREADYaEXEC();
+	}
 
 	enviarDTBaCPU(dtb,socketCPU);
 
-	if(recibir(socketCPU,&package,logger->logger)){
-
-		log_info_mutex(logger,"No se pudo recibir el paquete");
-
-	}else{
-
-		t_dtb * dtbRecibidoDeCPU = transformarPaqueteADTB(package);
-
-		pasarDTBSegunQuantumRestante(dtbRecibidoDeCPU);
-
-		if(list_size(colaReadyEspecial) > 0){
-
-			pasarDTBdeREADYESPaEXEC(dtbRecibidoDeCPU);
-
-		}
-
-	}
-
 }
-
+/*
+ * FUNCION PARA PASAR EL PRIMER PROCESO DE LA COLA READY A EJECUTAR
+ * return: (t_dtb) dtb que se pasó de cola de ready para mandar a ejecutar
+ */
 t_dtb *pasarDTBdeREADYaEXEC(){
 
     pthread_mutex_lock(&mutexReadyList);
@@ -140,6 +138,20 @@ t_dtb *pasarDTBdeREADYaEXEC(){
     return primerDTBenReady;
 }
 
+/*
+ * FUNCION PARA PASAR EL PRIMER PROCESO DE LA COLA READY ESPECIAL A EJECUTAR
+ * return: (t_dtb) dtb que se pasó de la cola de ready especial para mandar a ejecutar
+ */
+t_dtb * pasarDTBdeREADYESPaEXEC(){
+
+	pthread_mutex_lock(&mutexReadyEspList);
+	pthread_mutex_lock(&mutexEjecutandoList);
+	t_dtb *primerDTBenReadyEsp = (t_dtb *) list_remove(colaReadyEspecial,0);
+	list_add(colaEjecutando, primerDTBenReadyEsp);
+	pthread_mutex_unlock(&mutexEjecutandoList);
+	pthread_mutex_unlock(&mutexReadyEspList);
+	return primerDTBenReadyEsp;
+}
 int pasarDTBdeEXECaREADY(t_dtb * dtbABloq){
 
 	pthread_mutex_lock(&mutexBloqueadosList);
@@ -230,22 +242,6 @@ int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq){
 	return EXIT_SUCCESS;
 }
 
-void pasarDTBdeREADYESPaEXEC(t_dtb * dtbAEjecutar){
-
-	pthread_mutex_lock(&mutexReadyEspList);
-	pthread_mutex_lock(&mutexEjecutandoList);
-
-	int index = buscarDTBEnCola(colaReadyEspecial,dtbAEjecutar);
-
-	if(index > 0){
-		t_dtb * dtbReadyEspAExec = (t_dtb *) list_remove(colaReadyEspecial,index);
-		list_add(colaEjecutando, dtbReadyEspAExec);
-	}
-
-	pthread_mutex_unlock(&mutexEjecutandoList);
-	pthread_mutex_unlock(&mutexReadyEspList);
-}
-
 void pasarDTBdeBLOQaREADYESP(t_dtb * dtbAReadyEsp){
 
 	pthread_mutex_lock(&mutexBloqueadosList);
@@ -281,16 +277,10 @@ void pasarDTBdeBLOQaREADY(t_dtb * dtbAReady){
 void pasarDTBSegunQuantumRestante(t_dtb * dtb){
 
 	if(dtb->quantumRestante > 0){
-
-				pasarDTBdeBLOQaREADYESP(dtb);
-
-			}else{
-
-				if(dtb->quantumRestante == 0){
-
-					pasarDTBdeBLOQaREADY(dtb);
-				}
-			}
+		pasarDTBdeBLOQaREADYESP(dtb);
+	}else{
+		pasarDTBdeBLOQaREADY(dtb);
+	}
 
 }
 
@@ -307,6 +297,7 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
     copyIntToBuffer(&paquete,dtbAEnviar->flagInicializado);
     copyStringToBuffer(&paquete,dtbAEnviar->tablaDirecciones);
     copyIntToBuffer(&paquete,dtbAEnviar->cantidadLineas);
+    copyIntToBuffer(&paquete, dtbAEnviar->quantumRestante);
 
     int pqtSize = sizeof(int)*4 +
     		(strlen(dtbAEnviar->dirEscriptorio) + strlen(dtbAEnviar->tablaDirecciones)) * sizeof(char);

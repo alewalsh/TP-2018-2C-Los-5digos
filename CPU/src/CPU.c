@@ -497,6 +497,7 @@ t_dtb * transformarPaqueteADTB(t_package paquete)
 	dtb->flagInicializado = copyIntFromBuffer(&buffer);
 	dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
 	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
+	dtb->quantumRestante = copyIntFromBuffer(&buffer);
 	return dtb;
 }
 
@@ -511,8 +512,10 @@ t_package transformarDTBAPaquete(t_dtb * dtb)
 	copyIntToBuffer(&buffer, dtb->flagInicializado);
 	copyStringToBuffer(&buffer, dtb->tablaDirecciones);
 	copyIntToBuffer(&buffer, dtb->cantidadLineas);
+	copyIntToBuffer(&buffer, dtb->quantumRestante);
 	paquete.data = buffer;
-	paquete.size = 4*sizeof(int)+strlen(dtb->dirEscriptorio)+strlen(dtb->tablaDirecciones);
+	paquete.size = 5*sizeof(int)+
+			(strlen(dtb->dirEscriptorio)+strlen(dtb->tablaDirecciones))*sizeof(char);
 	return paquete;
 }
 
