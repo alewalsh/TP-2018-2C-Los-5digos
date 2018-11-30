@@ -57,7 +57,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 	char * pidString = intToString(datosPaquete->pid);
 	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
 	free(pidString);
-	t_segmento * segmento = reservarSegmento(datosPaquete->cantPaquetes, gdt->tablaSegmentos, datosPaquete->path);
+	t_segmento * segmento = reservarSegmento(datosPaquete->cantPaquetes, gdt->tablaSegmentos, datosPaquete->path, 0);
 	// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ LINEAS HAY LIBRES
 	if (segmento == NULL)
 	{
@@ -189,44 +189,6 @@ void imprimirInfoAdministrativaSegmentacion(int pid)
 	}
 }
 
-t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo)
-{
-	t_segmento * segmento = malloc(sizeof(t_segmento));
-	int lineasLibresContiguas = 0, i = 0, base;
-	while(i <= cantLineas)
-	{
-		if(bitarray_test_bit(estadoLineas,i) == 0)
-		{
-			base = i;
-			lineasLibresContiguas++;
-			if (lineasLibresContiguas == lineasEsperadas)
-			{
-				break;
-			}
-		}
-		else
-		{
-			lineasLibresContiguas = 0;
-		}
-		i++;
-	}
-	actualizarPosicionesLibres(base, lineasEsperadas, estadoLineas);
-	if (lineasLibresContiguas == lineasEsperadas)
-	{
-		segmento->base = base - lineasEsperadas;
-		segmento->limite = lineasEsperadas;
-		int nroSegmento = 0;
-		if (!dictionary_is_empty(tablaSegmentos))
-			nroSegmento = dictionary_size(tablaSegmentos);
-		segmento->nroSegmento = nroSegmento;
-		segmento->archivo = archivo;
-		return segmento;
-	}
-	else
-		return NULL;
-
-}
-
 void actualizarTablaDeSegmentos(int pid, t_segmento * segmento)
 {
 	char *  pidString = intToString(pid);
@@ -235,16 +197,6 @@ void actualizarTablaDeSegmentos(int pid, t_segmento * segmento)
 	dictionary_put(gdt->tablaSegmentos,nroSegmentoString,segmento);
 	free(nroSegmentoString);
 	dictionary_put(tablaProcesos,pidString,gdt);
-}
-
-void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarray * bitArray)
-{
-	int posicionInicial = finalBitArray - lineasEsperadas;
-	while (posicionInicial <= finalBitArray)
-	{
-		bitarray_set_bit(bitArray, posicionInicial);
-		posicionInicial++;
-	}
 }
 
 // Lógica de segmentación pura

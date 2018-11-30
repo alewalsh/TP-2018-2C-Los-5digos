@@ -244,7 +244,7 @@ void crearProceso(int pid)
 	free(gdt);
 }
 
-int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar)
+int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar, int nroSegmento)
 {
 	int i = 0, paginasReservadas = 0;
 	t_pagina * pagina = malloc(sizeof(t_pagina));
@@ -254,6 +254,7 @@ int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int li
 	if (config->modoEjecucion == SPA)
 	{
 		proceso = dictionary_remove(tablaProcesos, intToString(pid));
+		pagina->nroSegmento = nroSegmento;
 	}
 	while(paginasReservadas != paginasAReservar)
 	{
@@ -263,7 +264,8 @@ int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int li
 		}
 		if(bitarray_test_bit(estadoMarcos,i) == 0)
 		{
-			pagina->nroPagina = i;
+			pagina->nroPagina = paginasReservadas;
+			pagina->nroMarco = i;
 			if (lineasAOcupar > lineasXPagina)
 			{
 				pagina->lineasUtilizadas = lineasXPagina;
@@ -280,7 +282,7 @@ int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int li
 				list_add(proceso->tablaPaginas, pagina);
 			}
 
-			ocuparMarco(pagina->nroPagina);
+			ocuparMarco(pagina->nroMarco);
 			paginasReservadas++;
 		}
 		i++;
@@ -307,7 +309,7 @@ void actualizarTPI(t_pagina * pagina)
 void logPosicionesLibres(t_bitarray * bitarray, int modo)
 {
 	char * modoEjecucion;
-	if (modo == TPI || modo == SPA)
+	if (modo == TPI)
 		modoEjecucion = "página";
 	else
 		modoEjecucion = "línea";
@@ -372,5 +374,81 @@ int obtenerLineasProceso(int pid)
 
 void liberarMarco(t_pagina * pagina)
 {
-	bitarray_clean_bit(estadoMarcos, pagina->nroPagina);
+	bitarray_clean_bit(estadoMarcos, pagina->nroMarco);
+}
+
+bool hayXMarcosLibres(int cantidad)
+{
+	int i = 0, marcosLibres = 0;
+	while(i < bitarray_get_max_bit(estadoMarcos))
+	{
+		if (bitarray_test_bit(estadoMarcos,i) == 0)
+		{
+			marcosLibres++;
+			if (marcosLibres == cantidad)
+			{
+				break;
+			}
+		}
+		i++;
+	}
+	if (marcosLibres < cantidad)
+		return false;
+	return true;
+}
+
+t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo, int paginasAReservar)
+{
+	t_segmento * segmento = malloc(sizeof(t_segmento));
+	int lineasLibresContiguas = 0, i = 0, base;
+	if (config->modoEjecucion == SEG){
+		while(i <= cantLineas)
+		{
+			if(bitarray_test_bit(estadoLineas,i) == 0)
+			{
+				base = i;
+				lineasLibresContiguas++;
+				if (lineasLibresContiguas == lineasEsperadas)
+				{
+					break;
+				}
+			}
+			else
+			{
+				lineasLibresContiguas = 0;
+			}
+			i++;
+		}
+		actualizarPosicionesLibres(base, lineasEsperadas, estadoLineas);
+	}
+	if (config->modoEjecucion == SPA)
+	{
+		if (hayXMarcosLibres(paginasAReservar))
+			lineasLibresContiguas = lineasEsperadas;
+		else
+			return NULL;
+	}
+	if (lineasLibresContiguas == lineasEsperadas)
+	{
+		segmento->base = base - lineasEsperadas;
+		segmento->limite = lineasEsperadas;
+		int nroSegmento = 0;
+		if (!dictionary_is_empty(tablaSegmentos))
+			nroSegmento = dictionary_size(tablaSegmentos);
+		segmento->nroSegmento = nroSegmento;
+		segmento->archivo = archivo;
+		return segmento;
+	}
+	else
+		return NULL;
+}
+
+void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarray * bitArray)
+{
+	int posicionInicial = finalBitArray - lineasEsperadas;
+	while (posicionInicial <= finalBitArray)
+	{
+		bitarray_set_bit(bitArray, posicionInicial);
+		posicionInicial++;
+	}
 }

@@ -52,10 +52,12 @@ typedef struct{
 } t_segmento;
 
 typedef struct{
+	int nroMarco;
 	int nroPagina;
 	int pid;
 	char * path;
 	int lineasUtilizadas;
+	int nroSegmento;
 } t_pagina;
 
 typedef struct{

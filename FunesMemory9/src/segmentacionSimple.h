@@ -23,9 +23,7 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion);
 void imprimirInfoAdministrativaSegmentacion(int pid);
 int cerrarArchivoSegmentacion(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socketSolicitud);
 int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud);
-t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo);
 void actualizarTablaDeSegmentos(int pid, t_segmento * segmento);
-void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarray * bitArray);
 int ejecutarGuardarEsquemaSegmentacion(t_package pkg, t_infoGuardadoLinea* datosPaquete, int socket);
 
 #endif /* SRC_SEGMENTACIONSIMPLE_H_ */

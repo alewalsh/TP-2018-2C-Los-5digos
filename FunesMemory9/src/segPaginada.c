@@ -32,16 +32,18 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 	//ACA HAY QUE FIJARSE EN LAS TABLAS SI TENGO UNA PAGINA ASOCIADA A UN SEGMENTE LIBRE PARA ALMACENAR LOS DATOS
 	//EN CASO QUE SI RESERVAR DICHA PAGINA
 
-	int code = reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, cantLineas);
-	if (code == FM9_DAM_MEMORIA_INSUFICIENTE)
-	{
-		logPosicionesLibres(estadoMarcos,TPI);
-		return code;
-	}
 	char * pidString = intToString(datosPaquete->pid);
 	t_gdt * gdt = dictionary_remove(tablaProcesos,pidString);
 	free(pidString);
-	reservarSegmentoSegmentacionPaginada(gdt, datosPaquete->pid);
+	t_segmento * segmento = reservarSegmento(datosPaquete->cantPaquetes,gdt->tablaSegmentos,datosPaquete->path,paginasNecesarias);
+//	int code = reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, cantLineas);
+	if (segmento == NULL)
+	{
+		logPosicionesLibres(estadoLineas,SPA);
+		return FM9_DAM_MEMORIA_INSUFICIENTE;
+	}
+	reservarPaginasParaSegmento(segmento, datosPaquete, paginasNecesarias);
+//	reservarSegmentoSegmentacionPaginada(gdt, datosPaquete->pid);
 	// ESTO PARA QUE ESTA?????
 	contLineasUsadas += cantLineas;
 
@@ -49,12 +51,12 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 	char * bufferGuardado = malloc(config->tamMaxLinea);
 	int i = 0, offset = 0, lineasGuardadas = 0;
 	int lineaLeida = 1;
-	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
-	while(i < cantidadSegmentos)
-	{
-		t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
-		int paginaActual = segmento->base;
-		while (paginaActual < (segmento->base+segmento->limite))
+//	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
+//	while(i < cantidadSegmentos)
+//	{
+//		t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(segmento->nroSegmento));
+		int lineaActual = segmento->base;
+		while (lineaActual < (segmento->base+segmento->limite))
 		{
 			t_package paquete;
 			if(recibir(socketSolicitud,&paquete,logger->logger))
@@ -72,18 +74,16 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 			char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
 			if (nroLinea != lineaLeida)
 			{
-				pthread_mutex_lock(&mutexPaginaBuscada);
-				paginaBuscada = paginaActual;
-				t_pagina * pagina = list_find(gdt->tablaPaginas, (void *)filtrarPorNroPagina);
-				pthread_mutex_unlock(&mutexPaginaBuscada);
+				int posicionPagina = lineaActual / lineasXPagina;
+				t_pagina * pagina = list_get(gdt->tablaPaginas, posicionPagina);
 				int tamanioBuffer = strlen(bufferGuardado);
 				bufferGuardado[tamanioBuffer] = '\n';
-				guardarLinea(direccion(pagina->nroPagina,lineasGuardadas), bufferGuardado);
+				guardarLinea(direccion(pagina->nroMarco,lineasGuardadas), bufferGuardado);
 				lineasGuardadas++;
 				if (lineasGuardadas == lineasXPagina)
 				{
 					lineasGuardadas = 0;
-					paginaActual++;
+					lineaActual++;
 				}
 				free(bufferGuardado);
 				bufferGuardado = malloc(config->tamMaxLinea);
@@ -97,8 +97,8 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 			}
 			lineaLeida = nroLinea;
 		}
-		i++;
-	}
+//		i++;
+//	}
 	free(bufferGuardado);
 
 	//ENVIAR MSJ DE EXITO A DAM
@@ -110,51 +110,11 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 	return EXIT_SUCCESS;
 }
 
-int reservarSegmentoSegmentacionPaginada(t_gdt * gdt, int pid)
+int reservarPaginasParaSegmento(t_segmento * segmento, t_infoCargaEscriptorio* datosPaquete, int paginasAReservar)
 {
-	int i = 0;
-	int cantidadPaginas = list_size(gdt->tablaPaginas);
-	if (cantidadPaginas > 0)
+	if (segmento != NULL)
 	{
-		if (cantidadPaginas == 1)
-		{
-			t_segmento * segmento = malloc(sizeof(t_segmento));
-			t_pagina * pagina = list_get(gdt->tablaPaginas,0);
-			segmento->archivo = pagina->path;
-			segmento->base = pagina->nroPagina;
-			segmento->limite = cantidadPaginas;
-			segmento->nroSegmento = 0;
-			dictionary_put(gdt->tablaSegmentos,intToString(segmento->nroSegmento),segmento);
-		}
-		else
-		{
-			t_list * paginasASegmentar = list_create();
-			int j = 0;
-			while (i < cantidadPaginas)
-			{
-				t_pagina * pagina = list_get(gdt->tablaPaginas,i);
-				t_pagina * pagina2 = list_get(gdt->tablaPaginas,i+1);
-				if (pagina2 != NULL && pagina->nroPagina + 1 == pagina2->nroPagina)
-				{
-					list_add(paginasASegmentar,pagina);
-				}
-				else
-				{
-					list_add(paginasASegmentar,pagina);
-					t_segmento * segmento = malloc(sizeof(t_segmento));
-					segmento->archivo = pagina->path;
-					segmento->base = pagina->nroPagina;
-					segmento->limite = list_size(paginasASegmentar);
-					segmento->nroSegmento = j;
-					dictionary_put(gdt->tablaSegmentos,intToString(segmento->nroSegmento),segmento);
-					list_clean(paginasASegmentar);
-					j++;
-				}
-				i++;
-			}
-			list_destroy(paginasASegmentar);
-		}
-		dictionary_put(tablaProcesos, intToString(pid), gdt);
+		reservarPaginasNecesarias(paginasAReservar,datosPaquete->pid,datosPaquete->path,datosPaquete->cantPaquetes,segmento->nroSegmento);
 	}
 	else
 	{
@@ -164,6 +124,61 @@ int reservarSegmentoSegmentacionPaginada(t_gdt * gdt, int pid)
 	}
 	return EXIT_SUCCESS;
 }
+
+//int reservarSegmentoSegmentacionPaginada(t_gdt * gdt, int pid)
+//{
+//	int i = 0;
+//	int cantidadPaginas = list_size(gdt->tablaPaginas);
+//	if (cantidadPaginas > 0)
+//	{
+//		if (cantidadPaginas == 1)
+//		{
+//			t_segmento * segmento = malloc(sizeof(t_segmento));
+//			t_pagina * pagina = list_get(gdt->tablaPaginas,0);
+//			segmento->archivo = pagina->path;
+//			segmento->base = pagina->nroPagina;
+//			segmento->limite = cantidadPaginas;
+//			segmento->nroSegmento = 0;
+//			dictionary_put(gdt->tablaSegmentos,intToString(segmento->nroSegmento),segmento);
+//		}
+//		else
+//		{
+//			t_list * paginasASegmentar = list_create();
+//			int j = 0;
+//			while (i < cantidadPaginas)
+//			{
+//				t_pagina * pagina = list_get(gdt->tablaPaginas,i);
+//				t_pagina * pagina2 = list_get(gdt->tablaPaginas,i+1);
+//				if (pagina2 != NULL && pagina->nroPagina + 1 == pagina2->nroPagina)
+//				{
+//					list_add(paginasASegmentar,pagina);
+//				}
+//				else
+//				{
+//					list_add(paginasASegmentar,pagina);
+//					t_segmento * segmento = malloc(sizeof(t_segmento));
+//					segmento->archivo = pagina->path;
+//					segmento->base = pagina->nroPagina;
+//					segmento->limite = list_size(paginasASegmentar);
+//					segmento->nroSegmento = j;
+//					dictionary_put(gdt->tablaSegmentos,intToString(segmento->nroSegmento),segmento);
+//					list_clean(paginasASegmentar);
+//					j++;
+//				}
+//				i++;
+//			}
+//			list_destroy(paginasASegmentar);
+//		}
+//		dictionary_put(tablaProcesos, intToString(pid), gdt);
+//	}
+//	else
+//	{
+//		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
+//		logPosicionesLibres(estadoMarcos,SPA);
+//		return FM9_DAM_MEMORIA_INSUFICIENTE;
+//	}
+//	return EXIT_SUCCESS;
+//}
 
 int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int accion)
 {
@@ -199,15 +214,13 @@ int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int acci
 				while(j < (segmento->base+segmento->limite))
 				{
 					int idLinea = 0;
-					pthread_mutex_lock(&mutexPaginaBuscada);
-					paginaBuscada = j;
-					t_pagina * pagina = list_find(gdt->tablaPaginas, (void *) filtrarPorNroPagina);
-					pthread_mutex_unlock(&mutexPaginaBuscada);
+					int posicionPagina = j / lineasXPagina;
+					t_pagina * pagina = list_get(gdt->tablaPaginas, posicionPagina);
 					while (idLinea < pagina->lineasUtilizadas)
 					{
 						if (strcmp(pagina->path, data->path) == 0)
 						{
-							char * linea = obtenerLinea(direccion(pagina->nroPagina, idLinea));
+							char * linea = obtenerLinea(direccion(pagina->nroMarco, idLinea));
 							if (accion == AccionDUMP)
 							{
 								imprimirInfoAdministrativaSegPag(data->pid);
@@ -248,12 +261,10 @@ void imprimirInfoAdministrativaSegPag(int pid)
 		int j = segmento->base;
 		while (j < (segmento->base + segmento->limite))
 		{
-			pthread_mutex_lock(&mutexPaginaBuscada);
-			paginaBuscada = j;
-			t_pagina * pagina = list_find(gdt->tablaPaginas,(void * )filtrarPorNroPagina);
-			pthread_mutex_unlock(&mutexPaginaBuscada);
-			printf("PID %d: Nro Marco %d - Lineas utilizadas %d \n", pid, pagina->nroPagina, pagina->lineasUtilizadas);
-			log_info_mutex(logger, "PID %d: Nro Marco %d - Lineas utilizadas %d", pid, pagina->nroPagina, pagina->lineasUtilizadas);
+			int posicionPagina = j / lineasXPagina;
+			t_pagina * pagina = list_get(gdt->tablaPaginas,posicionPagina);
+			printf("PID %d: Nro Marco %d - Lineas utilizadas %d \n", pid, pagina->nroMarco, pagina->lineasUtilizadas);
+			log_info_mutex(logger, "PID %d: Nro Marco %d - Lineas utilizadas %d", pid, pagina->nroMarco, pagina->lineasUtilizadas);
 			j++;
 		}
 		i++;
@@ -276,34 +287,31 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg, t_infoGuardadoLinea* datosPaquet
 	{
 		return FM9_CPU_ACCESO_INVALIDO;
 	}
-
 	if(cantidadSegmentos > 0)
 	{
 		for(int i = 0; i < cantidadSegmentos; i++)
 		{
 			// LUEGO RECORRO DE A SEGMENTOS Y DE A PAGINAS PARA LOCALIZAR DONDE IRÍA EL DATO
 			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
-			int j = segmento->base;
-			while(j < (segmento->base + segmento->limite))
+			if (strcmp(segmento->archivo,datosPaquete->path) == 0)
 			{
-				if (lineaBuscada >= lineasXPagina)
-				{
-					lineaBuscada -= lineasXPagina;
-				}
-				else
-				{
-					pthread_mutex_lock(&mutexPaginaBuscada);
-					paginaBuscada = j;
-					t_pagina * pagina = list_find(gdt->tablaPaginas,(void * )filtrarPorNroPagina);
-					pthread_mutex_unlock(&mutexPaginaBuscada);
+//				int j = segmento->base;
+//				while(j < (segmento->base + segmento->limite))
+//				{
+					int posicionPagina = lineaBuscada / lineasXPagina;
+					t_pagina * pagina = list_get(gdt->tablaPaginas,posicionPagina);
+					while(lineaBuscada > lineasXPagina)
+					{
+						lineaBuscada -= lineasXPagina;
+					}
 					if (strcmp(pagina->path,datosPaquete->path) == 0)
 					{
-						guardarLinea(direccion(pagina->nroPagina, lineaBuscada), datosPaquete->datos);
+						guardarLinea(direccion(pagina->nroMarco, lineaBuscada), datosPaquete->datos);
 						pudeGuardar = true;
 						break;
 					}
-				}
-				j++;
+//					j++;
+//				}
 			}
 			if (pudeGuardar)
 			{
@@ -334,7 +342,7 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg, t_infoGuardadoLinea* datosPaquet
 bool filtrarPorNroPagina(t_pagina * pagina)
 {
 	pthread_mutex_lock(&mutexPaginaBuscada);
-	if (pagina->nroPagina == paginaBuscada)
+	if (pagina->nroMarco == paginaBuscada)
 	{
 		return true;
 	}
@@ -358,13 +366,9 @@ int cerrarArchivoSegPag(t_package pkg, t_infoCerrarArchivo* datosPaquete, int so
 			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
 			if (strcmp(segmento->archivo,datosPaquete->path) == 0)
 			{
-				int j = segmento->base;
-				while(i < (segmento->base + segmento->limite))
+				for(int j = 0; j < list_size(gdt->tablaPaginas);j++)
 				{
-					pthread_mutex_lock(&mutexPaginaBuscada);
-					paginaBuscada = j;
-					t_pagina * pagina = list_find(gdt->tablaPaginas, (void *)filtrarPorNroPagina);
-					pthread_mutex_unlock(&mutexPaginaBuscada);
+					t_pagina * pagina = list_get(gdt->tablaPaginas,j);
 					liberarMarco(pagina);
 				}
 			}
