@@ -207,6 +207,10 @@ int realizarEjecucion(t_dtb * dtb)
 			// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
 			// lo pase a la cola de Exit.
 			t_cpu_operacion * operacion = list_get(listaInstrucciones, dtb->programCounter);
+
+			int quantumRestante = (quantum - periodoEjecucion)-1;
+			dtb->quantumRestante = quantumRestante;
+
 			int respuesta = ejecutarOperacion(operacion, &dtb);
 			switch(respuesta)
 			{
