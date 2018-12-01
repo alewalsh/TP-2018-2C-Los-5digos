@@ -79,7 +79,7 @@ pthread_mutex_t mutexExit;
 void responderDAM();
 //void responderDAM(t_package);
 int validarArchivo(char *);
-void escribirStringEnArchivo(char *, char *);
+int escribirStringEnArchivo(char *, char *);
 void escribirMetadata(char*, struct metadataArchivo *);
 void leerMetadata(char *, struct metadataArchivo *);
 char* obtenerDatos(char*,int ,int);

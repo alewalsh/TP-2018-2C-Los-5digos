@@ -89,19 +89,19 @@ void inicializarCosnola() {
 
 					char * datosMD5 = obtenerDatos(pathMD5,0, metadataArchivoALeer->tamanio);
 
-					void * digest = malloc(MD5_DIGEST_LENGTH); //o puede ser unsigned char*
+					unsigned char digest[MD5_DIGEST_LENGTH];
 					MD5_CTX context;
 					MD5_Init(&context);
+
 					MD5_Update(&context, datosMD5, strlen(datosMD5) + 1);
 					MD5_Final(digest, &context);
+					printf("MD5 de %s es: ", pathMD5);
 
-//					char * md5EnChar = digest;
-//
-					printf("MD5 hash = (%d) \n", digest);
-//					int i;
-//					for (i=0;i<MD5_DIGEST_LENGTH;i++){
-//					    printf ("%02x", digest[i]);
-//					}
+					int i;
+					for (i=0;i<MD5_DIGEST_LENGTH;i++){
+						printf ("%02x", digest[i]);
+					}
+					printf("\n");
 
 					free(metadataArchivoALeer->bloques);
 					free(metadataArchivoALeer);

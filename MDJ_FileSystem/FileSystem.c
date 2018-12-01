@@ -175,10 +175,17 @@ void inicializarConexion(){
 	//recibo transer size
 	t_package paqueteTS;
 	if(recibir(socketEscucha->socket,&paqueteTS,loggerMDJ)){
-		//error no recibio TS
+		log_error(loggerMDJ, "Error al esperar recivir Transfer Size");
 	}
-	trasnfer_size = atoi(paqueteTS.data);
-	//todo log
+	if(paqueteTS.code != DAM_MDJ_TRANSFER_SIZE){
+		log_error(loggerMDJ, "No se recivio el Transfer Size");
+		exit(-1);
+	}
+	char *bufferTS = paqueteTS.data;
+	trasnfer_size = copyIntFromBuffer(&bufferTS);
+
+	free(bufferTS);
+
 	printf("Se conecto el DAM");
 
     pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);

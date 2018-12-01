@@ -1,60 +1,69 @@
 #include "FileSystem.h"
 
-//todo ver envio por transfer size.
-
-//TODO CAMBIAR CASES POR CODIGOS EN SOCKET.H
-
-//calloc para cuando leo metadata?
-
 void consoleExit() {
 	setExit();
 }
 
-void responderDAM() {
-//void responderDAM(t_package pkg) {
+void responderDAM(t_package pkg) {
 
 	sleep(configuracion->retardo/1000);
 
-//	int opcion = pkg.code; //sera asignado por escuchar al DAM
-//
-	int opcion;
-	opcion = 6;
+	int opcion = pkg.code;
 
 	switch (opcion) {
-	case 1: //validar archivo ++ [Path]
+	case DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO: //validar archivo ++ [Path]
 		printf("");
 
-		//TODO ver como consigo el filename. con path incluido. o estan todos si o si dentro de /archivos?
-		//en pkg.data ???
-
-		char *pathValidar = string_new();
-
-//		char *path = pkg.data;
+		char *bufferValidar = pkg.data;
+		char * pathValidar = copyStringFromBuffer(&bufferValidar);
 
 		int statusValidar;
 		statusValidar = validarArchivo(pathValidar);
 		if (statusValidar) {
 			log_info(loggerAtencionDAM, "Archivo: %s OK.", pathValidar);
-			//madnar ok
-			//mandar cuanto pesa realmente.
 
-//			enviar(socketEscucha->socket, DAM_MDJ_OK, , ,logger);
+			int tamanio;
+
+			struct metadataArchivo *metadataArchivoValidar = malloc(sizeof(struct metadataArchivo));
+			leerMetadata(pathValidar, metadataArchivoValidar);
+
+			tamanio = metadataArchivoValidar->tamanio;
+
+			char* bufferEnvioValidacion = malloc(sizeof(int));
+			copyIntToBuffer(&bufferEnvioValidacion, tamanio);
+
+			int sizeEnvioValidacion = sizeof(int);
+
+			//envia OK y el tamanio del archivo a validar. No utilizo TS porque seguro entra (?
+			if(enviar(socketEscucha->socket, DAM_MDJ_OK, bufferEnvioValidacion, sizeEnvioValidacion, loggerAtencionDAM)){
+				log_error(loggerAtencionDAM, "Error al enviar validacion de archivo al DAM.");
+			}
+
+			free(metadataArchivoValidar->bloques);
+			free(metadataArchivoValidar);
+			free(bufferEnvioValidacion);
+
 		} else {
-			//mandar fail
-			enviar(socketEscucha->socket, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM);
+			//manda fail
+			if(enviar(socketEscucha->socket, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM)){
+				log_error(loggerAtencionDAM, "Error al enviar path inexistente al DAM.");
+			}
 			log_error(loggerAtencionDAM, "Error. Path: %s inexistente.", pathValidar);
 		}
 
+		free(bufferValidar);
 		free(pathValidar);
 
 		break;
 
-	case 2: //crear archivo ++ [Path, N Cantidad de /n's]
+	case DAM_MDJ_CREAR_ARCHIVO: //crear archivo ++ [Path, N Cantidad de /n's]
 		printf("");
 
-		int cantidad_Ns; //paramentros de la funcion
+		char *bufferCrear = pkg.data;
+		char * pathArchivoNuevo = copyStringFromBuffer(&bufferCrear);
+		int cantidad_Ns = copyIntFromBuffer(&bufferCrear);
 
-		char *pathArchivoNuevo = string_new();
+//		crearRutaDirectorio(pathArchivoNuevo);  TODO ver si en necesario. de serlo ver como saco el archivo de la ruta de directorio.
 
 		//creo String de /n's a ser escrito
 		char *NcantidadDeNs = string_new();
@@ -65,27 +74,40 @@ void responderDAM() {
 			i++;
 		}
 
-		escribirStringEnArchivo(pathArchivoNuevo, NcantidadDeNs);
 
-		//todo validar archivo para ver si esta todo bien? yo o el dam?
+		if(escribirStringEnArchivo(pathArchivoNuevo, NcantidadDeNs)){
+			if(enviar(socketEscucha->socket, DAM_MDJ_OK, NULL,0, loggerAtencionDAM)){
+				log_error(loggerAtencionDAM, "Error al enviar OK de crear archivo al DAM.");
+			}
+		}else{
+			if(enviar(socketEscucha->socket, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM)){
+				log_error(loggerAtencionDAM, "Error al enviar FAIL por crear archivo al DAM.");
+			}
+		}
+
+		free(bufferCrear);
 		free(pathArchivoNuevo);
 
 		break;
 
-	case 3: //obtener datos ++ [Path, Offset, Size]
+	case DAM_MDJ_CARGAR_ESCRIPTORIO: //obtener datos ++ [Path, Offset, Size]
 		printf("");
-		char *pathArchivoALeer = string_new();
-
-		int offset;
-
-		int size;
+		char *bufferObtenerDatos = pkg.data;
+		char * pathArchivoALeer = copyStringFromBuffer(&bufferObtenerDatos);
+		int offset = copyIntFromBuffer(&bufferObtenerDatos);
+		int size = copyIntFromBuffer(&bufferObtenerDatos);
 
 		int statusObtener;
 		statusObtener = validarArchivo(pathArchivoALeer);
+
 		if (statusObtener) {
 			//obtengo datos
 			char *datosArchivo = obtenerDatos(pathArchivoALeer,offset,size);
-			//todo envio al DAM
+
+			//todo envio cuantos paquetes le mando?
+
+			enviarStringDAMporTRansferSize(datosArchivo);
+
 			log_info(loggerAtencionDAM, "Datos obtenidos de: %s son: %s", pathArchivoALeer, datosArchivo);
 		} else {
 			//manda fail
@@ -95,14 +117,15 @@ void responderDAM() {
 		free(pathArchivoALeer);
 		break;
 
-	case 4: //guardar datos ++ [Path, Offset, Size, Buffer]
+	case DAM_MDJ_HACER_FLUSH: //guardar datos ++ [Path, Offset, Size, Buffer]
 		printf("");
-		char *pathArchivoAModificar = string_new();
 
-		int offsetGuardar;
+		char *bufferGuardarDatos = pkg.data;
+		char * pathArchivoAModificar = copyStringFromBuffer(&bufferGuardarDatos);
+		int offsetGuardar = copyIntFromBuffer(&bufferGuardarDatos);
+		int sizeGuardar = copyIntFromBuffer(&bufferGuardarDatos);
 
-		int sizeGuardar;
-
+		//todo leer por TS cada paquete y concatenarlo
 		char * bufferGuardar = string_new();
 
 		int statusGuardar;
@@ -110,8 +133,8 @@ void responderDAM() {
 		if (statusGuardar) {
 			//obtengo datos
 			char *datosArchivo = obtenerDatos(pathArchivoAModificar,offsetGuardar,sizeGuardar);
-			//moficio dichos datos
 
+			//moficio dichos datos
 			char *principio = string_substring_until(datosArchivo, offsetGuardar);
 			char *final = string_substring_from(datosArchivo, offsetGuardar);
 
@@ -119,8 +142,6 @@ void responderDAM() {
 			string_append(&stringModificado, principio);
 			string_append(&stringModificado, bufferGuardar);
 			string_append(&stringModificado, final);
-
-//			char *stringAescribir = string_from_format(stringModificado);
 
 			//borro archivo anterior.
 			borrarArchivo(pathArchivoAModificar);
@@ -137,9 +158,11 @@ void responderDAM() {
 		free(bufferGuardar);
 		break;
 
-	case 5: //borrar archivo ++ [Path]
+	case DAM_MDJ_BORRAR_ARCHIVO: //borrar archivo ++ [Path]
 		printf("");
-		char *pathArchivoAEliminar = string_new();
+
+		char *bufferBorrar = pkg.data;
+		char * pathArchivoAEliminar = copyStringFromBuffer(&bufferBorrar);
 
 		borrarArchivo(pathArchivoAEliminar);
 
@@ -150,7 +173,7 @@ void responderDAM() {
 		}else{
 			log_info(loggerAtencionDAM, "Archivo: %s Borrado\n", pathArchivoAEliminar);
 		}
-		//todo validar archivo para ver si esta todo bien?
+
 		free(pathArchivoAEliminar);
 		break;
 	case 6:
@@ -200,7 +223,7 @@ void escribirMetadata(char *path, struct metadataArchivo *metadata) {
 	free(metadataParaFwrite);
 }
 
-void escribirStringEnArchivo(char *pathArchivo, char *stringAEscribir) {
+int escribirStringEnArchivo(char *pathArchivo, char *stringAEscribir) {
 
 	int tamanioString;
 	tamanioString = strlen(stringAEscribir) * sizeof(char);
@@ -298,7 +321,9 @@ void escribirStringEnArchivo(char *pathArchivo, char *stringAEscribir) {
 		free(aEscribir);
 	}else{
 		log_error(loggerAtencionDAM, "Error. No hay sificientes bloques para crear archivo: %s.", pathArchivo);
+		return 0;
 	}
+	return 1;
 }
 
 void leerMetadata(char *path, struct metadataArchivo *metadata) {
@@ -438,4 +463,10 @@ void borrarArchivo(char *path){
 	}else{
 		log_error(loggerAtencionDAM, "Error. No se puedo borar el archivo: %s", path);
 	}
+}
+
+void enviarStringDAMporTRansferSize(char *datosEnvio){
+	//TODO
+	//TODO
+	//TODO
 }
