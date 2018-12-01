@@ -163,6 +163,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	pthread_mutex_unlock(&semDummy);
         	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:{
+        	//TODO: Porque estamos abortando el DTB?
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	if(abortarDTB(dtb))
 			{

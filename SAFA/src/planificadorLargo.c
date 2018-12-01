@@ -32,13 +32,25 @@ void agregarDTBaMetricasLP(int id){
 }
 
 t_metricaLP *nuevaMetrica(int id) {
-
 	t_metricaLP *nuevaMetrica = malloc(sizeof(t_metricaLP));
 	nuevaMetrica->idDTB = id;
 	nuevaMetrica->tiempoEnNEW = 0;
 	return nuevaMetrica;
 }
 
+void sumarQuantumEjecutadoMetricaNEW(){
+
+	// Tengo que buscar todos los dtbs que esten en NEW, y a esos buscarlos en la cola de Metricas. Solo
+	// los que coincidan, deben sumarse el quantum esperado
+    for (int i = 0; i < list_size(colaNew); i++) {
+    	t_dtb * dtbEnNEW  = list_get(colaNew, i);
+    	int idDTBenNEW = dtbEnNEW->idGDT;
+
+    	t_metricaLP *dtbEnMetrica = list_get(listaMetricasLP, idDTBenNEW);
+    	dtbEnMetrica->tiempoEnNEW = dtbEnMetrica->tiempoEnNEW + conf->quantum;
+    }
+
+}
 
 void planificadorLP() {
 

@@ -32,6 +32,7 @@ int consolaNuevoGDT(char*);
 t_metricaLP *nuevaMetrica(int id);
 void agregarDTBaMetricasLP(int id);
 int consolaMetricaDTB(char* dtbSolicitado);
+void sumarQuantumEjecutadoMetricaNEW();
 
 void planificadorLP();
 
