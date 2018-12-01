@@ -113,6 +113,44 @@ void consolaLiberar(){
 }
 
 
+void consolaMetricasDTB(char *args){
+
+    printf("Metricas con parametro\n");
+	int asd = consolaMetricaDTB(args);
+//    printf("Tiempo en NEW del DTB: %d \n", asd);
+//    if (key == NULL) {
+//        log_warning_mutex(logger, "Los parametros ingresados son incorrectos");
+//        printf("Los parametros ingresados son incorrectos\n");
+//        return;
+//    }
+//
+//    if (!isKeyBlocked(key)) {
+//        log_debug_mutex(logger, "Estas queriendo desbloquear una key que no esta bloqueada");
+//        printf("Estas queriendo desbloquear una key que no esta bloqueada \n\n");
+//        return;
+//    }
+//
+//    if (removeBlockedKeyByKey(key)) {
+//        log_error_mutex(logger, "No se desbloqueo la clave %s", key);
+//        printf("No se desbloqueo la clave %s \n\n", key);
+//        return;
+//    }
+//
+//    //remuevo todas las keys que estan en waiting
+//    removeAllWaitingKeyByKey(key);
+//
+//    //Actualizo la tabla de claves bloqueadas y los esis bloqueados
+//    updateBlockedKeysTable();
+//    log_trace_mutex(logger, "actualize la tabla");
+//
+//    log_debug_mutex(logger, "Se desbloqueo correctamente la key %s", key);
+//    //sem_post(&sem_newEsi);
+}
+
+void consolaMetricas(){
+    printf("Metricas sin parametros\n");
+}
+
 
 //char *compressKey(char *key, int *size) {
 //    *size = sizeof(int) + (strlen(key) * sizeof(char));
@@ -163,39 +201,6 @@ void consolaLiberar(){
 //    printf("Se bloqueo la clave %s por el esi %s \n\n", key, id);
 //    return;
 //}
-//
-//void consoleUnblock(char *key) {
-//
-//    if (key == NULL) {
-//        log_warning_mutex(logger, "Los parametros ingresados son incorrectos");
-//        printf("Los parametros ingresados son incorrectos\n");
-//        return;
-//    }
-//
-//    if (!isKeyBlocked(key)) {
-//        log_debug_mutex(logger, "Estas queriendo desbloquear una key que no esta bloqueada");
-//        printf("Estas queriendo desbloquear una key que no esta bloqueada \n\n");
-//        return;
-//    }
-//
-//    if (removeBlockedKeyByKey(key)) {
-//        log_error_mutex(logger, "No se desbloqueo la clave %s", key);
-//        printf("No se desbloqueo la clave %s \n\n", key);
-//        return;
-//    }
-//
-//    //remuevo todas las keys que estan en waiting
-//    removeAllWaitingKeyByKey(key);
-//
-//    //Actualizo la tabla de claves bloqueadas y los esis bloqueados
-//    updateBlockedKeysTable();
-//    log_trace_mutex(logger, "actualize la tabla");
-//
-//    log_debug_mutex(logger, "Se desbloqueo correctamente la key %s", key);
-//    //sem_post(&sem_newEsi);
-//    printf("Se desbloqueo correctamente la key %s \n\n", key);
-//}
-//
 //void consoleList(char *key) {
 //
 //    if (key == NULL) {
@@ -536,6 +541,8 @@ void consoleHelp() {
 //
 
 void consoleExit() {
+    printf("Comando EXIT seleccionado.\n");
+    printf("Se procedera a cerrar el programa.\n");
     setExit();
 }
 

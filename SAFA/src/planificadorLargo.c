@@ -13,12 +13,39 @@ int consolaNuevoGDT(char* scriptIngresado){
 	if(agregarDTBaNEW(newDTB)){
 		return EXIT_FAILURE;
 	}
+	agregarDTBaMetricasLP(newDTB->idGDT);
     return EXIT_SUCCESS;
 }
+
+int consolaMetricaDTB(char* dtbSolicitado){
+	int tiempo;
+	int idSolicitado = atoi(dtbSolicitado);
+	t_metricaLP *metricaDelDTB = list_get(listaMetricasLP, idSolicitado);
+	tiempo = metricaDelDTB->tiempoEnNEW;
+    log_info_mutex(logger, "3");
+	return tiempo;
+}
+
+void agregarDTBaMetricasLP(int id){
+	t_metricaLP *metrica = nuevaMetrica(id);
+	list_add(listaMetricasLP, metrica);
+}
+
+t_metricaLP *nuevaMetrica(int id) {
+
+	t_metricaLP *nuevaMetrica = malloc(sizeof(t_metricaLP));
+	nuevaMetrica->idDTB = id;
+	nuevaMetrica->tiempoEnNEW = 0;
+	return nuevaMetrica;
+}
+
 
 void planificadorLP() {
 
     log_info_mutex(logger, "Hilo Planificador Largo levantado. Grado de multiprogramacion: %d", conf->grado_mp);
+    agregarDTBaMetricasLP(0); //Creo el elemento 0 para encontrar mas facil los ids buscados
+
+    //TODO: crear el free de esta lista y los elementos de adentro
 
     while(1){
     	//este no estoy seguro.

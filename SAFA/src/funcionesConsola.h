@@ -24,6 +24,7 @@ extern t_list* colaReady;			// Lista Ready.
 extern t_list* colaBloqueados;		// Lista Bloqueados.
 extern t_list* colaEjecutando;     // Lista DTBs en ejec
 extern t_list* colaExit;		// Lista Terminados.
+//TODO: Vamos a tener que agregar la cola especial que creo Fran
 
 extern sem_t mandadosPorConsola;
 
@@ -34,7 +35,7 @@ extern sem_t mandadosPorConsola;
 //
 
 
-//void consoleStop();
+
 
 void consolaEjecutar(char *args);
 void consolaLiberar();
@@ -44,9 +45,10 @@ void imprimirNEW();
 void imprimirREADY();
 void imprimirEJECUTANDO();
 
+void consolaMetricasDTB(char *args);
+void consolaMetricas();
+
 //void consoleBlock(char *args);
-//
-//void consoleUnblock(char *esi);
 //
 //void consoleList(char *key);
 //
@@ -56,6 +58,8 @@ void imprimirEJECUTANDO();
 //
 //void consolePrintMan();
 //
+//void consoleStop();
+
 
 void consoleExit();
 

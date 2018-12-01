@@ -155,6 +155,7 @@ void initList() {
 	colaBloqueados = list_create();
 	colaEjecutando = list_create();
 	colaExit = list_create();
+	listaMetricasLP = list_create();
 }
 
 void cambiosConfig(){

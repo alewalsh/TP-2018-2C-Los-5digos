@@ -26,15 +26,15 @@ void executeCommand(int comando, char *args) {
         case FINALIZAR:
             consolaLiberar();
 //            consoleBlock(args);
-            printf("Comando FINALIZAR seleccionado.\n");
+//            printf("Comando FINALIZAR seleccionado.\n");
             break;
         case METRICAS:
-//            consoleUnblock(args);
-            printf("Comando METRICAS seleccionado.\n");
+        	if (args != NULL){
+                consolaMetricasDTB(args);}
+        	else {
+                consolaMetricas();}
             break;
         case EXIT:
-            printf("Comando EXIT seleccionado.\n");
-            printf("Se procedera a cerrar el programa.\n");
         	seguirEjecutando = 0;
             consoleExit();
             break;

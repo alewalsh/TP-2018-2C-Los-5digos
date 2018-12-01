@@ -69,6 +69,7 @@ t_list* colaBloqueados;		// Lista Bloqueados.
 t_list* colaEjecutando;     // Lista DTBs en ejec
 t_list* colaExit;		// Lista Terminados.
 t_list* colaReadyEspecial;
+t_list* listaMetricasLP;
 
 
 ////informa que se corrio un EJECUTAR y hay dtbs en NEW
