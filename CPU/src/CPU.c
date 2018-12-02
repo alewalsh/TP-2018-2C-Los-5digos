@@ -91,10 +91,11 @@ int nuevoDummy(t_package paquete)
 	t_dtb * dtb = transformarPaqueteADTB(paquete);
 	// Si es 0, levanto un hilo y realizo  la operación Dummy - Iniciar G.DT
 	// Solicitarle al DAM la busqueda del Escriptorio en el MDJ
-	char *buffer;
-	int size = sizeof(int) + strlen(dtb->dirEscriptorio);
-	copyIntToBuffer(&buffer, dtb->idGDT);
-	copyStringToBuffer(&buffer, dtb->dirEscriptorio);
+	int size = sizeof(int) + (strlen(dtb->dirEscriptorio) * sizeof(char));
+	char *buffer = (char *) malloc(size);
+	char * p = buffer;
+	copyIntToBuffer(&p, dtb->idGDT);
+	copyStringToBuffer(&p, dtb->dirEscriptorio);
 	if(enviar(t_socketDAM->socket,CPU_DAM_BUSQUEDA_ESCRIPTORIO,buffer, size, loggerCPU->logger))
 	{
 		log_error_mutex(loggerCPU, "No se pudo enviar la busqueda del escriptorio al DAM.");
@@ -328,44 +329,57 @@ int eventoSAFA(t_dtb ** dtb, int code)
 t_package crearPaqueteSegunAccion(int accion, t_cpu_operacion * operacion, t_dtb ** dtb)
 {
 	t_package paquete;
-	char * buffer;
+	char * buffer = malloc(sizeof(char));
+	char * p;
 	switch(accion)
 	{
 		case ABRIR:
 			paquete.code = CPU_DAM_ABRIR_ARCHIVO;
-			paquete.size = strlen(operacion->argumentos.ABRIR.path);
-			copyStringToBuffer(&buffer, operacion->argumentos.ABRIR.path);
+			paquete.size = (strlen(operacion->argumentos.ABRIR.path) * sizeof(char));
+			buffer = realloc(buffer, paquete.size);
+			p = buffer;
+			copyStringToBuffer(&p, operacion->argumentos.ABRIR.path);
 			break;
 		case FLUSH:
 			paquete.code = CPU_DAM_FLUSH;
-			paquete.size = strlen(operacion->argumentos.FLUSH.path) + sizeof(int);
-			copyIntToBuffer(&buffer, (*dtb)->idGDT);
-			copyStringToBuffer(&buffer, operacion->argumentos.FLUSH.path);
+			paquete.size = (strlen(operacion->argumentos.FLUSH.path) * sizeof(char)) + sizeof(int);
+			buffer = realloc(buffer, paquete.size);
+			p = buffer;
+			copyIntToBuffer(&p, (*dtb)->idGDT);
+			copyStringToBuffer(&p, operacion->argumentos.FLUSH.path);
 			break;
 		case CREAR:
 			paquete.code = CPU_DAM_CREAR;
-			paquete.size = strlen(operacion->argumentos.CREAR.path) + sizeof(int);
-			copyStringToBuffer(&buffer, operacion->argumentos.CREAR.path);
-			copyIntToBuffer(&buffer, operacion->argumentos.CREAR.linea);
+			paquete.size = (strlen(operacion->argumentos.CREAR.path) * sizeof(char)) + sizeof(int);
+			buffer = realloc(buffer, paquete.size);
+			p = buffer;
+			copyStringToBuffer(&p, operacion->argumentos.CREAR.path);
+			copyIntToBuffer(&p, operacion->argumentos.CREAR.linea);
 			break;
 		case BORRAR:
 			paquete.code = CPU_DAM_BORRAR;
-			paquete.size = strlen(operacion->argumentos.BORRAR.path);
-			copyStringToBuffer(&buffer, operacion->argumentos.BORRAR.path);
+			paquete.size = strlen(operacion->argumentos.BORRAR.path) * sizeof(char);
+			buffer = realloc(buffer, paquete.size);
+			p = buffer;
+			copyStringToBuffer(&p, operacion->argumentos.BORRAR.path);
 			break;
 		case ASIGNAR:
 			paquete.code = CPU_FM9_ASIGNAR;
-			paquete.size = strlen(operacion->argumentos.ASIGNAR.path) + 2 * sizeof(int) + strlen(operacion->argumentos.ASIGNAR.datos);
-			copyIntToBuffer(&buffer, (*dtb)->idGDT);
-			copyStringToBuffer(&buffer, operacion->argumentos.ASIGNAR.path);
-			copyIntToBuffer(&buffer, operacion->argumentos.ASIGNAR.linea);
-			copyStringToBuffer(&buffer, operacion->argumentos.ASIGNAR.datos);
+			paquete.size = (strlen(operacion->argumentos.ASIGNAR.path) * sizeof(char)) + 2 * sizeof(int) + (strlen(operacion->argumentos.ASIGNAR.datos) * sizeof(char));
+			buffer = realloc(buffer, paquete.size);
+			p = buffer;
+			copyIntToBuffer(&p, (*dtb)->idGDT);
+			copyStringToBuffer(&p, operacion->argumentos.ASIGNAR.path);
+			copyIntToBuffer(&p, operacion->argumentos.ASIGNAR.linea);
+			copyStringToBuffer(&p, operacion->argumentos.ASIGNAR.datos);
 			break;
 		case CLOSE:
 			paquete.code = CPU_FM9_CERRAR_ARCHIVO;
-			paquete.size = strlen(operacion->argumentos.CLOSE.path) + sizeof(int);
-			copyIntToBuffer(&buffer, (*dtb)->idGDT);
-			copyStringToBuffer(&buffer, operacion->argumentos.CLOSE.path);
+			paquete.size = (strlen(operacion->argumentos.CLOSE.path) * sizeof(char)) + sizeof(int);
+			buffer = realloc(buffer, paquete.size);
+			p = buffer;
+			copyIntToBuffer(&p, (*dtb)->idGDT);
+			copyStringToBuffer(&p, operacion->argumentos.CLOSE.path);
 			break;
 		default:
 			break;
@@ -472,10 +486,11 @@ int manejarRecursosSAFA(char * recurso, int idGDT, int accion)
 		return EXIT_FAILURE;
 	}
 	// Enviar la informacion del recurso y del idGDT que lo bloquea (o desbloquea) al SAFA
-	int size = strlen(recurso) + sizeof(int);
-	char * buffer;
-	copyStringToBuffer(&buffer, recurso);
-	copyIntToBuffer(&buffer,idGDT);
+	int size = strlen(recurso) * sizeof(char) + sizeof(int);
+	char * buffer = malloc(size);
+	char * p = buffer;
+	copyStringToBuffer(&p, recurso);
+	copyIntToBuffer(&p,idGDT);
 	if(enviar(t_socketSAFA->socket,code,buffer, size, loggerCPU->logger))
 	{
 		log_error_mutex(loggerCPU, "No se pudo enviar el bloqueo o desbloqueo del recurso al SAFA..");
@@ -489,7 +504,8 @@ int manejarRecursosSAFA(char * recurso, int idGDT, int accion)
 int setQuantum(t_package paquete)
 {
     pthread_mutex_lock(&mutexQuantum);
-	int quantum = copyIntFromBuffer(&paquete.data);
+    char * buffer = paquete.data;
+	int quantum = copyIntFromBuffer(&buffer);
 	if (quantum > 0)
 	{
 		log_info_mutex(loggerCPU, "El valor del quantum es %d", quantum);
@@ -518,17 +534,17 @@ t_package transformarDTBAPaquete(t_dtb * dtb)
 {
 	// Se realiza lo que sería una serializacion de la info dentro de paquete->data
 	t_package paquete;
-	char *buffer;
-	copyIntToBuffer(&buffer, dtb->idGDT);
-	copyStringToBuffer(&buffer, dtb->dirEscriptorio);
-	copyIntToBuffer(&buffer, dtb->programCounter);
-	copyIntToBuffer(&buffer, dtb->flagInicializado);
-	copyStringToBuffer(&buffer, dtb->tablaDirecciones);
-	copyIntToBuffer(&buffer, dtb->cantidadLineas);
-	copyIntToBuffer(&buffer, dtb->quantumRestante);
+	paquete.size = 5 * sizeof(int) + (strlen(dtb->dirEscriptorio) + strlen(dtb->tablaDirecciones))*sizeof(char);
+	char *buffer = (char *)malloc(paquete.size);
+	char * p = buffer;
+	copyIntToBuffer(&p, dtb->idGDT);
+	copyStringToBuffer(&p, dtb->dirEscriptorio);
+	copyIntToBuffer(&p, dtb->programCounter);
+	copyIntToBuffer(&p, dtb->flagInicializado);
+	copyStringToBuffer(&p, dtb->tablaDirecciones);
+	copyIntToBuffer(&p, dtb->cantidadLineas);
+	copyIntToBuffer(&p, dtb->quantumRestante);
 	paquete.data = buffer;
-	paquete.size = 5*sizeof(int)+
-			(strlen(dtb->dirEscriptorio)+strlen(dtb->tablaDirecciones))*sizeof(char);
 	return paquete;
 }
 

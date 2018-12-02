@@ -560,10 +560,10 @@ int conectarseConMdj() {
 			MDJ_HSK, t_socketMdj);
 
 	//Se envía el transfer size
-	int size;
-	char * buffer;
-	copyIntToBuffer(&buffer, configDMA->transferSize);
-	size = sizeof(int);
+	int size = sizeof(int);
+	char *buffer = (char *) malloc(size);
+	char *p = buffer;
+	copyIntToBuffer(&p, configDMA->transferSize);
 
 	if (enviar(t_socketMdj->socket, DAM_MDJ_TRANSFER_SIZE, buffer, size,logger->logger)) {
 		log_error_mutex(logger, "No se pudo enviar el transfer size al MDJ");

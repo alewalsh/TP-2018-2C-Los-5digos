@@ -19,7 +19,8 @@
 #include "consola.h"
 #include <sys/inotify.h>
 #include <unistd.h>
-
+#include "planificadorCorto.h"
+#include "planificadorLargo.h"
 
 //Para el SELECT
 fd_set master;

@@ -35,13 +35,19 @@ int buscarDtbParaInicializar();
 
 t_dtb *pasarDTBdeREADYaEXEC();
 t_dtb *pasarDTBdeREADYESPaEXEC();
+
 int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq);
 int pasarDTBdeEXECaREADY(t_dtb * dtbABloq);
 int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq);
+
 int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq);
 void pasarDTBdeBLOQaREADY(t_dtb * dtbAReady);
-void pasarDTBdeNEWaREADY(t_dtb * dtbAReady);
 void pasarDTBdeBLOQaREADYESP(t_dtb * dtbAReadyEsp);
+
+
+void pasarDTBdeNEWaREADY(t_dtb * dtbAReady);
+void pasarDTBdeNEWaEXIT(t_dtb * dtbAExit);
+
 void pasarDTBSegunQuantumRestante(t_dtb * dtb);
 //variable global
 

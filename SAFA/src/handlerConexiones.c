@@ -12,6 +12,8 @@
 #include <grantp/structCommons.h>
 //#include "SAFA.h"
 #include "funcionesSAFA.h"
+#include "planificadorCorto.h"
+#include "planificadorLargo.h"
 
 
 void manejarConexiones(){
@@ -62,9 +64,10 @@ void manejarConexiones(){
                 cpu->socket= nuevoFd;
                 list_add(listaCpus, cpu);
 
-                char *buffer = malloc(sizeof(int));
-                copyIntToBuffer(&buffer,conf->quantum);
-            	int size;
+            	int size = sizeof(int);
+                char *buffer = (char *) malloc(size);
+                char *p = buffer;
+                copyIntToBuffer(&p,conf->quantum);
 //            	char *keyCompress = compressKey(buffer, &size);
             	if(enviar(nuevoFd, SAFA_CPU_QUANTUM, buffer, size, logger->logger))
             	{
@@ -160,7 +163,8 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         case CPU_SAFA_BLOQUEAR_DUMMMY:
         	//Se bloquea el dummy
         	bloquearDummy();
-        	pthread_mutex_unlock(&semDummy);
+//        	pthread_mutex_unlock(&semDummy);
+        	sem_post(&semDummy);
         	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:{
         	//TODO: Porque estamos abortando el DTB?
@@ -188,11 +192,12 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	int pid = copyIntFromBuffer(&pkg.data);
 			int result = copyIntFromBuffer(&pkg.data);
 
+			t_dtb * dtb = buscarDTBPorPIDenCola(colaNew, pid);
 			if(result == EXIT_SUCCESS){
-				pasarDTBdeNEWaREADY(); //Se cargó en memoria correctamente
+				pasarDTBdeNEWaREADY(dtb); //Se cargó en memoria correctamente
 				log_info_mutex(logger, "Se cargó correctamente en memoria el proceso: %d", pid);
 			}else{
-				pasarDTBdeNEWaEXIT(); //No se pudo cargar a memoria
+				pasarDTBdeNEWaEXIT(dtb); //No se pudo cargar a memoria
 				log_error_mutex(logger, "No se pudo cargar en memoria el proceso: %d", pid);
 			}
 

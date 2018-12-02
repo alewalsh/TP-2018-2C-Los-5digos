@@ -8,7 +8,8 @@
 #include "funcionesSAFA.h"
 #include <grantp/structCommons.h>
 #include <grantp/configuracion.h>
-
+#include "planificadorCorto.h"
+#include "planificadorLargo.h"
 
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA EL MANEJO DEL SELECT
@@ -265,9 +266,9 @@ int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){
 }
 t_dtb * buscarDTBPorPIDenCola(t_list * cola, int pid){
 	t_dtb * dtb;
-	int index = -1;
+//	int index = -1;
 	int listSize = list_size(cola);
-	if(listSize<= 0) return dtb;
+	if(listSize<= 0) return NULL;
 
 	for(int i = 0; i<listSize;i++){
 		dtb = list_get(cola,i);
@@ -284,7 +285,7 @@ int desbloquearDTBsegunAlgoritmo(int pid){
 	//desbloqueo el proceso dependiendo del algoritmo indicado
 	t_dtb * dtb = buscarDTBPorPIDenCola(colaBloqueados,pid);
 
-	if(index > 0){
+	if(dtb->idGDT > 0){
 		switch(conf->algoritmo){
 		case RR:
 			pasarDTBdeBLOQaREADY(dtb);

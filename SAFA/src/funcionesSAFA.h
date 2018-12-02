@@ -21,10 +21,10 @@
 
 //DTB DUMMY
 t_dtb * dummyDTB;
-//Semaforo para el dummy
-pthread_mutex_t semDummy;
 pthread_mutex_t semCargadoEnMemoria;
 sem_t semaforpGradoMultiprgramacion;
+//Semaforo para el dummy
+sem_t semDummy;
 
 //extern t_list *statusList;
 //extern pthread_mutex_t mutexStatusList;

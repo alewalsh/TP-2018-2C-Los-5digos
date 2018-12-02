@@ -10,6 +10,7 @@
 #include <commons/log.h>
 #include <commons/bitarray.h>
 #include <grantp/configuracion.h>
+#include <grantp/compression.h>
 #include <grantp/socket.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -30,11 +31,11 @@ pthread_t threadConsola;
 
 pthread_attr_t tattr;
 
-t_log* loggerMDJ;
-t_log* loggerAtencionDAM;
+t_log_mutex* loggerMDJ;
+t_log_mutex* loggerAtencionDAM;
 configMDJ* configuracion;
 
-int * socketDAM;
+int socketDAM;
 t_socket* socketEscucha;
 int trasnfer_size;
 
