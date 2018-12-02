@@ -65,13 +65,13 @@ void manejarConexiones(){
                 char *buffer = malloc(sizeof(int));
                 copyIntToBuffer(&buffer,conf->quantum);
             	int size;
-            	char *keyCompress = compressKey(buffer, &size);
-            	if(enviar(nuevoFd, SAFA_CPU_QUANTUM, keyCompress, size, logger->logger))
+//            	char *keyCompress = compressKey(buffer, &size);
+            	if(enviar(nuevoFd, SAFA_CPU_QUANTUM, buffer, size, logger->logger))
             	{
             		log_error_mutex(logger, "No se pudo enviar el quantum al CPU.");
-            		free(keyCompress);
+            		free(buffer);
             	}
-        		free(keyCompress);
+        		free(buffer);
 
                 break;
             default:

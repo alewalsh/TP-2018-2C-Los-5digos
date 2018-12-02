@@ -116,7 +116,7 @@ void liberarMemoriaTSocket(t_socket * TSocket);
 
 int realizarEjecucion(t_dtb * dtb);
 
-int finalizoEjecucionDTB(t_dtb * dtb);
+int finalizoEjecucionDTB(t_dtb * dtb, int code);
 
 int eventoSAFA(t_dtb ** dtb, int code);
 

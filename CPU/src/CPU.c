@@ -39,6 +39,7 @@ void recibirDTB()
 		t_package paquete;
 		if (recibir(t_socketSAFA->socket,&paquete,loggerCPU->logger)) {
             log_error_mutex(loggerCPU, "No se pudo recibir el mensaje.");
+            exit_gracefully(EXIT_FAILURE);
             //handlerDisconnect(i);
         }
 		else
@@ -114,47 +115,48 @@ int nuevoDummy(t_package paquete)
 	return EXIT_SUCCESS;
 }
 
-t_list * parseoInstrucciones(char * path, int cantidadLineas)
-{
-	FILE * fp = fopen(path, "r");
-	char * line = NULL;
-	size_t len = 0;
-	ssize_t read;
-	if (fp == NULL){
-		log_error_mutex(loggerCPU, "Error al abrir el archivo: ");
-		exit_gracefully(EXIT_FAILURE);
-	}
-	t_list * listaInstrucciones = list_create();
-	int i = 1;
-	while ((read = getline(&line, &len, fp)) != -1)
-	{
-		bool ultimaLinea = (i == cantidadLineas);
-		t_cpu_operacion parsed = parse(line, ultimaLinea);
-		if(parsed.valido)
-		{
-			if(!parsed.esComentario)
-				list_add(listaInstrucciones, &parsed);
+//t_list * parseoInstrucciones(char * path, int cantidadLineas)
+//{
+//	FILE * fp = fopen(path, "r");
+//	char * line = NULL;
+//	size_t len = 0;
+//	ssize_t read;
+//	if (fp == NULL){
+//		log_error_mutex(loggerCPU, "Error al abrir el archivo: ");
+//		exit_gracefully(EXIT_FAILURE);
+//	}
+//	t_list * listaInstrucciones = list_create();
+//	int i = 1;
+//	while ((read = getline(&line, &len, fp)) != -1)
+//	{
+//		bool ultimaLinea = (i == cantidadLineas);
+//		t_cpu_operacion parsed = parse(line, ultimaLinea);
+//		if(parsed.valido)
+//		{
+//			if(!parsed.esComentario)
+//				list_add(listaInstrucciones, &parsed);
+//
+//			destruir_operacion(parsed);
+////			// TODO: PRUEBA TEMPORAL PARA VERIFICAR QUE NO DESTRUYE LA REFERENCIA QUE SE AGREGÓ EN LISTA INSTRUCCIONES
+////			t_cpu_operacion * operacion = list_get(listaInstrucciones, 0);
+////			printf("Accion: %d", operacion->keyword);
+////			printf("Argumento 1: %s", operacion->argumentos.ABRIR.path);
+//		}
+//		else
+//		{
+//			log_error_mutex(loggerCPU, "La linea <%d> no es valida\n", i);
+//			exit_gracefully(EXIT_FAILURE);
+//		}
+//		i++;
+//	}
+//
+//	fclose(fp);
+//	if (line)
+//		free(line);
+//
+//	return listaInstrucciones;
+//}
 
-			destruir_operacion(parsed);
-//			// TODO: PRUEBA TEMPORAL PARA VERIFICAR QUE NO DESTRUYE LA REFERENCIA QUE SE AGREGÓ EN LISTA INSTRUCCIONES
-//			t_cpu_operacion * operacion = list_get(listaInstrucciones, 0);
-//			printf("Accion: %d", operacion->keyword);
-//			printf("Argumento 1: %s", operacion->argumentos.ABRIR.path);
-		}
-		else
-		{
-			log_error_mutex(loggerCPU, "La linea <%d> no es valida\n", i);
-			exit_gracefully(EXIT_FAILURE);
-		}
-		i++;
-	}
-
-	fclose(fp);
-	if (line)
-		free(line);
-
-	return listaInstrucciones;
-}
 int comenzarEjecucion(t_package paquete)
 {
 	// Luego de recibirlo tengo que verificar su flag de inicializacion
@@ -188,7 +190,7 @@ int realizarEjecucion(t_dtb * dtb)
 {
 	// Si es 1, levanto un hilo y comienzo la ejecución de sentencias
 	// if DTB->flagInicializado == 1
-	t_list * listaInstrucciones = parseoInstrucciones(dtb->dirEscriptorio, dtb->cantidadLineas);
+	t_list * listaInstrucciones = parseoInstrucciones(dtb->dirEscriptorio, dtb->cantidadLineas, loggerCPU);
 	int cantidadInstrucciones = list_size(listaInstrucciones);
 	if (cantidadInstrucciones <= 0)
 	{
@@ -201,6 +203,8 @@ int realizarEjecucion(t_dtb * dtb)
 		// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
 		// Por cada unidad de tiempo de quantum, se ejecutara una linea del Escriptorio indicado en el DTB
 		pthread_mutex_lock(&mutexQuantum);
+		// RETARDO DE EJECUCION:
+		usleep(config->retardo * 1000);
 		int periodoEjecucion = 0;
 		while(periodoEjecucion < quantum)
 		{
@@ -238,20 +242,24 @@ int realizarEjecucion(t_dtb * dtb)
 		pthread_mutex_unlock(&mutexQuantum);
 		if (dtb->programCounter == cantidadInstrucciones)
 		{
-			if(finalizoEjecucionDTB(dtb))
+			if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_DTB))
 			{
 				log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
 			}
 		}
+	}
+	if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB))
+	{
+		log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
 	}
 	free(dtb);
 	list_destroy_and_destroy_elements(listaInstrucciones, (void *) liberarOperacion);
 	return EXIT_SUCCESS;
 }
 
-int finalizoEjecucionDTB(t_dtb * dtb)
+int finalizoEjecucionDTB(t_dtb * dtb, int code)
 {
-	if (eventoSAFA(&dtb, CPU_SAFA_FIN_EJECUCION_DTB))
+	if (eventoSAFA(&dtb, code))
 	{
 		log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
 		return EXIT_FAILURE;

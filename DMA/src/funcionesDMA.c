@@ -43,6 +43,8 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 	//recibo la confirmacion
 	int sizeOfFile = confirmarExistenciaFile();
 	int result;
+	//TODO: Declaro aca el cantIO pq si no, no funciona el enviar
+	int cantIO = 0;
 
 	if(sizeOfFile >=0){
 		cantidadLineasScriptorio = 0;
@@ -51,12 +53,13 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 
 		//ALGORITMO PROPIO
 		t_list * listaInstrucciones = parseoInstrucciones(path, cantidadLineasScriptorio, logger);
-		int cantIO = contarCantidadIODelArchivo(listaInstrucciones);
+		cantIO = contarCantidadIODelArchivo(listaInstrucciones);
 
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
-		enviarConfirmacionSafa(pid, result, ARCHIVO_INICIALIZADO);
+		// TODO: Agregue el 0 como cantIO para que compile
+		enviarConfirmacionSafa(pid, result, 0, ARCHIVO_INICIALIZADO);
 		free(keyCompress);
 		return false;
 	}
@@ -241,12 +244,14 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
-		enviarConfirmacionSafa(pid, result, ARCHIVO_CARGADO);
+		// TODO: Agregue el 0 como cantIO para que compile
+		enviarConfirmacionSafa(pid, result, 0,ARCHIVO_CARGADO);
 		free(keyCompress);
 		return false;
 	}
 
-	enviarConfirmacionSafa(pid, result, ARCHIVO_CARGADO);
+	// TODO: Agregue el 0 como cantIO para que compile
+	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_CARGADO);
 	free(keyCompress);
 
 	return true;
@@ -282,7 +287,8 @@ bool hacerFlush(t_package paquete, int socketEnUso) {
 
 	//Se reciben los paquetes del mdj y se envian al fm9
 	int result = enviarPkgDeFm9AMdj(path);
-	enviarConfirmacionSafa(pid, result, ARCHIVO_GUARDADO);
+	// TODO: Agregue el 0 como cantIO para que compile
+	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_GUARDADO);
 	return true;
 }
 
@@ -416,14 +422,16 @@ int enviarPkgDeFm9AMdj(char * path) {
 			logger->logger)) {
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
 		free(buffer);
-		enviarConfirmacionSafa(pid, EXIT_FAILURE, ARCHIVO_CREADO);
+		// TODO: Agregue el 0 como cantIO para que compile
+		enviarConfirmacionSafa(pid, EXIT_FAILURE, 0, ARCHIVO_CREADO);
 		return false;
 	}
 
 	t_package response;
 	if(recibir(t_socketMdj->socket, &response, logger->logger)){
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
-		enviarConfirmacionSafa(pid,EXIT_FAILURE,ARCHIVO_CREADO);
+		// TODO: Agregue el 0 como cantIO para que compile
+		enviarConfirmacionSafa(pid,EXIT_FAILURE,0,ARCHIVO_CREADO);
 		return false;
 	}
 
@@ -435,7 +443,8 @@ int enviarPkgDeFm9AMdj(char * path) {
 	}
 
 	//SE ENVIA CONFIRMACION A SAFA
-	enviarConfirmacionSafa(pid, result, ARCHIVO_CREADO);
+	// TODO: Agregue el 0 como cantIO para que compile
+	enviarConfirmacionSafa(pid, result,0, ARCHIVO_CREADO);
 	free(buffer);
 	return true;
 }
@@ -460,7 +469,8 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 		log_error_mutex(logger,
 				"Error al enviar el path al MDJ del archivo a borrar");
 		free(buffer);
-		enviarConfirmacionSafa(pid, EXIT_FAILURE, ARCHIVO_BORRADO);
+		// TODO: Agregue el 0 como cantIO para que compile
+		enviarConfirmacionSafa(pid, EXIT_FAILURE, 0, ARCHIVO_BORRADO);
 		return false;
 	}
 
@@ -468,7 +478,8 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 	t_package response;
 	if(recibir(t_socketMdj->socket, &response, logger->logger)){
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
-		enviarConfirmacionSafa(pid,EXIT_FAILURE,ARCHIVO_CREADO);
+		// TODO: Agregue el 0 como cantIO para que compile
+		enviarConfirmacionSafa(pid,EXIT_FAILURE, 0, ARCHIVO_CREADO);
 		return false;
 	}
 
@@ -480,7 +491,8 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 	}
 
 	//SE ENVIA LA CONFIRMACION A SAFA
-	enviarConfirmacionSafa(pid, result, ARCHIVO_BORRADO);
+	// TODO: Agregue el 0 como cantIO para que compile
+	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_BORRADO);
 	return true;
 }
 
@@ -752,6 +764,8 @@ int contarCantidadIODelArchivo(t_list * listaInstrucciones){
 		switch(operacion->keyword){
 			case ABRIR: case FLUSH: case CREAR: case BORRAR:
 				cantidadEntradasSalidas ++;
+				break;
+			default:
 				break;
 		}
 	}
