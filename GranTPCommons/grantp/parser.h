@@ -13,6 +13,8 @@
 	#include <stdbool.h>
 	#include <string.h>
 	#include <commons/string.h>
+	#include "mutex_log.h"
+	#include <commons/collections/list.h>
 
 	typedef struct {
 		bool valido;
@@ -78,4 +80,6 @@
 	*/
 	void destruir_operacion(t_cpu_operacion op);
 
+
+	t_list * parseoInstrucciones(char * path, int cantidadLineas, t_log_mutex * logger );
 #endif /* PARSER_H_ */

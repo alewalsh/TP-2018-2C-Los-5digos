@@ -20,7 +20,7 @@
 #include <grantp/split.h>
 #include <grantp/mutex_log.h>
 #include "stdbool.h"
-
+#include "grantp/parser.h"
 
 extern t_list *statusList;
 extern pthread_mutex_t mutexStatusList;
@@ -49,6 +49,7 @@ enum codConfirmSafaId{
 	ARCHIVO_GUARDADO //FLUSH
 };
 
+int cantidadLineasScriptorio;
 
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA EL MANEJO DEL SELECT
@@ -78,4 +79,5 @@ int contarCantidadLineas(char * string);
 int calcularCantidadPaquetes(int sizeOfFile);
 void enviarConfirmacionSafa(int pid, int result, int code);
 int confirmarExistenciaFile();
+int contarCantidadIODelArchivo(t_list * listaInstr);
 #endif /* FUNCIONESDMA_H_ */
