@@ -282,12 +282,12 @@ bool hacerFlush(t_package paquete, int socketEnUso) {
 	free(bufferToFm9);
 
 	//Se reciben los paquetes del mdj y se envian al fm9
-	int result = enviarPkgDeFm9AMdj(path, inicio, sizeAGuardar);
+	int result = enviarPkgDeFm9AMdj(path);
 	enviarConfirmacionSafa(pid, result, ARCHIVO_GUARDADO);
 	return true;
 }
 
-int enviarPkgDeFm9AMdj(char * path, int inicio, int sizeAGuardar) {
+int enviarPkgDeFm9AMdj(char * path) {
 	//Se recibe el archivo desde FUNES MEMORY
 	t_package pkgCantLineas;
 	int cantLineasARecibir;
@@ -299,7 +299,7 @@ int enviarPkgDeFm9AMdj(char * path, int inicio, int sizeAGuardar) {
 		cantLineasARecibir = atoi(pkgCantLineas.data);
 	}
 
-	char * bufferTotal;
+	char * bufferTotal; //buffer que se va a cargar con tudo el archivo
 	//realizo una iteracion por cada linea
 	for (int linea = 0; linea < cantLineasARecibir; linea++) {
 		t_package package;
@@ -350,10 +350,10 @@ int enviarPkgDeFm9AMdj(char * path, int inicio, int sizeAGuardar) {
 
 	//ENVIO A MDJ
 	//ENVIAR DATOS A MDJ: le envio EL PATH, EL INICIO Y EL SIZE A GUARDAR PARA QUE CALCULE LA CANTIDAD DE PAQUETES A ENVIAR
-	char * pkgToMdj;
+	char * pkgToMdj; int inicio = 0;
 	copyStringToBuffer(&pkgToMdj, path);
 	copyIntToBuffer(&pkgToMdj, inicio);
-	copyIntToBuffer(&pkgToMdj,sizeAGuardar);
+	copyIntToBuffer(&pkgToMdj,strlen(bufferTotal));
 
 	int sizeOfBuffer = sizeof(int) * 3;
 	if (enviar(t_socketMdj->socket, DAM_MDJ_HACER_FLUSH, pkgToMdj,
@@ -522,10 +522,10 @@ void iniciarConexionesDelDMA() {
 		log_error_mutex(logger, "Error al crear el hilo del CPU");
 		exit_gracefully(1);
 	} else {
-		log_info_mutex(logger, "Se realizó la conexion del CPU");
+		log_info_mutex(logger, "Se realizó el escuchar del CPU");
 	}
 
-	log_info_mutex(logger, "Se realizaron todas las conexiones correctamente");
+	log_info_mutex(logger, "Se inicializaron correctamente todas las conexiones");
 
 }
 
@@ -535,7 +535,7 @@ void iniciarConexionesDelDMA() {
 int conectarseConSafa() {
 
 	socketSafa = malloc(sizeof(int));
-	conectarYenviarHandshake(configDMA->puertoSAFA, configDMA->ipSAFA,
+	t_socketSafa = conectarYenviarHandshake(configDMA->puertoSAFA, configDMA->ipSAFA,
 			socketSafa, SAFA_HSK, t_socketSafa);
 	return 0;
 }
@@ -544,9 +544,8 @@ int conectarseConSafa() {
  * Crea UN hilo que queda conectado al MDJ
  */
 int conectarseConMdj() {
-
 	socketMdj = malloc(sizeof(int));
-	conectarYenviarHandshake(configDMA->puertoMDJ, configDMA->ipMDJ, socketMdj,
+	t_socketMdj = conectarYenviarHandshake(configDMA->puertoMDJ, configDMA->ipMDJ, socketMdj,
 			MDJ_HSK, t_socketMdj);
 
 	//Se envía el transfer size
@@ -555,14 +554,11 @@ int conectarseConMdj() {
 	copyIntToBuffer(&buffer, configDMA->transferSize);
 	size = sizeof(int);
 
-	if (enviar(t_socketMdj->socket, DAM_MDJ_TRANSFER_SIZE, buffer, size,
-			logger->logger)) {
+	if (enviar(t_socketMdj->socket, DAM_MDJ_TRANSFER_SIZE, buffer, size,logger->logger)) {
 		log_error_mutex(logger, "No se pudo enviar el transfer size al MDJ");
-		free(buffer);
 		return EXIT_FAILURE;
 	}
 
-	free(buffer);
 	return 0;
 }
 
@@ -572,7 +568,7 @@ int conectarseConMdj() {
 int conectarseConFm9() {
 
 	socketFm9 = malloc(sizeof(int));
-	conectarYenviarHandshake(configDMA->puertoFM9, configDMA->ipFM9, socketFm9,
+	t_socketFm9 = conectarYenviarHandshake(configDMA->puertoFM9, configDMA->ipFM9, socketFm9,
 			FM9_HSK, t_socketFm9);
 	return 0;
 }
@@ -582,7 +578,7 @@ int conectarseConCPU() {
 	return 0;
 }
 
-void conectarYenviarHandshake(int puerto, char *ip, int * socket,
+t_socket * conectarYenviarHandshake(int puerto, char *ip, int * socket,
 		int handshakeProceso, t_socket* TSocket) {
 	if (!cargarSocket(puerto, ip, socket, logger->logger)) {
 		TSocket = inicializarTSocket(*socket, logger->logger);
@@ -593,11 +589,11 @@ void conectarYenviarHandshake(int puerto, char *ip, int * socket,
 				enumToProcess(handshakeProceso));
 		exit_gracefully(ERROR_SOCKET);
 	}
+	return TSocket;
 }
 
 void conectarYRecibirHandshake(int puertoEscucha) {
 
-	int socketEscucha;
 	if (escuchar(puertoEscucha, &socketEscucha, logger->logger)) {
 		//liberar recursos/
 		exit_gracefully(1);

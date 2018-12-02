@@ -39,6 +39,7 @@ extern fd_set master;
 extern fd_set readset;
 extern configSAFA *conf;
 extern t_log_mutex *logger;
+extern int socketEscucha;
 
 enum codConfirmSafaId{
 	ARCHIVO_CREADO= 24000, //CREAR ARCHIVO
@@ -70,7 +71,7 @@ bool abrirArchivo(t_package paquete, int socketEnUso);
 bool hacerFlush(t_package paquete, int socketEnUso);
 void enviarPaqueteAFm9(char * buffer);
 int enviarPkgDeMdjAFm9(int pid, char * path, int inicio, int size);
-int enviarPkgDeFm9AMdj(char * path, int inicio, int sizeAGuardar);
+int enviarPkgDeFm9AMdj(char * path);
 bool crearArchivo(t_package paquete, int socketEnUso);
 bool borrarArchivo(t_package paquete, int socketEnUso);
 int contarCantidadLineas(char * string);

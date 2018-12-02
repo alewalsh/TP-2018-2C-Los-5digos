@@ -70,7 +70,7 @@ void cargarArchivoDeConfig(char * pathConfig);
 void configure_logger();
 void iniciarConexionesDelDMA();
 void sig_handler(int signo);
-void conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket);
+t_socket * conectarYenviarHandshake(int puerto, char *ip, int * socket, int handshakeProceso, t_socket* TSocket);
 void conectarYRecibirHandshake(int puertoEscucha);
 char * enumToProcess(int proceso);
 int conectarseConSafa();

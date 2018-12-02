@@ -20,7 +20,8 @@ int main(int argc, char ** argv) {
 //    sig_handler(SIGINT);
 	//Recibir DTB y verificar valor de flag de inicializacion
     pthread_create(&threadPrincipal, &tattr, (void *) recibirDTB, NULL);
-	exit_gracefully(EXIT_SUCCESS);
+	pthread_join(threadPrincipal,NULL);
+    exit_gracefully(EXIT_SUCCESS);
 }
 
 //void sig_handler(int signal)

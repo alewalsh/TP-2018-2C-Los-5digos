@@ -162,7 +162,8 @@ void crearFifa(){
 // ****CONEXION****
 
 void inicializarConexion(){
-	int * socketPropio;
+	log_info(loggerMDJ, "------------INICIALIZANDO CONEXIONES---------------");
+	int socketPropio;
     uint16_t handshake;
 	if (escuchar(configuracion->puertoMDJ, &socketPropio, loggerMDJ)) {
 		exit_gracefully(1);
@@ -170,7 +171,7 @@ void inicializarConexion(){
 	if (acceptConnection(socketPropio, &socketDAM, MDJ_HSK, &handshake, loggerMDJ)) {
 		log_error(loggerMDJ, "No se acepta la conexion");
 	}
-	socketEscucha = inicializarTSocket(*socketPropio, loggerMDJ);
+	socketEscucha = inicializarTSocket(socketPropio, loggerMDJ);
 
 	//recibo transer size
 	t_package paqueteTS;
@@ -179,7 +180,8 @@ void inicializarConexion(){
 	}
 	if(paqueteTS.code != DAM_MDJ_TRANSFER_SIZE){
 		log_error(loggerMDJ, "No se recivio el Transfer Size");
-		exit(-1);
+		close(socketPropio);
+		inicializarConexion();
 	}
 	char *bufferTS = paqueteTS.data;
 	trasnfer_size = copyIntFromBuffer(&bufferTS);
