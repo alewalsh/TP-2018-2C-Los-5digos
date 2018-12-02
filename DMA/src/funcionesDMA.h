@@ -70,11 +70,12 @@ bool leerEscriptorio(t_package paquete, int socketEnUso);
 bool abrirArchivo(t_package paquete, int socketEnUso);
 bool hacerFlush(t_package paquete, int socketEnUso);
 void enviarPaqueteAFm9(char * buffer);
-int enviarPkgDeMdjAFm9(int pid, char * path, int inicio, int size);
+int enviarPkgDeMdjAFm9(int pid, char * path, int size);
 int enviarPkgDeFm9AMdj(char * path);
 bool crearArchivo(t_package paquete, int socketEnUso);
 bool borrarArchivo(t_package paquete, int socketEnUso);
 int contarCantidadLineas(char * string);
 int calcularCantidadPaquetes(int sizeOfFile);
 void enviarConfirmacionSafa(int pid, int result, int code);
+int confirmarExistenciaFile();
 #endif /* FUNCIONESDMA_H_ */

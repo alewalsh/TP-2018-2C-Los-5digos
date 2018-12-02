@@ -46,7 +46,7 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 
 	if(sizeOfFile >=0){
 		//Se reciben los paquetes del mdj y se envian al fm9
-		result = enviarPkgDeMdjAFm9(pid, path, 0 , sizeOfFile );
+		result = enviarPkgDeMdjAFm9(pid, path, sizeOfFile );
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
@@ -64,16 +64,16 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 
 //Se recibe uno o varios paquetes del MDJ y se envian al FM9
 //Return: Base en memoria de los paquetes guardados.
-int enviarPkgDeMdjAFm9(int pid, char * path, int inicio, int size) {
+int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 
 	//Calculo cuantos paquetes voy a recibir del fm9 segun mi transfer size
 	int cantPkg = calcularCantidadPaquetes(size);
 
-	//Ahora se reciben los paquetes y se concatena todo el archivo
+	//Ahora se reciben los paquetes y se concatena tudo el archivo
 	//(Si el archivo es mayor que mi Transfersize recibo n paquetes del tamaño de mi transfersize)
 
-	//todo: ENVIAR LA PETICION DEL ARCHIVO. DESDE INICIO HASTA FIN
 	char * pkg;
+	int inicio = 0;
 	copyStringToBuffer(&pkg,path);//path
 	copyIntToBuffer(&pkg,inicio);//inicio
 	copyIntToBuffer(&pkg,size);//size
@@ -101,9 +101,9 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int inicio, int size) {
 		}
 	}
 
-	//una vez recibido todo el archivo y de haberlo concatenado en un char *
+	//una vez recibido tudo el archivo y de haberlo concatenado en un char *
 	//realizo un split con cada /n y cuento la cantidad de lineas que contiene el mensaje
-	int cantLineas;
+	int cantLineas = 0;
 
 	char** arrayLineas = str_split(bufferConcatenado, '\n', cantLineas);
 
@@ -112,8 +112,8 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int inicio, int size) {
 	//Se envia un msj al fm9 con los siguientes parametros
 	char *buffer;
 	copyIntToBuffer(&buffer, pid); //ProcesID
-	copyIntToBuffer(&buffer, cantLineas); //Cantidad De lineas
 	copyStringToBuffer(&buffer, path); //Path del archivo
+	copyIntToBuffer(&buffer, cantLineas); //Cantidad De lineas
 	int sizeOfBuffer= sizeof(int) * 3 + (strlen(path) * sizeof(char));
 
 	if (enviar(t_socketFm9->socket, DAM_FM9_CARGAR_ESCRIPTORIO, buffer,
@@ -207,9 +207,6 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 	char *buffer = paquete.data;
 	int pid = copyIntFromBuffer(&buffer);
 	char * path = copyStringFromBuffer(&buffer);
-	//TODO: VER CON ALE SI RECIBO EL INICIO Y EL FIN DEL ARCHIVO A ABRIR Y VER EN QUE FORMATO LOS RECIBO
-	int inicio = copyIntFromBuffer(&buffer);
-	int tamanioAPedir = copyIntFromBuffer(&buffer);
 
 	free(buffer);
 	printf("Ehhh, voy a buscar %s para %d", path, pid);
@@ -233,7 +230,7 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 
 	if(sizeOfFile >=0){
 		//Se reciben los paquetes del mdj y se envian al fm9
-		result = enviarPkgDeMdjAFm9(pid, path, inicio , tamanioAPedir );
+		result = enviarPkgDeMdjAFm9(pid, path, sizeOfFile);
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
@@ -257,11 +254,6 @@ bool hacerFlush(t_package paquete, int socketEnUso) {
 	char *buffer = paquete.data;
 	int pid = copyIntFromBuffer(&buffer);
 	char * path = copyStringFromBuffer(&buffer);
-	//Todo: recibir inicio y size del cpu
-	int inicio = copyIntFromBuffer(&buffer);
-	int sizeAGuardar = copyIntFromBuffer(&buffer);
-	free(buffer);
-
 
 	//Se envia el path del archivo al Fm9
 	int size;
@@ -731,7 +723,6 @@ int confirmarExistenciaFile(){
 int recibirConfirmacionMemoria() {
 
 	t_package package;
-	//TODO: ACA ME DEBERIA ENVIAR LA POSICION EN MEMORIA DONDE SE CARGO EL ARCHIVO O PARTE DE ARCHIVO
 
 	if (recibir(t_socketFm9->socket, &package, logger->logger)) {
 		log_error_mutex(logger,
