@@ -41,7 +41,7 @@ int cerrarArchivoSegmentacion(t_package pkg, t_infoCerrarArchivo* datosPaquete, 
 // Lógica de segmentacion pura
 int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud)
 {
-	if(tengoMemoriaDisponible(datosPaquete->cantPaquetes) == 1){
+	if(tengoMemoriaDisponible(datosPaquete->cantidadLineasARecibir) == 1){
 		log_error_mutex(logger, "No hay memoria disponible para cargar el Escriptorio.");
 		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
 		logPosicionesLibres(estadoLineas,SEG);
@@ -57,7 +57,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 	char * pidString = intToString(datosPaquete->pid);
 	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
 	free(pidString);
-	t_segmento * segmento = reservarSegmento(datosPaquete->cantPaquetes, gdt->tablaSegmentos, datosPaquete->path, 0);
+	t_segmento * segmento = reservarSegmento(datosPaquete->cantidadLineasARecibir, gdt->tablaSegmentos, datosPaquete->path, 0);
 	// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ LINEAS HAY LIBRES
 	if (segmento == NULL)
 	{
@@ -67,7 +67,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 	actualizarTablaDeSegmentos(datosPaquete->pid,segmento);
 	// ACTUALIZO LA GLOBAL CON LAS LINEAS QUE UTILICE RECIEN
 	// ESTO PARA QUE ESTA?????
-	contLineasUsadas += datosPaquete->cantPaquetes;
+	contLineasUsadas += datosPaquete->cantidadLineasARecibir;
 
 	char * bufferGuardado = malloc(config->tamMaxLinea);
 	int i = 0, offset = 0;

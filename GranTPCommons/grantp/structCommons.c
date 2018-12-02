@@ -99,7 +99,7 @@ t_infoCargaEscriptorio * guardarDatosPaqueteCargaEscriptorio(t_package pkg){
 
 	datosPaquete->pid = copyIntFromBuffer(&buffer);
 	datosPaquete->path = copyStringFromBuffer(&buffer);
-	datosPaquete->cantPaquetes = copyIntFromBuffer(&buffer);
+	datosPaquete->cantidadLineasARecibir = copyIntFromBuffer(&buffer);
 
 	free(buffer);
 	return datosPaquete;

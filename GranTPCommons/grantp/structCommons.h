@@ -80,7 +80,7 @@ typedef struct{
 
 typedef struct{
 	int pid;
-	int cantPaquetes;
+	int cantidadLineasARecibir;
 	char * path;
 } t_infoCargaEscriptorio;
 
