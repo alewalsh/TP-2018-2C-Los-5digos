@@ -45,8 +45,14 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 	int result;
 
 	if(sizeOfFile >=0){
+		cantidadLineasScriptorio = 0;
 		//Se reciben los paquetes del mdj y se envian al fm9
 		result = enviarPkgDeMdjAFm9(pid, path, sizeOfFile );
+
+		//ALGORITMO PROPIO
+		t_list * listaInstrucciones = parseoInstrucciones(path, cantidadLineasScriptorio, logger);
+		int cantIO = contarCantidadIODelArchivo(listaInstrucciones);
+
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
@@ -55,7 +61,7 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 		return false;
 	}
 
-	enviarConfirmacionSafa(pid, result, ARCHIVO_INICIALIZADO);
+	enviarConfirmacionSafa(pid, result, cantIO,ARCHIVO_INICIALIZADO);
 
 	free(keyCompress);
 
@@ -107,6 +113,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 
 	char** arrayLineas = str_split(bufferConcatenado, '\n', cantLineas);
 
+	cantidadLineasScriptorio = cantLineas;
 	free(bufferConcatenado);
 
 	//Se envia un msj al fm9 con los siguientes parametros
@@ -604,12 +611,13 @@ void conectarYRecibirHandshake(int puertoEscucha) {
 //------------------------------------------------------------------------------------------------------------------
 
 
-void enviarConfirmacionSafa(int pid, int result, int code){
+void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int code){
 	char *buffer;
 	int msjCode;
-	int size = sizeof(int) * 2;
+	int size = sizeof(int) * 3;
 	copyIntToBuffer(&buffer, pid);
 	copyIntToBuffer(&buffer, result);
+	copyIntToBuffer(&buffer,cantidadIODelProceso);
 
 	switch(code){
 	case ARCHIVO_INICIALIZADO:
@@ -736,6 +744,19 @@ int recibirConfirmacionMemoria() {
 	}
 }
 
+int contarCantidadIODelArchivo(t_list * listaInstrucciones){
+	int cantidadEntradasSalidas = 0;
+	for(int i= 0; i < list_size(listaInstrucciones); i++){
+		t_cpu_operacion * operacion = list_get(listaInstrucciones, i);
+
+		switch(operacion->keyword){
+			case ABRIR: case FLUSH: case CREAR: case BORRAR:
+				cantidadEntradasSalidas ++;
+				break;
+		}
+	}
+	return cantidadEntradasSalidas;
+}
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA EL MANEJO DEL SELECT
 //------------------------------------------------------------------------------------------------------------------
