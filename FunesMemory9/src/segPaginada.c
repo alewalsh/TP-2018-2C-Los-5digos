@@ -35,7 +35,7 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 	char * pidString = intToString(datosPaquete->pid);
 	t_gdt * gdt = dictionary_remove(tablaProcesos,pidString);
 	free(pidString);
-	t_segmento * segmento = reservarSegmento(datosPaquete->cantPaquetes,gdt->tablaSegmentos,datosPaquete->path,paginasNecesarias);
+	t_segmento * segmento = reservarSegmento(datosPaquete->cantidadLineasARecibir,gdt->tablaSegmentos,datosPaquete->path,paginasNecesarias);
 //	int code = reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, cantLineas);
 	if (segmento == NULL)
 	{
@@ -114,7 +114,7 @@ int reservarPaginasParaSegmento(t_segmento * segmento, t_infoCargaEscriptorio* d
 {
 	if (segmento != NULL)
 	{
-		reservarPaginasNecesarias(paginasAReservar,datosPaquete->pid,datosPaquete->path,datosPaquete->cantPaquetes,segmento->nroSegmento);
+		reservarPaginasNecesarias(paginasAReservar,datosPaquete->pid,datosPaquete->path,datosPaquete->cantidadLineasARecibir,segmento->nroSegmento);
 	}
 	else
 	{
