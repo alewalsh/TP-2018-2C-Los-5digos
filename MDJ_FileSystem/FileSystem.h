@@ -85,6 +85,9 @@ void escribirMetadata(char*, struct metadataArchivo *);
 void leerMetadata(char *, struct metadataArchivo *);
 char* obtenerDatos(char*,int ,int);
 void borrarArchivo(char *);
+void enviarStringDAMporTRansferSize(char *);
+char * rebirStringDAMporTRansferSize(int);
+void crearPathArchivo(char *);
 
 
 void consoleExit();

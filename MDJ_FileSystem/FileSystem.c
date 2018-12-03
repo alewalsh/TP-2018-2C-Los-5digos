@@ -6,14 +6,12 @@ int main(int argc, char ** argv) {
 	inicializarMDJ(argv[1]);
 	crearFifa();
 
-	pthread_create(&threadDAM, &tattr, (void *) responderDAM, NULL); //No va.
 	pthread_create(&threadConsola, &tattr, (void *) inicializarCosnola, NULL); // ultimo de tod (?
 	inicializarConexion();
 
-	while(!getExit())
-	{
+	//espero a que finalice el thread consola. Solo sucede si se ejecuta el comando "exit" en la misma.
+	pthread_join(threadConsola, NULL);
 
-	}
 	exit_gracefully(FIN_EXITOSO);
 }
 
@@ -194,8 +192,7 @@ void inicializarConexion(){
 	char *bufferTS = paqueteTS.data;
 	trasnfer_size = copyIntFromBuffer(&bufferTS);
 
-//	printf("Se conecto el DAM");
-
+	//inicio hilo de escucha a peticiones del DAM.
     pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
 }
 
@@ -208,7 +205,7 @@ void esperarInstruccionDAM(){
 		}
 		else{
 			//TODO
-//			pthread_create(&threadDAM, &tattr, (void *) responderDAM, NULL); //funciona con el mismo nombre de thread?? Donde va el paquete?
+//			pthread_create(&threadDAM, &tattr, (void *) responderDAM, NULL); Si el DAM no es concurrente es al pedo.
 			responderDAM(paquete); //todo en thread distinto por cada recibir.
 		}
 	}

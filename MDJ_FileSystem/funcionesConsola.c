@@ -20,7 +20,7 @@ void inicializarCosnola() {
 			break;
 		}
 
-		log_info(loggerMDJ, "Readline leyo: %s\n", linea);
+		log_info_mutex(loggerMDJ, "Readline leyo: %s\n", linea);
 
 		//obtengo primer paramentro de la entrada.
 		token = strtok(linea, s);
@@ -29,7 +29,6 @@ void inicializarCosnola() {
 		if((token != NULL) && (strcmp(token, "ls") == 0)){
 			//obtengo segundo parametro de la entrada.
 			token = strtok(NULL, s);
-			log_info(loggerMDJ, "LSeara: %s \n", token);
 
 			if(token != NULL){
 				char * directorioEleseable = string_new();
@@ -52,7 +51,7 @@ void inicializarCosnola() {
 					//no hago nada
 				}else{
 					if(strncmp(token, "..", strlen(token)) == 0){
-						log_info(loggerMDJ, "Se retrocedera una carpeta. \n");
+						log_info_mutex(loggerMDJ, "Se retrocedera una carpeta. \n");
 						int substract;
 						substract = lenUltimaCarpeta(directorioActual);
 
@@ -62,12 +61,12 @@ void inicializarCosnola() {
 						directorioActual = string_substring_until(directorioActual, total-substract);
 
 					}else{
-						log_info(loggerMDJ, "Se agrega %s a %s \n", token, directorioActual);
+						log_info_mutex(loggerMDJ, "Se agrega %s a %s \n", token, directorioActual);
 						string_append(&directorioActual, token);
 						string_append(&directorioActual, "/");
 					}
 				}
-				log_info(loggerMDJ, "Directorio actual: %s \n", directorioActual);
+				log_info_mutex(loggerMDJ, "Directorio actual: %s \n", directorioActual);
 			}
 		}
 
@@ -79,7 +78,7 @@ void inicializarCosnola() {
 			string_append(&pathMD5, token);
 
 			if(token != NULL){
-				log_info(loggerMDJ, "MD5eara: %s \n", token);
+				log_info_mutex(loggerMDJ, "MD5eara: %s \n", token);
 
 				int statusMd5;
 				statusMd5 = validarArchivo(pathMD5);
@@ -119,7 +118,7 @@ void inicializarCosnola() {
 			string_append(&path, token);
 
 			if(token != NULL){
-				log_info(loggerMDJ, "CATeara: %s \n", path);
+				log_info_mutex(loggerMDJ, "CATeara: %s \n", path);
 
 				int statusCAT;
 				statusCAT = validarArchivo(path);
@@ -147,6 +146,8 @@ void inicializarCosnola() {
 }
 
 void eleESE(char *rutaDirectorio){
+	log_info_mutex(loggerMDJ, "LSeara: %s \n", rutaDirectorio);
+
 	printf("Contenido de %s: \n \n", rutaDirectorio);
 
 	DIR *directorio;
