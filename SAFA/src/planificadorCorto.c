@@ -136,7 +136,7 @@ void ejecutarIOBF(int socketCPU){
 		log_info_mutex(logger,"El proceso %d tiene %d operaciones de I/O \n",dtb->idGDT, dtb->cantIO);
 	}
 
-	dtb = list_remove(colaReady,0);
+	pasarDTBdeREADYaEXEC(dtb);
 	log_info_mutex(logger,"Se va a enviar el proceso %d al CPU",dtb->idGDT);
 	enviarDTBaCPU(dtb,socketCPU);
 
