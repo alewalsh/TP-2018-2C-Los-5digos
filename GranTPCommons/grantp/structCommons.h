@@ -29,6 +29,7 @@ typedef struct {
     char *tablaDirecciones;
     int cantidadLineas;
     int quantumRestante;
+    int cantIO;
 } t_dtb;
 
 
