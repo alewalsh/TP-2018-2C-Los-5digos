@@ -108,10 +108,8 @@ int nuevoDummy(t_package paquete)
 	if(enviar(t_socketSAFA->socket,CPU_SAFA_BLOQUEAR_DUMMMY,paquete.data, paquete.size, loggerCPU->logger))
 	{
 		log_error_mutex(loggerCPU, "No se pudo enviar el bloqueo del Dummy al S-AFA.");
-		free(buffer);
 		return EXIT_FAILURE;
 	}
-	free(buffer);
 	free(dtb);
 	return EXIT_SUCCESS;
 }
@@ -505,7 +503,7 @@ int setQuantum(t_package paquete)
 {
     pthread_mutex_lock(&mutexQuantum);
     char * buffer = paquete.data;
-	int quantum = copyIntFromBuffer(&buffer);
+	quantum = copyIntFromBuffer(&buffer);
 	if (quantum > 0)
 	{
 		log_info_mutex(loggerCPU, "El valor del quantum es %d", quantum);
@@ -520,13 +518,17 @@ t_dtb * transformarPaqueteADTB(t_package paquete)
 	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
 	t_dtb * dtb = malloc(sizeof(t_dtb));
 	char *buffer = paquete.data;
+	bool tieneTablaDirecciones;
 	dtb->idGDT = copyIntFromBuffer(&buffer);
 	dtb->dirEscriptorio = copyStringFromBuffer(&buffer);
 	dtb->programCounter = copyIntFromBuffer(&buffer);
 	dtb->flagInicializado = copyIntFromBuffer(&buffer);
-	dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
+	tieneTablaDirecciones = copyIntFromBuffer(&buffer);
+	if (tieneTablaDirecciones)
+		dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
 	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
 	dtb->quantumRestante = copyIntFromBuffer(&buffer);
+
 	return dtb;
 }
 

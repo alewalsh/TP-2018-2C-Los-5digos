@@ -76,7 +76,7 @@ void planificadorLP() {
    		//Me fijo cual es el primer elemento de la lista, no lo saco, solo tengo los datos
    		t_dtb *primerDTB = list_get(colaNew,0);
 
-   		sem_wait(&semDummy);
+   		pthread_mutex_lock(&semDummy);
   		planificadorCPdesbloquearDummy(primerDTB->idGDT,primerDTB->dirEscriptorio);
 
         pthread_mutex_unlock(&mutexNewList);

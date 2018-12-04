@@ -117,7 +117,7 @@ void liberarRecursos(){
 //    sem_destroy(&sem_preemptive);
     sem_destroy(&semaforpGradoMultiprgramacion);
     sem_destroy(&mandadosPorConsola);
-    sem_destroy(&semDummy);
+    pthread_mutex_destroy(&semDummy);
     pthread_mutex_destroy(&semCargadoEnMemoria);
 
 
@@ -148,9 +148,9 @@ void initMutexs(){
 	pthread_mutex_init(&mutexDummy, NULL);
 	pthread_mutex_init(&semCargadoEnMemoria, NULL);
 
+	pthread_mutex_init(&semDummy, NULL);
 	sem_init(&semaforpGradoMultiprgramacion, 0 ,conf->grado_mp);
 	sem_init(&mandadosPorConsola, 0, 0);
-	sem_init(&semDummy, 0, 0);
 }
 
 
