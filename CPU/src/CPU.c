@@ -527,7 +527,9 @@ t_dtb * transformarPaqueteADTB(t_package paquete)
 	if (tieneTablaDirecciones)
 		dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
 	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
+	dtb->realizOpDummy = copyIntFromBuffer(&buffer);
 	dtb->quantumRestante = copyIntFromBuffer(&buffer);
+	dtb->cantIO = copyIntFromBuffer(&buffer);
 
 	return dtb;
 }

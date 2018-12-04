@@ -353,7 +353,7 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
     	stringsLength += strlen(dtbAEnviar->tablaDirecciones);
     	tieneTablaDirecciones = true;
     }
-    int pqtSize = sizeof(int)*6 + (stringsLength) * sizeof(char);
+    int pqtSize = sizeof(int)*8 + (stringsLength) * sizeof(char);
     char *paquete = (char *) malloc(pqtSize);
     char * p = paquete;
 
@@ -365,8 +365,9 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
     if (tieneTablaDirecciones)
     	copyStringToBuffer(&p,dtbAEnviar->tablaDirecciones);
     copyIntToBuffer(&p,dtbAEnviar->cantidadLineas);
+    copyIntToBuffer(&p,dtbAEnviar->realizOpDummy);
     copyIntToBuffer(&p, dtbAEnviar->quantumRestante);
-
+    copyIntToBuffer(&p, dtbAEnviar->cantIO);
 
     //MANDO EL PAQUETE CON EL MENSAJE A LA CPU LIBRE
 	if(enviar(socketCpu,SAFA_CPU_EJECUTAR,paquete,pqtSize,logger->logger)){

@@ -127,6 +127,8 @@ t_dtb *crearNuevoDTB(char *dirScript) {
 	newDTB->tablaDirecciones = NULL;
 	newDTB->cantidadLineas = 0;
 	newDTB->realizOpDummy = 0;
+	newDTB->quantumRestante = 0;
+	newDTB->cantIO = 0;
 	return newDTB;
 }
 
@@ -169,31 +171,47 @@ t_dtb * transformarPaqueteADTB(t_package paquete)
 	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
 	t_dtb * dtb = malloc(sizeof(t_dtb));
 	char *buffer = paquete.data;
+	bool tieneTablaDirecciones;
 	dtb->idGDT = copyIntFromBuffer(&buffer);
 	dtb->dirEscriptorio = copyStringFromBuffer(&buffer);
 	dtb->programCounter = copyIntFromBuffer(&buffer);
 	dtb->flagInicializado = copyIntFromBuffer(&buffer);
-	dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
+	tieneTablaDirecciones = copyIntFromBuffer(&buffer);
+	if (tieneTablaDirecciones)
+		dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
 	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
+	dtb->realizOpDummy = copyIntFromBuffer(&buffer);
 	dtb->quantumRestante = copyIntFromBuffer(&buffer);
+	dtb->cantIO = copyIntFromBuffer(&buffer);
+
 	return dtb;
 }
-
 t_package transformarDTBAPaquete(t_dtb * dtb)
 {
 	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
 	t_package paquete;
-	char *buffer;
-	copyIntToBuffer(&buffer, dtb->idGDT);
-	copyStringToBuffer(&buffer, dtb->dirEscriptorio);
-	copyIntToBuffer(&buffer, dtb->programCounter);
-	copyIntToBuffer(&buffer, dtb->flagInicializado);
-	copyStringToBuffer(&buffer, dtb->tablaDirecciones);
-	copyIntToBuffer(&buffer, dtb->cantidadLineas);
-	copyIntToBuffer(&buffer, dtb->quantumRestante);
+    int stringsLength = strlen(dtb->dirEscriptorio);
+	bool tieneTablaDirecciones = false;
+	if (dtb->tablaDirecciones != NULL)
+	{
+		stringsLength += strlen(dtb->tablaDirecciones);
+		tieneTablaDirecciones = true;
+	}
+	paquete.size = sizeof(int)*8 + (stringsLength) * sizeof(char);
+	char *buffer = (char *) malloc(paquete.size);
+	char * p = buffer;
+	copyIntToBuffer(&p,dtb->idGDT);
+	copyStringToBuffer(&p,dtb->dirEscriptorio);
+	copyIntToBuffer(&p,dtb->programCounter);
+	copyIntToBuffer(&p,dtb->flagInicializado);
+	copyIntToBuffer(&p,tieneTablaDirecciones);
+	if (tieneTablaDirecciones)
+		copyStringToBuffer(&p,dtb->tablaDirecciones);
+	copyIntToBuffer(&p,dtb->cantidadLineas);
+	copyIntToBuffer(&p,dtb->realizOpDummy);
+	copyIntToBuffer(&p, dtb->quantumRestante);
+	copyIntToBuffer(&p, dtb->cantIO);
 	paquete.data = buffer;
-	paquete.size = 5*sizeof(int)+
-			(strlen(dtb->dirEscriptorio)+strlen(dtb->tablaDirecciones))*sizeof(char);
 	return paquete;
 }
 
