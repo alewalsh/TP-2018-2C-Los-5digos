@@ -163,8 +163,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         case CPU_SAFA_BLOQUEAR_DUMMMY:
         	//Se bloquea el dummy
         	bloquearDummy();
-//        	pthread_mutex_unlock(&semDummy);
-        	sem_post(&semDummy);
+        	pthread_mutex_unlock(&semDummy);
         	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:{
         	//TODO: Porque estamos abortando el DTB?

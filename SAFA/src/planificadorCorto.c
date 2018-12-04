@@ -28,7 +28,7 @@ void planificadorCP() {
 
     	if(list_size(colaNew) > 0 && dummyBloqueado == 1){
     		int index = buscarDtbParaInicializar();
-    		if(index > 0){
+    		if(index >= 0){
     			//Se desbloquea el dummy y se agrega a la lista de ready
     			desbloquearDummy();
     		}
@@ -346,18 +346,27 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
     log_info_mutex(logger, "PCP: Se enviara un DTB a CPU");
 
     //CREO EL PAQUETE Y LO COMPRIMO
-    char *paquete;
+    int stringsLength = strlen(dtbAEnviar->dirEscriptorio);
+    bool tieneTablaDirecciones = false;
+    if (dtbAEnviar->tablaDirecciones != NULL)
+    {
+    	stringsLength += strlen(dtbAEnviar->tablaDirecciones);
+    	tieneTablaDirecciones = true;
+    }
+    int pqtSize = sizeof(int)*6 + (stringsLength) * sizeof(char);
+    char *paquete = (char *) malloc(pqtSize);
+    char * p = paquete;
 
-    copyIntToBuffer(&paquete,dtbAEnviar->idGDT);
-    copyStringToBuffer(&paquete,dtbAEnviar->dirEscriptorio);
-    copyIntToBuffer(&paquete,dtbAEnviar->programCounter);
-    copyIntToBuffer(&paquete,dtbAEnviar->flagInicializado);
-    copyStringToBuffer(&paquete,dtbAEnviar->tablaDirecciones);
-    copyIntToBuffer(&paquete,dtbAEnviar->cantidadLineas);
-    copyIntToBuffer(&paquete, dtbAEnviar->quantumRestante);
+    copyIntToBuffer(&p,dtbAEnviar->idGDT);
+    copyStringToBuffer(&p,dtbAEnviar->dirEscriptorio);
+    copyIntToBuffer(&p,dtbAEnviar->programCounter);
+    copyIntToBuffer(&p,dtbAEnviar->flagInicializado);
+    copyIntToBuffer(&p,tieneTablaDirecciones);
+    if (tieneTablaDirecciones)
+    	copyStringToBuffer(&p,dtbAEnviar->tablaDirecciones);
+    copyIntToBuffer(&p,dtbAEnviar->cantidadLineas);
+    copyIntToBuffer(&p, dtbAEnviar->quantumRestante);
 
-    int pqtSize = sizeof(int)*4 +
-    		(strlen(dtbAEnviar->dirEscriptorio) + strlen(dtbAEnviar->tablaDirecciones)) * sizeof(char);
 
     //MANDO EL PAQUETE CON EL MENSAJE A LA CPU LIBRE
 	if(enviar(socketCpu,SAFA_CPU_EJECUTAR,paquete,pqtSize,logger->logger)){
@@ -367,6 +376,7 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 		if(result == EXIT_FAILURE){
 			log_error_mutex(logger, "Error al finalizar el DTB..");
 	   }
+		free(paquete);
 	}
 	log_info_mutex(logger, "Se envió el DTB a ejecutar a la CPU: %d",socketCpu);
 
