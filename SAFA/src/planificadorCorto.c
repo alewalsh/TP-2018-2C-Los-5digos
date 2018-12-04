@@ -54,7 +54,7 @@ void planificadorCP() {
 						break;
 					default:
 						log_info_mutex(logger, "PCP mediante Propio");
-			//            playExecute();
+						ejecutarIOBF(socketCPU);
 						break;
 				}
 			}
@@ -121,6 +121,29 @@ void ejecutarVRR(int socketCPU){
 
 	enviarDTBaCPU(dtb,socketCPU);
 
+}
+
+void ejecutarIOBF(int socketCPU){
+
+	t_dtb * dtb;
+
+	if(list_size(colaReady) > 0){
+		list_sort(colaReady,(void *) procesoConMayorCantIO);
+	}
+
+	for(int i=0; i < list_size(colaReady);i++){
+		dtb = list_get(colaReady,i);
+		log_info_mutex(logger,"El proceso %d tiene %d operaciones de I/O \n",dtb->idGDT, dtb->cantIO);
+	}
+
+	dtb = list_remove(colaReady,0);
+	log_info_mutex(logger,"Se va a enviar el proceso %d al CPU",dtb->idGDT);
+	enviarDTBaCPU(dtb,socketCPU);
+
+}
+
+bool procesoConMayorCantIO(t_dtb * p1, t_dtb * p2){
+	return (p1->cantIO >= p2->cantIO);
 }
 /*
  * FUNCION PARA PASAR EL PRIMER PROCESO DE LA COLA READY A EJECUTAR
