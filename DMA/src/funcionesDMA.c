@@ -43,6 +43,8 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 	//recibo la confirmacion
 	int sizeOfFile = confirmarExistenciaFile();
 	int result;
+	//TODO: Declaro aca el cantIO pq si no, no funciona el enviar
+	int cantIO = 0;
 
 	if(sizeOfFile >=0){
 		cantidadLineasScriptorio = 0;
@@ -51,12 +53,13 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 
 		//ALGORITMO PROPIO
 		t_list * listaInstrucciones = parseoInstrucciones(path, cantidadLineasScriptorio, logger);
-		int cantIO = contarCantidadIODelArchivo(listaInstrucciones);
+		cantIO = contarCantidadIODelArchivo(listaInstrucciones);
 
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
-		enviarConfirmacionSafa(pid, result, ARCHIVO_INICIALIZADO);
+		// TODO: Agregue el 0 como cantIO para que compile
+		enviarConfirmacionSafa(pid, result, 0, ARCHIVO_INICIALIZADO);
 		free(keyCompress);
 		return false;
 	}
@@ -78,12 +81,13 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 	//Ahora se reciben los paquetes y se concatena tudo el archivo
 	//(Si el archivo es mayor que mi Transfersize recibo n paquetes del tamaño de mi transfersize)
 
-	char * pkg;
-	int inicio = 0;
-	copyStringToBuffer(&pkg,path);//path
-	copyIntToBuffer(&pkg,inicio);//inicio
-	copyIntToBuffer(&pkg,size);//size
 	int sizeOfPkg = strlen(path)*sizeof(char) + sizeof(int)*2;
+	char * pkg = (char *)malloc(sizeOfPkg);
+	char * p = pkg;
+	int inicio = 0;
+	copyStringToBuffer(&p,path);//path
+	copyIntToBuffer(&p,inicio);//inicio
+	copyIntToBuffer(&p,size);//size
 
 	if(enviar(t_socketMdj->socket,DAM_MDJ_CARGAR_ESCRIPTORIO, pkg, sizeOfPkg, logger->logger)){
 		//error
@@ -92,18 +96,19 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 		free(pkg);
 		return false;
 	}
+	free(pkg);
 
 	char * bufferConcatenado = malloc(configDMA->transferSize * cantPkg);
+	char * ptr = bufferConcatenado;
 	//Recibo x cantPkg del mdj y se concatenan en un bufferConcatenado
 	for (int i = 0; i < cantPkg; i++) {
 		t_package pkgTransferSize;
 
-		if (recibir(t_socketMdj->socket, &pkgTransferSize,
-				logger->logger)) {
+		if (recibir(t_socketMdj->socket, &pkgTransferSize, logger->logger)) {
 			log_error_mutex(logger, "Error al recibir el paquete %d", i);
 		} else {
 			//Concatenar buffer
-			copyStringToBuffer(&bufferConcatenado, pkgTransferSize.data);
+			copyStringToBuffer(&ptr, pkgTransferSize.data);
 		}
 	}
 
@@ -117,11 +122,12 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 	free(bufferConcatenado);
 
 	//Se envia un msj al fm9 con los siguientes parametros
-	char *buffer;
-	copyIntToBuffer(&buffer, pid); //ProcesID
-	copyStringToBuffer(&buffer, path); //Path del archivo
-	copyIntToBuffer(&buffer, cantLineas); //Cantidad De lineas
 	int sizeOfBuffer= sizeof(int) * 3 + (strlen(path) * sizeof(char));
+	char *buffer = (char *)malloc(sizeOfBuffer);
+	char * ptr2 = buffer;
+	copyIntToBuffer(&ptr2, pid); //ProcesID
+	copyStringToBuffer(&ptr2, path); //Path del archivo
+	copyIntToBuffer(&ptr2, cantLineas); //Cantidad De lineas
 
 	if (enviar(t_socketFm9->socket, DAM_FM9_CARGAR_ESCRIPTORIO, buffer,
 			sizeOfBuffer, logger->logger)) {
@@ -157,11 +163,12 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 
 				sub = string_substring(buffer,inicio,fin);
 
-				char * bufferAEnviar;
-				copyIntToBuffer(&bufferAEnviar, i + 1); //NRO LINEA
-				copyIntToBuffer(&bufferAEnviar, strlen(sub) * sizeof(char)); //SIZE
-				copyStringToBuffer(&bufferAEnviar, sub); //BUFFER
 				int size = sizeof(int) * 2 + strlen(sub) * sizeof(char);
+				char * bufferAEnviar = (char *) malloc(size);
+				char * p = bufferAEnviar;
+				copyIntToBuffer(&p, i + 1); //NRO LINEA
+				copyIntToBuffer(&p, strlen(sub) * sizeof(char)); //SIZE
+				copyStringToBuffer(&p, sub); //BUFFER
 
 				//enviar
 				if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG,
@@ -177,11 +184,12 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 			}
 		} else {
 			//Si está dentro del tamaño permitido se envía la linea
-			char * bufferAEnviar;
-			copyIntToBuffer(&bufferAEnviar, (i + 1));
-			copyIntToBuffer(&bufferAEnviar, tamanioLinea * sizeof(char));
-			copyStringToBuffer(&bufferAEnviar, buffer);
 			int size = sizeof(int) * 2 + tamanioLinea * sizeof(char);
+			char * bufferAEnviar = (char *) malloc(size);
+			char * p = bufferAEnviar;
+			copyIntToBuffer(&p, (i + 1));
+			copyIntToBuffer(&p, tamanioLinea * sizeof(char));
+			copyStringToBuffer(&p, buffer);
 
 			if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG,
 					bufferAEnviar, size,
@@ -241,12 +249,14 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
-		enviarConfirmacionSafa(pid, result, ARCHIVO_CARGADO);
+		// TODO: Agregue el 0 como cantIO para que compile
+		enviarConfirmacionSafa(pid, result, 0,ARCHIVO_CARGADO);
 		free(keyCompress);
 		return false;
 	}
 
-	enviarConfirmacionSafa(pid, result, ARCHIVO_CARGADO);
+	// TODO: Agregue el 0 como cantIO para que compile
+	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_CARGADO);
 	free(keyCompress);
 
 	return true;
@@ -263,13 +273,12 @@ bool hacerFlush(t_package paquete, int socketEnUso) {
 	char * path = copyStringFromBuffer(&buffer);
 
 	//Se envia el path del archivo al Fm9
-	int size;
-	char *bufferToFm9;
-	copyIntToBuffer(&bufferToFm9, pid);
-	copyStringToBuffer(&bufferToFm9, path);
-	copyIntToBuffer(&bufferToFm9, configDMA->transferSize);
-
-	size = sizeof(int) * 2 + strlen(path) * sizeof(char);
+	int size = sizeof(int) * 2 + strlen(path) * sizeof(char);
+	char *bufferToFm9 = (char*)malloc(size);
+	char * p = bufferToFm9;
+	copyIntToBuffer(&p, pid);
+	copyStringToBuffer(&p, path);
+	copyIntToBuffer(&p, configDMA->transferSize);
 
 	//Se envia las posiciones a FM9 y retorna los datos para guardar en MDJ
 	if (enviar(t_socketFm9->socket, DAM_FM9_FLUSH, bufferToFm9, size,
@@ -282,7 +291,8 @@ bool hacerFlush(t_package paquete, int socketEnUso) {
 
 	//Se reciben los paquetes del mdj y se envian al fm9
 	int result = enviarPkgDeFm9AMdj(path);
-	enviarConfirmacionSafa(pid, result, ARCHIVO_GUARDADO);
+	// TODO: Agregue el 0 como cantIO para que compile
+	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_GUARDADO);
 	return true;
 }
 
@@ -298,6 +308,7 @@ int enviarPkgDeFm9AMdj(char * path) {
 		cantLineasARecibir = atoi(pkgCantLineas.data);
 	}
 
+	int sizeBufferTotal = 0;
 	char * bufferTotal; //buffer que se va a cargar con tudo el archivo
 	//realizo una iteracion por cada linea
 	for (int linea = 0; linea < cantLineasARecibir; linea++) {
@@ -326,6 +337,7 @@ int enviarPkgDeFm9AMdj(char * path) {
 
 
 		char * bufferLineaConcatenada;
+		t_package pkgTransferSize;
 		//Ahora se reciben los paquetes y se envia a FILESYSTEM
 		for (int i = 0; i < cantidadPaquetes; i++) {
 			t_package pkgTransferSize;
@@ -336,10 +348,16 @@ int enviarPkgDeFm9AMdj(char * path) {
 				return EXIT_FAILURE;
 			} else {
 				//Envío el paquete al MDJ
-				copyStringToBuffer(&bufferLineaConcatenada, pkgTransferSize.data);
+				int size = pkgTransferSize.size;
+				bufferLineaConcatenada = (char *)malloc(size);
+				char * ptr = bufferLineaConcatenada;
+				copyStringToBuffer(&ptr, pkgTransferSize.data);
 			}
 		}
-		copyStringToBuffer(&bufferTotal, bufferLineaConcatenada);
+		sizeBufferTotal += pkgTransferSize.size;
+		bufferTotal = realloc(bufferTotal, sizeBufferTotal);
+		char * ptr2 = bufferTotal;
+		copyStringToBuffer(&ptr2, bufferLineaConcatenada);
 		free(bufferLineaConcatenada);
 	}
 
@@ -349,12 +367,13 @@ int enviarPkgDeFm9AMdj(char * path) {
 
 	//ENVIO A MDJ
 	//ENVIAR DATOS A MDJ: le envio EL PATH, EL INICIO Y EL SIZE A GUARDAR PARA QUE CALCULE LA CANTIDAD DE PAQUETES A ENVIAR
-	char * pkgToMdj; int inicio = 0;
-	copyStringToBuffer(&pkgToMdj, path);
-	copyIntToBuffer(&pkgToMdj, inicio);
-	copyIntToBuffer(&pkgToMdj,strlen(bufferTotal));
-
 	int sizeOfBuffer = sizeof(int) * 3;
+	char * pkgToMdj = (char *) malloc(sizeOfBuffer);
+	char * ptr = pkgToMdj;
+	int inicio = 0;
+	copyStringToBuffer(&ptr, path);
+	copyIntToBuffer(&ptr, inicio);
+	copyIntToBuffer(&ptr,strlen(bufferTotal));
 	if (enviar(t_socketMdj->socket, DAM_MDJ_HACER_FLUSH, pkgToMdj,
 			sizeOfBuffer, logger->logger)) {
 		log_error_mutex(logger,
@@ -371,8 +390,9 @@ int enviarPkgDeFm9AMdj(char * path) {
 		//tomo el paquete de un tamaño del transfer size
 		char * bufferOfTransferSize = string_substring(bufferTotal,i*configDMA->transferSize,((i+1)*configDMA->transferSize-1));
 
-		char * bufferToMdj;
-		copyStringToBuffer(&bufferToMdj,bufferOfTransferSize);
+		char * bufferToMdj = malloc(configDMA->transferSize);
+		char * p = bufferToMdj;
+		copyStringToBuffer(&p,bufferOfTransferSize);
 
 		if (enviar(t_socketMdj->socket, DAM_MDJ_GUARDAR_DATOS, bufferToMdj,
 				configDMA->transferSize, logger->logger)) {
@@ -400,30 +420,34 @@ int enviarPkgDeFm9AMdj(char * path) {
  bool crearArchivo(t_package paquete, int socketEnUso) {
 
 	//Datos recibidos del cpu
-	int pid = copyIntFromBuffer(&paquete.data); //PID
-	char * path = copyStringFromBuffer(&paquete.data); //PATH del archivo a crear
-	int cantLineas = copyIntFromBuffer(&paquete.data); //Cantidad de lineas del archivo a crear
+	char * buffer = paquete.data;
 
-	char *buffer;
-	copyIntToBuffer(&buffer, pid);
-	copyStringToBuffer(&buffer, path);
-	copyIntToBuffer(&buffer, cantLineas);
+	int pid = copyIntFromBuffer(&buffer); //PID
+	char * path = copyStringFromBuffer(&buffer); //PATH del archivo a crear
+	int cantLineas = copyIntFromBuffer(&buffer); //Cantidad de lineas del archivo a crear
 
-	int size = sizeof(int) + (strlen(buffer) * sizeof(char)) + sizeof(int);
+	int size = sizeof(int) + (strlen(path) * sizeof(char)) + sizeof(int);
+	char *bufferEnvio = (char *) malloc(size);
+	char * ptr = bufferEnvio;
+	copyIntToBuffer(&ptr, pid);
+	copyStringToBuffer(&ptr, path);
+	copyIntToBuffer(&ptr, cantLineas);
+
 
 	//SE ENVIA EL PAQEUTE CON LOS DATOS A MDJ PARA CREAR ARCHIVO
-	if (enviar(t_socketMdj->socket, DAM_MDJ_CREAR_ARCHIVO, buffer, size,
-			logger->logger)) {
+	if (enviar(t_socketMdj->socket, DAM_MDJ_CREAR_ARCHIVO, bufferEnvio, size, logger->logger)) {
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
-		free(buffer);
-		enviarConfirmacionSafa(pid, EXIT_FAILURE, ARCHIVO_CREADO);
+		free(bufferEnvio);
+		// TODO: Agregue el 0 como cantIO para que compile
+		enviarConfirmacionSafa(pid, EXIT_FAILURE, 0, ARCHIVO_CREADO);
 		return false;
 	}
 
 	t_package response;
 	if(recibir(t_socketMdj->socket, &response, logger->logger)){
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
-		enviarConfirmacionSafa(pid,EXIT_FAILURE,ARCHIVO_CREADO);
+		// TODO: Agregue el 0 como cantIO para que compile
+		enviarConfirmacionSafa(pid,EXIT_FAILURE,0,ARCHIVO_CREADO);
 		return false;
 	}
 
@@ -435,8 +459,9 @@ int enviarPkgDeFm9AMdj(char * path) {
 	}
 
 	//SE ENVIA CONFIRMACION A SAFA
-	enviarConfirmacionSafa(pid, result, ARCHIVO_CREADO);
-	free(buffer);
+	// TODO: Agregue el 0 como cantIO para que compile
+	enviarConfirmacionSafa(pid, result,0, ARCHIVO_CREADO);
+	free(bufferEnvio);
 	return true;
 }
 
@@ -448,11 +473,12 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 	int pid = copyIntFromBuffer(&paquete.data);
 	char * path = copyStringFromBuffer(&paquete.data);
 
-	char *buffer;
-	copyIntToBuffer(&buffer,pid);
-	copyStringToBuffer(&buffer,path);
-
 	int size = sizeof(int) + (strlen(path) * sizeof(char));
+	char *buffer = (char *) malloc(size);
+	char * p = buffer;
+	copyIntToBuffer(&p,pid);
+	copyStringToBuffer(&p,path);
+
 
 	//SE ENVIA EL PATH DEL ARCHIVO AL MDJ PARA BORRAR EL MISMO
 	if (enviar(t_socketMdj->socket, DAM_MDJ_BORRAR_ARCHIVO, buffer, size,
@@ -460,7 +486,8 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 		log_error_mutex(logger,
 				"Error al enviar el path al MDJ del archivo a borrar");
 		free(buffer);
-		enviarConfirmacionSafa(pid, EXIT_FAILURE, ARCHIVO_BORRADO);
+		// TODO: Agregue el 0 como cantIO para que compile
+		enviarConfirmacionSafa(pid, EXIT_FAILURE, 0, ARCHIVO_BORRADO);
 		return false;
 	}
 
@@ -468,7 +495,8 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 	t_package response;
 	if(recibir(t_socketMdj->socket, &response, logger->logger)){
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
-		enviarConfirmacionSafa(pid,EXIT_FAILURE,ARCHIVO_CREADO);
+		// TODO: Agregue el 0 como cantIO para que compile
+		enviarConfirmacionSafa(pid,EXIT_FAILURE, 0, ARCHIVO_CREADO);
 		return false;
 	}
 
@@ -480,7 +508,8 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 	}
 
 	//SE ENVIA LA CONFIRMACION A SAFA
-	enviarConfirmacionSafa(pid, result, ARCHIVO_BORRADO);
+	// TODO: Agregue el 0 como cantIO para que compile
+	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_BORRADO);
 	return true;
 }
 
@@ -548,10 +577,10 @@ int conectarseConMdj() {
 			MDJ_HSK, t_socketMdj);
 
 	//Se envía el transfer size
-	int size;
-	char * buffer;
-	copyIntToBuffer(&buffer, configDMA->transferSize);
-	size = sizeof(int);
+	int size = sizeof(int);
+	char *buffer = (char *) malloc(size);
+	char *p = buffer;
+	copyIntToBuffer(&p, configDMA->transferSize);
 
 	if (enviar(t_socketMdj->socket, DAM_MDJ_TRANSFER_SIZE, buffer, size,logger->logger)) {
 		log_error_mutex(logger, "No se pudo enviar el transfer size al MDJ");
@@ -612,12 +641,14 @@ void conectarYRecibirHandshake(int puertoEscucha) {
 
 
 void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int code){
-	char *buffer;
+
 	int msjCode;
 	int size = sizeof(int) * 3;
-	copyIntToBuffer(&buffer, pid);
-	copyIntToBuffer(&buffer, result);
-	copyIntToBuffer(&buffer,cantidadIODelProceso);
+	char *buffer = (char *) malloc(size);
+	char *p = buffer;
+	copyIntToBuffer(&p, pid);
+	copyIntToBuffer(&p, result);
+	copyIntToBuffer(&p,cantidadIODelProceso);
 
 	switch(code){
 	case ARCHIVO_INICIALIZADO:
@@ -752,6 +783,8 @@ int contarCantidadIODelArchivo(t_list * listaInstrucciones){
 		switch(operacion->keyword){
 			case ABRIR: case FLUSH: case CREAR: case BORRAR:
 				cantidadEntradasSalidas ++;
+				break;
+			default:
 				break;
 		}
 	}

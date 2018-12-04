@@ -22,8 +22,14 @@ int consolaMetricaDTB(char* dtbSolicitado){
 	int idSolicitado = atoi(dtbSolicitado);
 	t_metricaLP *metricaDelDTB = list_get(listaMetricasLP, idSolicitado);
 	tiempo = metricaDelDTB->tiempoEnNEW;
-    log_info_mutex(logger, "3");
-	return tiempo;
+    log_info_mutex(logger, "Tiempo traido antes de actualizar: %d", tiempo);
+
+    sumarQuantumEjecutadoMetricaNEW();
+	t_metricaLP *metricaDelDTB2 = list_get(listaMetricasLP, idSolicitado);
+	int tiempo2 = metricaDelDTB2->tiempoEnNEW;
+    log_info_mutex(logger, "Tiempo traido desp de actualizar: %d", tiempo2);
+
+    return tiempo;
 }
 
 void agregarDTBaMetricasLP(int id){
@@ -70,7 +76,7 @@ void planificadorLP() {
    		//Me fijo cual es el primer elemento de la lista, no lo saco, solo tengo los datos
    		t_dtb *primerDTB = list_get(colaNew,0);
 
-   		pthread_mutex_lock(&semDummy);
+   		sem_wait(&semDummy);
   		planificadorCPdesbloquearDummy(primerDTB->idGDT,primerDTB->dirEscriptorio);
 
         pthread_mutex_unlock(&mutexNewList);

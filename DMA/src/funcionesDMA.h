@@ -77,7 +77,7 @@ bool crearArchivo(t_package paquete, int socketEnUso);
 bool borrarArchivo(t_package paquete, int socketEnUso);
 int contarCantidadLineas(char * string);
 int calcularCantidadPaquetes(int sizeOfFile);
-void enviarConfirmacionSafa(int pid, int result, int code);
+void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int code);
 int confirmarExistenciaFile();
 int contarCantidadIODelArchivo(t_list * listaInstr);
 #endif /* FUNCIONESDMA_H_ */

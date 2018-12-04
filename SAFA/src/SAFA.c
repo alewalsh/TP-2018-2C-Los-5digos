@@ -25,7 +25,13 @@ int main(int argc, char ** argv) {
 
     /*inicializacion de recursos y carga de configuracion
      /home/utnso/git/tp-2018-2c-Los-5digos/SAFA/config"*/
-    inicializarRecursos(argv[1]);
+    if (argc > 0)
+    	inicializarRecursos(argv[1]);
+    else
+    {
+    	log_error_mutex(logger, "Faltan parametros para inicializar el SAFA.");
+    	return EXIT_FAILURE;
+	}
 
     printf("Recursos incializados");
 
@@ -111,7 +117,7 @@ void liberarRecursos(){
 //    sem_destroy(&sem_preemptive);
     sem_destroy(&semaforpGradoMultiprgramacion);
     sem_destroy(&mandadosPorConsola);
-    pthread_mutex_destroy(&semDummy);
+    sem_destroy(&semDummy);
     pthread_mutex_destroy(&semCargadoEnMemoria);
 
 
