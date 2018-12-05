@@ -207,6 +207,15 @@ int abortarDTB(t_dtb * dtb){
 	return result;
 }
 
+int abortarDTBNuevo(t_dtb * dtb){
+	//logica para abortar dtb
+
+	//primero busco en la cola de ejecutando
+	int result = pasarDTBdeNEWaEXIT(dtb);
+
+	return result;
+}
+
 int finEjecucionPorQuantum(t_dtb * dtb){
 	return pasarDTBdeEXECaREADY(dtb);
 }

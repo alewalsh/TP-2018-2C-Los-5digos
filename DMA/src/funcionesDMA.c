@@ -42,7 +42,8 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 	//recibo la confirmacion
 	int sizeOfFile = confirmarExistenciaFile();
 	int result;
-	//TODO: Declaro aca el cantIO pq si no, no funciona el enviar
+
+	//Declaro aca el cantIO pq si no, no funciona el enviar
 	int cantIO = 0;
 
 	if(sizeOfFile >=0){

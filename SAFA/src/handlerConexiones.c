@@ -10,7 +10,6 @@
 #include <grantp/socket.h>
 #include <grantp/mutex_log.h>
 #include <grantp/structCommons.h>
-//#include "SAFA.h"
 #include "funcionesSAFA.h"
 #include "planificadorCorto.h"
 #include "planificadorLargo.h"
@@ -161,12 +160,11 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	break;
         }
         case CPU_SAFA_ABORTAR_DTB_NUEVO:{
-        	//TODO: Adaptar el abortar para que busque en NEW, este caso se da por errores en el envío de la dirEscriptorio
 			t_dtb * dtb = transformarPaqueteADTB(pkg);
-//			if(abortarDTB(dtb))
-//			{
+			if(abortarDTBNuevo(dtb))
+			{
 				log_error_mutex(logger, "Hubo un error al abortar el DTB.");
-//			}
+			}
 			break;
 		}
         case CPU_SAFA_BLOQUEAR_DUMMMY:
@@ -175,7 +173,6 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	pthread_mutex_unlock(&semDummy);
         	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:{
-        	//TODO: Porque estamos abortando el DTB?
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	if(abortarDTB(dtb))
 			{
@@ -205,7 +202,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 				pasarDTBdeNEWaREADY(dtb); //Se cargó en memoria correctamente
 				log_info_mutex(logger, "Se cargó correctamente en memoria el proceso: %d", pid);
 			}else{
-				pasarDTBdeNEWaEXIT(dtb); //No se pudo cargar a memoria
+				abortarDTBNuevo(dtb); //No se pudo cargar a memoria
 				log_error_mutex(logger, "No se pudo cargar en memoria el proceso: %d", pid);
 			}
 

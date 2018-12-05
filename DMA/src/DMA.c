@@ -152,7 +152,6 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         	break;
 
         case SOCKET_DISCONECT:
-//            handlerDisconnect(socketFD);
             close(socketFD);
             deleteSocketFromMaster(socketFD);
             break;
