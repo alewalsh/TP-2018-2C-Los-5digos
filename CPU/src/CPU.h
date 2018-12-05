@@ -101,7 +101,7 @@ t_socket * conectarseAProceso(int puerto, char *ip, int * socket, int handshakeP
 void recibirDTB();
 
 void manejarSolicitud(t_package pkg, int socketFD);
-int nuevoDummy(t_package paquete);
+int nuevoDummy(t_dtb * dtb, t_package paquete);
 
 int comenzarEjecucion(t_package paquete);
 int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb);

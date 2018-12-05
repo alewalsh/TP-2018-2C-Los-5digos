@@ -160,6 +160,15 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	}
         	break;
         }
+        case CPU_SAFA_ABORTAR_DTB_NUEVO:{
+        	//TODO: Adaptar el abortar para que busque en NEW, este caso se da por errores en el envío de la dirEscriptorio
+			t_dtb * dtb = transformarPaqueteADTB(pkg);
+//			if(abortarDTB(dtb))
+//			{
+				log_error_mutex(logger, "Hubo un error al abortar el DTB.");
+//			}
+			break;
+		}
         case CPU_SAFA_BLOQUEAR_DUMMMY:
         	//Se bloquea el dummy
         	bloquearDummy();

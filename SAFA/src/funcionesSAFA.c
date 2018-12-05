@@ -119,9 +119,11 @@ t_dtb *crearNuevoDTB(char *dirScript) {
 
 	sumarGDTCounter();
 	int aux = obtenerGDTCounter();
-    t_dtb *newDTB = malloc(sizeof(t_dtb));
+	int size = 8*sizeof(int) + strlen(dirScript) + 1;
+    t_dtb *newDTB = malloc(size);
 	newDTB->idGDT = aux;
-	newDTB->dirEscriptorio = dirScript;
+	memcpy(newDTB->dirEscriptorio, dirScript, strlen(dirScript) + 1);
+//	newDTB->dirEscriptorio = dirScript;
 	newDTB->programCounter = 0;
 	newDTB->flagInicializado = 1;
 	newDTB->tablaDirecciones = NULL;
@@ -129,6 +131,7 @@ t_dtb *crearNuevoDTB(char *dirScript) {
 	newDTB->realizOpDummy = 0;
 	newDTB->quantumRestante = 0;
 	newDTB->cantIO = 0;
+	newDTB->esDummy = false;
 	return newDTB;
 }
 
@@ -140,6 +143,7 @@ int agregarDTBaNEW(t_dtb *dtb) {
         pthread_mutex_unlock(&mutexNewList);
         return EXIT_FAILURE;
     }
+    t_dtb * dtb2 = list_get(colaNew, i);
     pthread_mutex_unlock(&mutexNewList);
     return EXIT_SUCCESS;
 }
@@ -337,8 +341,11 @@ t_dtb *crearDummyDTB() {
 	dummyDTB->programCounter = 0;
 	dummyDTB->flagInicializado = false;
 	dummyDTB->tablaDirecciones = NULL;
+	dummyDTB->realizOpDummy = 0;
 	dummyDTB->cantidadLineas = 0;
-
+	dummyDTB->cantIO = 0;
+	dummyDTB->esDummy = true;
+	dummyDTB->quantumRestante = 0;
 	list_add(colaBloqueados,dummyDTB);
 	return dummyDTB;
 }
@@ -348,7 +355,8 @@ void desbloquearDummy(){
     pthread_mutex_lock(&mutexDummy);
     dummyBloqueado = 0;
     //desbloquear dummy
-    desbloquearDTB(dummyDTB);
+    t_dtb * dummy = list_find(colaBloqueados,(void *)obtenerDummy);
+    desbloquearDTB(dummy);
     pthread_mutex_unlock(&mutexDummy);
 }
 
@@ -356,7 +364,8 @@ void bloquearDummy(){
     pthread_mutex_lock(&mutexDummy);
     dummyBloqueado = 1;
     //bloquear dummy
-    bloquearDTB(dummyDTB);
+    t_dtb * dummy = list_find(colaEjecutando,(void *)obtenerDummy);
+    bloquearDTB(dummy);
     pthread_mutex_unlock(&mutexDummy);
 }
 

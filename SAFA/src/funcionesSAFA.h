@@ -112,7 +112,7 @@ int obtenerEstadoDummy();
 void setearFlagInicializacionDummy(int num);
 void setearPathEnDummy(char * path);
 int obtenerFlagDummy();
-void planificadorCPdesbloquearDummy(int idGDT, char *dirScript);
+void planificadorCPdesbloquearDummy();
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA PLANIFICADOR CP
 //------------------------------------------------------------------------------------------------------------------

@@ -85,13 +85,24 @@ void manejarSolicitud(t_package pkg, int socketFD) {
     free(pkg.data);
 
 }
-int nuevoDummy(t_package paquete)
+int nuevoDummy(t_dtb * dtb, t_package paquete)
 {
 	// Luego de recibirlo tengo que verificar su flag de inicializacion
-	t_dtb * dtb = transformarPaqueteADTB(paquete);
+
 	// Si es 0, levanto un hilo y realizo  la operación Dummy - Iniciar G.DT
 	// Solicitarle al DAM la busqueda del Escriptorio en el MDJ
-	int size = sizeof(int) + (strlen(dtb->dirEscriptorio) * sizeof(char));
+	int longitudEscriptorio = strlen(dtb->dirEscriptorio) + 1;
+	if (longitudEscriptorio <= 0)
+	{
+		// TODO: Enviar error al SAFA
+		if(enviar(t_socketSAFA->socket,CPU_SAFA_ABORTAR_DTB_NUEVO,paquete.data, paquete.size, loggerCPU->logger))
+		{
+			log_error_mutex(loggerCPU, "No se pudo enviar el ABORTA del Dummy al S-AFA.");
+			return EXIT_FAILURE;
+		}
+		return EXIT_FAILURE;
+	}
+	int size = 2*sizeof(int) + (longitudEscriptorio * sizeof(char));
 	char *buffer = (char *) malloc(size);
 	char * p = buffer;
 	copyIntToBuffer(&p, dtb->idGDT);
@@ -162,7 +173,7 @@ int comenzarEjecucion(t_package paquete)
 	t_dtb * dtb = transformarPaqueteADTB(paquete);
 	if (dtb->flagInicializado == 0)
 	{
-		if(nuevoDummy(paquete))
+		if(nuevoDummy(dtb, paquete))
 		{
 			log_error_mutex(loggerCPU, "Hubo un error en la inicializacion del dummy");
 			return EXIT_FAILURE;
@@ -516,7 +527,7 @@ int setQuantum(t_package paquete)
 t_dtb * transformarPaqueteADTB(t_package paquete)
 {
 	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
-	t_dtb * dtb = malloc(sizeof(t_dtb));
+	t_dtb * dtb = malloc(paquete.size);
 	char *buffer = paquete.data;
 	bool tieneTablaDirecciones;
 	dtb->idGDT = copyIntFromBuffer(&buffer);
@@ -651,9 +662,4 @@ void liberarMemoriaTSocket(t_socket * TSocket)
 
 void initMutexs(){
 	pthread_mutex_init(&mutexQuantum, NULL);
-//	pthread_mutex_init(&mutexDesalojo, NULL);
 }
-
-//void initSems() {
-//    sem_init(&sem_nuevoDummy, 0, 0);
-//}

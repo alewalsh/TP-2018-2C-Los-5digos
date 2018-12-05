@@ -53,4 +53,6 @@ void pasarDTBdeNEWaEXIT(t_dtb * dtbAExit);
 void pasarDTBSegunQuantumRestante(t_dtb * dtb);
 //variable global
 
+bool obtenerDummy(t_dtb * dtb);
+
 #endif /* PLANIFICADORCORTO_H_ */

@@ -14,7 +14,7 @@ void planificadorCP() {
 
 	log_info_mutex(logger, "Hilo planificador Corto Plazo iniciado");
 	dummyDTB = (t_dtb *) crearDummyDTB();
-	bloquearDummy();
+//	bloquearDummy();
 
 	pthread_mutex_init(&mutexPlanificando, NULL);
 
@@ -71,23 +71,33 @@ int buscarDtbParaInicializar(){
 	for(int i = 0; i<sizeList;i++){
 		t_dtb * dtb = list_get(colaNew,i);
 		if(dtb->flagInicializado == 1 && dtb->realizOpDummy == 0){
-			//Actualizar dummy con el path
-			dummyDTB->dirEscriptorio = dtb->dirEscriptorio;
-			dtb->realizOpDummy = 1;
-			list_add_in_index(colaNew,i,dtb);
+			t_dtb * dtbActualizado = list_remove(colaNew,i);
+			dtbActualizado->realizOpDummy = 1;
+			list_add_in_index(colaNew,i,dtbActualizado);
 			return i;
 		}
 	}
 	return -1;
 }
 
-void planificadorCPdesbloquearDummy(int idGDT, char *dirScript){
-
-
-	dummyDTB->idGDT = idGDT;
-	dummyDTB->dirEscriptorio = dirScript;
+void planificadorCPdesbloquearDummy(int idGDT, char * dirScript)
+{
+	// Me fijo cual es el primer elemento de la lista, no lo saco, solo tengo los datos
+	t_dtb * dummy = list_remove_by_condition(colaBloqueados, (void *) obtenerDummy);
+	printf("Direccion del script: %s", dirScript);
+	dummy->idGDT = idGDT;
+	dummy->dirEscriptorio = dirScript;
+	list_add(colaBloqueados, dummy);
+	printf("Direccion del script: %s", dummy->dirEscriptorio);
 	//Recibo la solicitud y desbloqueo el dummy.
 	dummyBloqueado = 1;
+}
+
+bool obtenerDummy(t_dtb * dtb)
+{
+	if (dtb->esDummy)
+		return true;
+	return false;
 }
 
 void ejecutarRR(int socketCpu){
@@ -346,14 +356,15 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
     log_info_mutex(logger, "PCP: Se enviara un DTB a CPU");
 
     //CREO EL PAQUETE Y LO COMPRIMO
-    int stringsLength = strlen(dtbAEnviar->dirEscriptorio);
+    int stringsLength = strlen(dtbAEnviar->dirEscriptorio) + 1;
     bool tieneTablaDirecciones = false;
+    int pqtSize = sizeof(int)*9 + (stringsLength) * sizeof(char);
     if (dtbAEnviar->tablaDirecciones != NULL)
     {
-    	stringsLength += strlen(dtbAEnviar->tablaDirecciones);
+    	stringsLength += strlen(dtbAEnviar->tablaDirecciones) + 1;
+    	pqtSize += sizeof(int);
     	tieneTablaDirecciones = true;
     }
-    int pqtSize = sizeof(int)*8 + (stringsLength) * sizeof(char);
     char *paquete = (char *) malloc(pqtSize);
     char * p = paquete;
 
@@ -377,12 +388,12 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 		if(result == EXIT_FAILURE){
 			log_error_mutex(logger, "Error al finalizar el DTB..");
 	   }
-		free(paquete);
+//		free(paquete);
 	}
 	log_info_mutex(logger, "Se envió el DTB a ejecutar a la CPU: %d",socketCpu);
 
 
-    free(paquete);
+//    free(paquete);
 }
 
 int buscarCPULibre(){

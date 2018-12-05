@@ -30,6 +30,7 @@ typedef struct {
     int cantidadLineas;
     int quantumRestante;
     int cantIO;
+    bool esDummy;
 } t_dtb;
 
 
