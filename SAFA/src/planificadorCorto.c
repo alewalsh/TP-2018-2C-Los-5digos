@@ -357,29 +357,6 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 
     //CREO EL PAQUETE Y LO COMPRIMO
     t_package paquete = transformarDTBAPaquete(dtbAEnviar);
-//    int stringsLength = strlen(dtbAEnviar->dirEscriptorio) + 1;
-//    bool tieneTablaDirecciones = false;
-//    int pqtSize = sizeof(int)*9 + (stringsLength) * sizeof(char);
-//    if (dtbAEnviar->tablaDirecciones != NULL)
-//    {
-//    	stringsLength += strlen(dtbAEnviar->tablaDirecciones) + 1;
-//    	pqtSize += sizeof(int);
-//    	tieneTablaDirecciones = true;
-//    }
-//    char *paquete = (char *) malloc(pqtSize);
-//    char * p = paquete;
-//
-//    copyIntToBuffer(&p,dtbAEnviar->idGDT);
-//    copyStringToBuffer(&p,dtbAEnviar->dirEscriptorio);
-//    copyIntToBuffer(&p,dtbAEnviar->programCounter);
-//    copyIntToBuffer(&p,dtbAEnviar->flagInicializado);
-//    copyIntToBuffer(&p,tieneTablaDirecciones);
-//    if (tieneTablaDirecciones)
-//    	copyStringToBuffer(&p,dtbAEnviar->tablaDirecciones);
-//    copyIntToBuffer(&p,dtbAEnviar->cantidadLineas);
-//    copyIntToBuffer(&p,dtbAEnviar->realizOpDummy);
-//    copyIntToBuffer(&p, dtbAEnviar->quantumRestante);
-//    copyIntToBuffer(&p, dtbAEnviar->cantIO);
 
     //MANDO EL PAQUETE CON EL MENSAJE A LA CPU LIBRE
 	if(enviar(socketCpu,SAFA_CPU_EJECUTAR,paquete.data,paquete.size,logger->logger)){
@@ -407,6 +384,3 @@ int buscarCPULibre(){
 	}
 	return -1;
 }
-
-
-
