@@ -82,7 +82,7 @@ void responderDAM();
 int validarArchivo(char *);
 int escribirStringEnArchivo(char *, char *);
 void escribirMetadata(char*, struct metadataArchivo *);
-void leerMetadata(char *, struct metadataArchivo *);
+metadataArchivo * leerMetadata(char *path);
 char* obtenerDatos(char*,int ,int);
 void borrarArchivo(char *);
 void enviarStringDAMporTRansferSize(char *);

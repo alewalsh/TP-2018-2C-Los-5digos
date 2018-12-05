@@ -83,8 +83,7 @@ void inicializarCosnola() {
 				int statusMd5;
 				statusMd5 = validarArchivo(pathMD5);
 				if (statusMd5) {
-					struct metadataArchivo *metadataArchivoALeer = malloc(sizeof(struct metadataArchivo));
-					leerMetadata(pathMD5, metadataArchivoALeer);
+					metadataArchivo *metadataArchivoALeer = leerMetadata(pathMD5);
 
 					char * datosMD5 = obtenerDatos(pathMD5,0, metadataArchivoALeer->tamanio);
 
@@ -124,8 +123,7 @@ void inicializarCosnola() {
 				statusCAT = validarArchivo(path);
 				if (statusCAT) {
 
-					struct metadataArchivo *metadataArchivoALeer = malloc(sizeof(struct metadataArchivo));
-					leerMetadata(path, metadataArchivoALeer);
+					metadataArchivo *metadataArchivoALeer = leerMetadata(path);
 
 					char * datos = obtenerDatos(path,0, metadataArchivoALeer->tamanio);
 
