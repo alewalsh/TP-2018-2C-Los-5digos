@@ -102,6 +102,7 @@ int desbloquearDTB(t_dtb * dtb);
 int abortarDTB(t_dtb * dtb);
 int finEjecucionPorQuantum(t_dtb * dtb);
 int confirmacionDMA(int pid, int result);
+int abortarDTBNuevo(t_dtb * dtb);
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA MANEJO DEL DUMMY
 //------------------------------------------------------------------------------------------------------------------
