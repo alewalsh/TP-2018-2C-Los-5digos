@@ -23,17 +23,13 @@ void responderDAM(t_package pkg) {
 		string_append(&pathValidar, pathArchivos);
 		string_append(&pathValidar, pathValidarSinPM);
 
-		int statusValidar;
-		statusValidar = validarArchivo(pathValidar);
+		int statusValidar = validarArchivo(pathValidar);
 		if (statusValidar) {
 			log_info_mutex(loggerAtencionDAM, "Archivo: %s OK.", pathValidar);
-
-			int tamanio;
-
-			struct metadataArchivo *metadataArchivoValidar = malloc(sizeof(struct metadataArchivo));
+			metadataArchivo *metadataArchivoValidar = malloc(sizeof(metadataArchivo));
 			leerMetadata(pathValidar, metadataArchivoValidar);
 
-			tamanio = metadataArchivoValidar->tamanio;
+			int tamanio = metadataArchivoValidar->tamanio;
 
 			char* bufferEnvioValidacion = malloc(sizeof(int));
 			char * p = bufferEnvioValidacion;
@@ -57,10 +53,8 @@ void responderDAM(t_package pkg) {
 			}
 			log_error_mutex(loggerAtencionDAM, "Error. Path: %s inexistente.", pathValidar);
 		}
-
 		free(bufferValidar);
 		free(pathValidar);
-
 		break;
 
 	case DAM_MDJ_CREAR_ARCHIVO: //crear archivo ++ [Path, N Cantidad de /n's]
@@ -357,9 +351,8 @@ int escribirStringEnArchivo(char *pathArchivo, char *stringAEscribir) {
 	return 1;
 }
 
-void leerMetadata(char *path, struct metadataArchivo *metadata) {
-	FILE *archivoNuevo;
-	archivoNuevo = fopen(path, "rb");
+void leerMetadata(char *path, metadataArchivo *metadata) {
+	FILE *archivoNuevo = fopen(path, "rb");
 	if(archivoNuevo == NULL){
 		log_error_mutex(loggerAtencionDAM, "Error al arbir el archivo: %s para leer su metadata.", path);
 	}

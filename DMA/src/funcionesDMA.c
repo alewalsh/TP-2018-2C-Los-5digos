@@ -77,13 +77,15 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 //Return: Base en memoria de los paquetes guardados.
 int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 
+	//TODO: Hacer validacion, si es size = 0, no corresponde enviar ninguna paquete.
+
 	//Calculo cuantos paquetes voy a recibir del fm9 segun mi transfer size
 	int cantPkg = calcularCantidadPaquetes(size);
 
 	//Ahora se reciben los paquetes y se concatena tudo el archivo
 	//(Si el archivo es mayor que mi Transfersize recibo n paquetes del tamaño de mi transfersize)
 
-	int sizeOfPkg = strlen(path)*sizeof(char) + sizeof(int)*2;
+	int sizeOfPkg = strlen(path)*sizeof(char) + sizeof(int)*3;
 	char * pkg = (char *)malloc(sizeOfPkg);
 	char * p = pkg;
 	int inicio = 0;
@@ -93,8 +95,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 
 	if(enviar(t_socketMdj->socket,DAM_MDJ_CARGAR_ESCRIPTORIO, pkg, sizeOfPkg, logger->logger)){
 		//error
-		log_error_mutex(logger,
-				"No se pudo enviar la busqueda del escriptorio al MDJ");
+		log_error_mutex(logger, "No se pudo enviar la busqueda del escriptorio al MDJ");
 		free(pkg);
 		return false;
 	}
@@ -756,7 +757,8 @@ int confirmarExistenciaFile(){
 	}
 
 	//Recibo el tamaño del archivo a cargar
-	result = atoi(package.data);
+	char * buffer = package.data;
+	result = copyIntFromBuffer(&buffer);
 
 	return result;
 }
