@@ -18,8 +18,9 @@ void responderDAM(t_package pkg) {
 		char * pathValidarSinPM = copyStringFromBuffer(&bufferValidar);
 
 		char *pathValidar = string_new();
+		char * pathArchivos = "Archivos";
 		string_append(&pathValidar, configuracion->puntoMontaje);
-		string_append(&pathValidar, "Archivos");
+		string_append(&pathValidar, pathArchivos);
 		string_append(&pathValidar, pathValidarSinPM);
 
 		int statusValidar;
@@ -35,7 +36,8 @@ void responderDAM(t_package pkg) {
 			tamanio = metadataArchivoValidar->tamanio;
 
 			char* bufferEnvioValidacion = malloc(sizeof(int));
-			copyIntToBuffer(&bufferEnvioValidacion, tamanio);
+			char * p = bufferEnvioValidacion;
+			copyIntToBuffer(&p, tamanio);
 
 			int sizeEnvioValidacion = sizeof(int);
 
