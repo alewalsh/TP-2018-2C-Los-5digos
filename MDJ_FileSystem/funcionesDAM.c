@@ -19,6 +19,7 @@ void responderDAM(t_package pkg) {
 
 		char *pathValidar = string_new();
 		string_append(&pathValidar, configuracion->puntoMontaje);
+		string_append(&pathValidar, "Archivos");
 		string_append(&pathValidar, pathValidarSinPM);
 
 		int statusValidar;
@@ -69,6 +70,7 @@ void responderDAM(t_package pkg) {
 
 		char *pathArchivoNuevo = string_new();
 		string_append(&pathArchivoNuevo, configuracion->puntoMontaje);
+		string_append(&pathValidar, "Archivos");
 		string_append(&pathArchivoNuevo, pathArchivoNuevoSinPM);
 
 		crearPathArchivo(pathArchivoNuevo);
@@ -106,6 +108,7 @@ void responderDAM(t_package pkg) {
 
 		char *pathArchivoALeer = string_new();
 		string_append(&pathArchivoALeer, configuracion->puntoMontaje);
+		string_append(&pathValidar, "Archivos");
 		string_append(&pathArchivoALeer, pathArchivoALeerSinPM);
 
 		int statusObtener;
@@ -143,6 +146,7 @@ void responderDAM(t_package pkg) {
 
 		char *pathArchivoAModificar = string_new();
 		string_append(&pathArchivoAModificar, configuracion->puntoMontaje);
+		string_append(&pathValidar, "Archivos");
 		string_append(&pathArchivoAModificar, pathArchivoAModificarSinPM);
 
 		int statusGuardar;
@@ -183,6 +187,7 @@ void responderDAM(t_package pkg) {
 
 		char *pathArchivoAEliminar = string_new();
 		string_append(&pathArchivoAEliminar, configuracion->puntoMontaje);
+		string_append(&pathValidar, "Archivos");
 		string_append(&pathArchivoAEliminar, pathArchivoAEliminarSinPM);
 
 		borrarArchivo(pathArchivoAEliminar);
