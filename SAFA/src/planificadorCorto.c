@@ -325,7 +325,7 @@ void pasarDTBdeNEWaREADY(t_dtb * dtbAReady){
 	pthread_mutex_unlock(&mutexNewList);
 }
 
-void pasarDTBdeNEWaEXIT(t_dtb * dtbAExit){
+int pasarDTBdeNEWaEXIT(t_dtb * dtbAExit){
 
 	pthread_mutex_lock(&mutexNewList);
 	pthread_mutex_lock(&mutexExitList);
@@ -335,10 +335,14 @@ void pasarDTBdeNEWaEXIT(t_dtb * dtbAExit){
 	if(index > 0){
 		t_dtb * dtbNewAExit = (t_dtb *) list_remove(colaNew,index);
 		list_add(colaReady, dtbNewAExit);
+	}else{
+		return EXIT_FAILURE;
 	}
 
 	pthread_mutex_unlock(&mutexExitList);
 	pthread_mutex_unlock(&mutexNewList);
+
+	return EXIT_SUCCESS;
 }
 
 void pasarDTBSegunQuantumRestante(t_dtb * dtb){

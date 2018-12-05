@@ -48,7 +48,7 @@ void pasarDTBdeBLOQaREADYESP(t_dtb * dtbAReadyEsp);
 
 
 void pasarDTBdeNEWaREADY(t_dtb * dtbAReady);
-void pasarDTBdeNEWaEXIT(t_dtb * dtbAExit);
+int pasarDTBdeNEWaEXIT(t_dtb * dtbAExit);
 
 void pasarDTBSegunQuantumRestante(t_dtb * dtb);
 //variable global
