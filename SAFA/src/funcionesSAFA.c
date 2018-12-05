@@ -143,7 +143,6 @@ int agregarDTBaNEW(t_dtb *dtb) {
         pthread_mutex_unlock(&mutexNewList);
         return EXIT_FAILURE;
     }
-    t_dtb * dtb2 = list_get(colaNew, i);
     pthread_mutex_unlock(&mutexNewList);
     return EXIT_SUCCESS;
 }
@@ -168,55 +167,6 @@ t_cpus *crearCpu() {
 	cpu->socket = 0;
 	cpu->libre = 0;//0 = libre, 1= en uso
 	return cpu;
-}
-
-t_dtb * transformarPaqueteADTB(t_package paquete)
-{
-	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
-	t_dtb * dtb = malloc(sizeof(t_dtb));
-	char *buffer = paquete.data;
-	bool tieneTablaDirecciones;
-	dtb->idGDT = copyIntFromBuffer(&buffer);
-	dtb->dirEscriptorio = copyStringFromBuffer(&buffer);
-	dtb->programCounter = copyIntFromBuffer(&buffer);
-	dtb->flagInicializado = copyIntFromBuffer(&buffer);
-	tieneTablaDirecciones = copyIntFromBuffer(&buffer);
-	if (tieneTablaDirecciones)
-		dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
-	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
-	dtb->realizOpDummy = copyIntFromBuffer(&buffer);
-	dtb->quantumRestante = copyIntFromBuffer(&buffer);
-	dtb->cantIO = copyIntFromBuffer(&buffer);
-
-	return dtb;
-}
-t_package transformarDTBAPaquete(t_dtb * dtb)
-{
-	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
-	t_package paquete;
-    int stringsLength = strlen(dtb->dirEscriptorio);
-	bool tieneTablaDirecciones = false;
-	if (dtb->tablaDirecciones != NULL)
-	{
-		stringsLength += strlen(dtb->tablaDirecciones);
-		tieneTablaDirecciones = true;
-	}
-	paquete.size = sizeof(int)*8 + (stringsLength) * sizeof(char);
-	char *buffer = (char *) malloc(paquete.size);
-	char * p = buffer;
-	copyIntToBuffer(&p,dtb->idGDT);
-	copyStringToBuffer(&p,dtb->dirEscriptorio);
-	copyIntToBuffer(&p,dtb->programCounter);
-	copyIntToBuffer(&p,dtb->flagInicializado);
-	copyIntToBuffer(&p,tieneTablaDirecciones);
-	if (tieneTablaDirecciones)
-		copyStringToBuffer(&p,dtb->tablaDirecciones);
-	copyIntToBuffer(&p,dtb->cantidadLineas);
-	copyIntToBuffer(&p,dtb->realizOpDummy);
-	copyIntToBuffer(&p, dtb->quantumRestante);
-	copyIntToBuffer(&p, dtb->cantIO);
-	paquete.data = buffer;
-	return paquete;
 }
 
 int bloquearDTB(t_dtb * dtb){

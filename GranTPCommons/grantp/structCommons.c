@@ -129,3 +129,57 @@ t_datosFlush * guardarDatosPaqueteFlush(t_package pkg)
 	free(buffer);
 	return infoFlush;
 }
+
+t_dtb * transformarPaqueteADTB(t_package paquete)
+{
+	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
+	t_dtb * dtb = malloc(paquete.size);
+	char *buffer = paquete.data;
+	bool tieneTablaDirecciones;
+	dtb->idGDT = copyIntFromBuffer(&buffer);
+	dtb->dirEscriptorio = copyStringFromBuffer(&buffer);
+	dtb->programCounter = copyIntFromBuffer(&buffer);
+	dtb->flagInicializado = copyIntFromBuffer(&buffer);
+	tieneTablaDirecciones = copyIntFromBuffer(&buffer);
+	if (tieneTablaDirecciones)
+		dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
+	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
+	dtb->realizOpDummy = copyIntFromBuffer(&buffer);
+	dtb->quantumRestante = copyIntFromBuffer(&buffer);
+	dtb->cantIO = copyIntFromBuffer(&buffer);
+	dtb->esDummy = copyIntFromBuffer(&buffer);
+
+	return dtb;
+}
+t_package transformarDTBAPaquete(t_dtb * dtb)
+{
+	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
+	t_package paquete;
+    int stringsLength = strlen(dtb->dirEscriptorio) + 1;
+	bool tieneTablaDirecciones = false;
+	int size = 0;
+	if (dtb->tablaDirecciones != NULL)
+	{
+		stringsLength += strlen(dtb->tablaDirecciones) + 1;
+		tieneTablaDirecciones = true;
+		size += sizeof(int);
+	}
+	size = sizeof(int)*10 + (stringsLength) * sizeof(char);
+	paquete.size = size;
+	char *buffer = (char *) malloc(paquete.size);
+	char * p = buffer;
+	copyIntToBuffer(&p,dtb->idGDT);
+	copyStringToBuffer(&p,dtb->dirEscriptorio);
+	copyIntToBuffer(&p,dtb->programCounter);
+	copyIntToBuffer(&p,dtb->flagInicializado);
+	copyIntToBuffer(&p,tieneTablaDirecciones);
+	if (tieneTablaDirecciones)
+		copyStringToBuffer(&p,dtb->tablaDirecciones);
+	copyIntToBuffer(&p,dtb->cantidadLineas);
+	copyIntToBuffer(&p,dtb->realizOpDummy);
+	copyIntToBuffer(&p, dtb->quantumRestante);
+	copyIntToBuffer(&p, dtb->cantIO);
+	copyIntToBuffer(&p, dtb->esDummy);
+	paquete.data = buffer;
+	return paquete;
+}
