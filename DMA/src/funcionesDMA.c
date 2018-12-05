@@ -28,15 +28,17 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 	printf("Ehhh, voy a buscar %s para %d", path, pid);
 
 	//Se envia el path del archivo al filesystem
-	int size;
-	char *keyCompress = compressKey(path, &size);
+	int size = sizeof(int) + ((strlen(path) + 1) * sizeof(char));
+	char * bufferEnvio = (char *) malloc(size);
+	char * p = bufferEnvio;
+	copyStringToBuffer(&p, path);
 
 	//CONFIRMO EXISTENCIA DEL ARCHIVO
 	//mando un msj para saber si el archivo existe
-	if (enviar(t_socketMdj->socket, DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO, keyCompress, size, logger->logger)) {
+	if (enviar(t_socketMdj->socket, DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO, bufferEnvio, size, logger->logger)) {
 		log_error_mutex(logger,
 				"No se pudo enviar la busqueda del escriptorio al MDJ");
-		free(keyCompress);
+		free(bufferEnvio);
 		return false;
 	}
 	//recibo la confirmacion
@@ -60,13 +62,13 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 		result = EXIT_FAILURE;
 		// TODO: Agregue el 0 como cantIO para que compile
 		enviarConfirmacionSafa(pid, result, 0, ARCHIVO_INICIALIZADO);
-		free(keyCompress);
+		free(bufferEnvio);
 		return false;
 	}
 
 	enviarConfirmacionSafa(pid, result, cantIO,ARCHIVO_INICIALIZADO);
 
-	free(keyCompress);
+	free(bufferEnvio);
 	free(path);
 	return true;
 }

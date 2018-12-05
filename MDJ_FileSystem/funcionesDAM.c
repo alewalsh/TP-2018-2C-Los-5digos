@@ -39,7 +39,7 @@ void responderDAM(t_package pkg) {
 			int sizeEnvioValidacion = sizeof(int);
 
 			//envia OK y el tamanio del archivo a validar. No utilizo TS porque seguro entra (?
-			if(enviar(socketEscucha->socket, DAM_MDJ_OK, bufferEnvioValidacion, sizeEnvioValidacion, loggerAtencionDAM->logger)){
+			if(enviar(socketDAM, DAM_MDJ_OK, bufferEnvioValidacion, sizeEnvioValidacion, loggerAtencionDAM->logger)){
 				log_error_mutex(loggerAtencionDAM, "Error al enviar validacion de archivo al DAM.");
 			}
 
@@ -49,7 +49,7 @@ void responderDAM(t_package pkg) {
 
 		} else {
 			//manda fail
-			if(enviar(socketEscucha->socket, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger)){
+			if(enviar(socketDAM, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger)){
 				log_error_mutex(loggerAtencionDAM, "Error al enviar path inexistente al DAM.");
 			}
 			log_error_mutex(loggerAtencionDAM, "Error. Path: %s inexistente.", pathValidar);
@@ -83,11 +83,11 @@ void responderDAM(t_package pkg) {
 		}
 
 		if(escribirStringEnArchivo(pathArchivoNuevo, NcantidadDeNs)){
-			if(enviar(socketEscucha->socket, DAM_MDJ_OK, NULL,0, loggerAtencionDAM->logger)){
+			if(enviar(socketDAM, DAM_MDJ_OK, NULL,0, loggerAtencionDAM->logger)){
 				log_error_mutex(loggerAtencionDAM, "Error al enviar OK de crear archivo al DAM.");
 			}
 		}else{
-			if(enviar(socketEscucha->socket, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger)){
+			if(enviar(socketDAM, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger)){
 				log_error_mutex(loggerAtencionDAM, "Error al enviar FAIL por crear archivo al DAM.");
 			}
 		}
@@ -123,7 +123,7 @@ void responderDAM(t_package pkg) {
 		} else {
 			//manda fail
 			log_error_mutex(loggerAtencionDAM, "Error no se pudo leer de: &s", pathArchivoALeer);
-			enviar(socketEscucha->socket, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger);
+			enviar(socketDAM, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger);
 		}
 		free(pathArchivoALeer);
 		break;
@@ -169,7 +169,7 @@ void responderDAM(t_package pkg) {
 
 		} else {
 			log_error_mutex(loggerAtencionDAM, "Error no se pudo leer de: %s", pathArchivoAModificar);
-			enviar(socketEscucha->socket, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger);
+			enviar(socketDAM, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger);
 		}
 		free(pathArchivoAModificar);
 		free(bufferGuardar);
@@ -506,7 +506,7 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 
 		copyStringToBuffer(&p,retornoOffset);
 
-		if(enviar(socketEscucha->socket, DAM_MDJ_OK, bufferEnvio, trasnfer_size, loggerAtencionDAM->logger)){
+		if(enviar(socketDAM, DAM_MDJ_OK, bufferEnvio, trasnfer_size, loggerAtencionDAM->logger)){
 			log_error_mutex(loggerAtencionDAM, "Error al enviar validacion de archivo al DAM.");
 			free(bufferEnvio);
 		}
