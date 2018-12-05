@@ -18,9 +18,9 @@ void responderDAM(t_package pkg) {
 		char * pathValidarSinPM = copyStringFromBuffer(&bufferValidar);
 
 		char *pathValidar = string_new();
-		char * pathArchivos = "Archivos";
+		char * pathArchivosVal = "Archivos";
 		string_append(&pathValidar, configuracion->puntoMontaje);
-		string_append(&pathValidar, pathArchivos);
+		string_append(&pathValidar, pathArchivosVal);
 		string_append(&pathValidar, pathValidarSinPM);
 
 		int statusValidar;
@@ -71,8 +71,10 @@ void responderDAM(t_package pkg) {
 		int cantidad_Ns = copyIntFromBuffer(&bufferCrear);
 
 		char *pathArchivoNuevo = string_new();
+
 		string_append(&pathArchivoNuevo, configuracion->puntoMontaje);
-		string_append(&pathValidar, "Archivos");
+		char * pathArchivosCreo = "Archivos";
+		string_append(&pathArchivoNuevo, pathArchivosCreo);
 		string_append(&pathArchivoNuevo, pathArchivoNuevoSinPM);
 
 		crearPathArchivo(pathArchivoNuevo);
@@ -109,8 +111,9 @@ void responderDAM(t_package pkg) {
 		int size = copyIntFromBuffer(&bufferObtenerDatos);
 
 		char *pathArchivoALeer = string_new();
+		char * pathArchivosCarga = "Archivos";
 		string_append(&pathArchivoALeer, configuracion->puntoMontaje);
-		string_append(&pathValidar, "Archivos");
+		string_append(&pathArchivoALeer, pathArchivosCarga);
 		string_append(&pathArchivoALeer, pathArchivoALeerSinPM);
 
 		int statusObtener;
@@ -147,8 +150,9 @@ void responderDAM(t_package pkg) {
 		log_info_mutex(loggerAtencionDAM, "Datos recibidos a ser guardados son: %s", bufferGuardar);
 
 		char *pathArchivoAModificar = string_new();
+		char * pathArchivosFlush = "Archivos";
 		string_append(&pathArchivoAModificar, configuracion->puntoMontaje);
-		string_append(&pathValidar, "Archivos");
+		string_append(&pathArchivoAModificar, pathArchivosFlush);
 		string_append(&pathArchivoAModificar, pathArchivoAModificarSinPM);
 
 		int statusGuardar;
@@ -188,8 +192,9 @@ void responderDAM(t_package pkg) {
 		char * pathArchivoAEliminarSinPM = copyStringFromBuffer(&bufferBorrar);
 
 		char *pathArchivoAEliminar = string_new();
+		char * pathArchivosBorra = "Archivos";
 		string_append(&pathArchivoAEliminar, configuracion->puntoMontaje);
-		string_append(&pathValidar, "Archivos");
+		string_append(&pathArchivoAEliminar, pathArchivosBorra);
 		string_append(&pathArchivoAEliminar, pathArchivoAEliminarSinPM);
 
 		borrarArchivo(pathArchivoAEliminar);
@@ -518,7 +523,7 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 			free(bufferEnvio);
 		}
 
-		free(bufferEnvio);
+		p = bufferEnvio;
 		cuantosPaquetes--;
 	}
 }
