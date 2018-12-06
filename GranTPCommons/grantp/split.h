@@ -11,6 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-char** str_split(char* a_str, const char a_delim, int count);
+char** str_split(char* a_str, const char a_delim, int * count);
 
 #endif /* GRANTP_SPLIT_H_ */

@@ -85,7 +85,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 	//Ahora se reciben los paquetes y se concatena tudo el archivo
 	//(Si el archivo es mayor que mi Transfersize recibo n paquetes del tamaño de mi transfersize)
 
-	int sizeOfPkg = strlen(path)*sizeof(char) + sizeof(int)*3;
+	int sizeOfPkg = ((strlen(path)+1) *sizeof(char)) + sizeof(int)*3;
 	char * pkg = (char *)malloc(sizeOfPkg);
 	char * p = pkg;
 	int inicio = 0;
@@ -119,13 +119,13 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 	//realizo un split con cada /n y cuento la cantidad de lineas que contiene el mensaje
 	int cantLineas = 0;
 
-	char** arrayLineas = str_split(bufferConcatenado, '\n', cantLineas);
+	char** arrayLineas = str_split(bufferConcatenado, '\n', &cantLineas);
 
 	cantidadLineasScriptorio = cantLineas;
 	free(bufferConcatenado);
 
 	//Se envia un msj al fm9 con los siguientes parametros
-	int sizeOfBuffer= sizeof(int) * 3 + (strlen(path) * sizeof(char));
+	int sizeOfBuffer= sizeof(int) * 3 + ((strlen(path) + 1) * sizeof(char));
 	char *buffer = (char *)malloc(sizeOfBuffer);
 	char * ptr2 = buffer;
 	copyIntToBuffer(&ptr2, pid); //ProcesID
@@ -166,7 +166,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 
 				sub = string_substring(buffer,inicio,fin);
 
-				int size = sizeof(int) * 2 + strlen(sub) * sizeof(char);
+				int size = sizeof(int) * 3 + (strlen(sub)+1) * sizeof(char);
 				char * bufferAEnviar = (char *) malloc(size);
 				char * p = bufferAEnviar;
 				copyIntToBuffer(&p, i + 1); //NRO LINEA
@@ -187,7 +187,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 			}
 		} else {
 			//Si está dentro del tamaño permitido se envía la linea
-			int size = sizeof(int) * 2 + tamanioLinea * sizeof(char);
+			int size = (sizeof(int) * 3) + (tamanioLinea+1) * sizeof(char);
 			char * bufferAEnviar = (char *) malloc(size);
 			char * p = bufferAEnviar;
 			copyIntToBuffer(&p, (i + 1));
@@ -197,8 +197,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 			if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG,
 					bufferAEnviar, size,
 					logger->logger)) {
-				log_error_mutex(logger,
-						"Error al enviar info del escriptorio a FM9");
+				log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
 				free(buffer);
 				return EXIT_FAILURE;
 			}
@@ -207,8 +206,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 		i++;
 	}
 	free(arrayLineas);
-	log_info_mutex(logger,
-			"Se enviaron todos los datos a memoria del proceso: %d", pid);
+	log_info_mutex(logger, "Se enviaron todos los datos a memoria del proceso: %d", pid);
 
 	//Se recibe confirmacion de datos guardados en memoria del FM9
 	int result = recibirConfirmacionMemoria();
@@ -711,20 +709,24 @@ char * enumToProcess(int proceso) {
 
 int calcularCantidadPaquetes(int sizeOfFile) {
 	//Lo divido por mi transfer Size y me quedo con la parte entera
-	double num = sizeOfFile / configDMA->transferSize;
-
-	double p_entera;
-	double p_decimal;
-	//Separo la parte entera
-	p_decimal = modf(num, &p_entera);
-	//Calculo la cantidad de paquetes
-	int cantPart;
-	if (p_decimal != 0) {
-		cantPart = p_entera + 1;
-	} else {
-		cantPart = p_entera;
+	int cantPart = sizeOfFile / configDMA->transferSize;
+	if(sizeOfFile % configDMA->transferSize != 0){
+		cantPart++;
 	}
-	log_info_mutex(logger, "Se recibiran %d paquetes", cantPart);
+//	double num = sizeOfFile / configDMA->transferSize;
+//
+//	double p_entera;
+//	double p_decimal;
+//	//Separo la parte entera
+//	p_decimal = modf(num, &p_entera);
+//	//Calculo la cantidad de paquetes
+//	int cantPart;
+//	if (p_decimal != 0) {
+//		cantPart = p_entera + 1;
+//	} else {
+//		cantPart = p_entera;
+//	}
+//	log_info_mutex(logger, "Se recibiran %d paquetes", cantPart);
 
 	return cantPart;
 }
@@ -768,8 +770,7 @@ int recibirConfirmacionMemoria() {
 	t_package package;
 
 	if (recibir(t_socketFm9->socket, &package, logger->logger)) {
-		log_error_mutex(logger,
-				"Error al recibir los datos de memoria asociados al proceso");
+		log_error_mutex(logger, "Error al recibir los datos de memoria asociados al proceso");
 		return EXIT_FAILURE;
 	}
 	if (package.code == FM9_DAM_ESCRIPTORIO_CARGADO) {

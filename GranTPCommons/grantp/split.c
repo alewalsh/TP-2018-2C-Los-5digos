@@ -17,12 +17,12 @@
  * 			{int} Int a cargar con la cantidad de lineas formadas.
  * @RETURN: {char **} Punteros de los punteros de las lineas
  */
-char** str_split(char* a_str, const char a_delim, int count)
+char** str_split(char* a_str, const char a_delim, int * count)
 {
     char** result    = 0;
     char* tmp        = a_str;
     char* last_comma = 0;
-    count = 0;
+    (*count) = 0;
     char delim[2];
     delim[0] = a_delim;
     delim[1] = 0;
@@ -33,20 +33,20 @@ char** str_split(char* a_str, const char a_delim, int count)
 	{
 		if(a_str[i] == '\n')
 		{
-			count++;
+			(*count)++;
 			last_comma = tmp;
 		}
 		i++;
 	}
 
     /* Add space for trailing token. */
-    count += last_comma < (a_str + strlen(a_str) - 1);
+    (*count) += last_comma < (a_str + strlen(a_str) - 1);
 
     /* Add space for terminating null string so caller
        knows where the list of returned strings ends. */
-    count++;
+    (*count)++;
 
-    result = malloc(sizeof(char*) * count);
+    result = malloc(sizeof(char*) * (*count));
 
     if (result)
     {
