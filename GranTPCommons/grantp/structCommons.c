@@ -95,13 +95,13 @@ t_infoGuardadoLinea * guardarDatosPaqueteGuardadoLinea(t_package pkg){
 t_infoCargaEscriptorio * guardarDatosPaqueteCargaEscriptorio(t_package pkg){
 
 	char * buffer = pkg.data;
-	t_infoCargaEscriptorio * datosPaquete = malloc(sizeof(t_infoCargaEscriptorio*));
+	t_infoCargaEscriptorio * datosPaquete = malloc(sizeof(t_infoCargaEscriptorio));
 
 	datosPaquete->pid = copyIntFromBuffer(&buffer);
 	datosPaquete->path = copyStringFromBuffer(&buffer);
 	datosPaquete->cantidadLineasARecibir = copyIntFromBuffer(&buffer);
 
-	free(buffer);
+	//free(buffer);
 	return datosPaquete;
 }
 

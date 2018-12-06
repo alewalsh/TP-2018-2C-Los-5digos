@@ -196,6 +196,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         case DAM_SAFA_CONFIRMACION_SCRIPT_INICIALIZADO:{
         	int pid = copyIntFromBuffer(&pkg.data);
 			int result = copyIntFromBuffer(&pkg.data);
+			int cantIOProcess = copyIntFromBuffer(&pkg.data);
 
 			t_dtb * dtb = buscarDTBPorPIDenCola(colaNew, pid);
 			if(result == EXIT_SUCCESS){
