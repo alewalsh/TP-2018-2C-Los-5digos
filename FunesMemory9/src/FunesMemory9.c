@@ -30,8 +30,8 @@ void inicializarContadores(){
 	lineasXPagina = config->tamPagina / config->tamMaxLinea;
 	tablaProcesos = dictionary_create();
 	tablaPaginasInvertida = list_create();
-	inicializarBitmap(estadoLineas);
-	inicializarBitmap(estadoMarcos);
+	inicializarBitmap(&estadoLineas);
+	inicializarBitmap(&estadoMarcos);
 }
 
 void inicializarSemaforos()

@@ -33,7 +33,7 @@ int direccion(int base, int desplazamiento)
 	return direccion;
 }
 
-void inicializarBitmap(t_bitarray * bitArray)
+void inicializarBitmap(t_bitarray **bitArray)
 {
 	int tamBitarray = 0;
 	if (config->modoEjecucion == SEG)
@@ -45,12 +45,12 @@ void inicializarBitmap(t_bitarray * bitArray)
 		tamBitarray++;
 	}
 	char* data=malloc(tamBitarray);
-	bitArray = bitarray_create_with_mode(data,tamBitarray,LSB_FIRST); // if create falla error.
+	*bitArray = bitarray_create_with_mode(data,tamBitarray,LSB_FIRST); // if create falla error.
 
 	int bit;
 	bit = 0;
 	while(bit <= cantLineas){
-		bitarray_clean_bit(bitArray, bit);
+		bitarray_clean_bit(*bitArray, bit);
 		bit ++;
 	}
 }
@@ -69,9 +69,9 @@ int tengoMemoriaDisponible(int cantACargar)
 {
 	int memoriaDisponible = 0;
 	if (config->modoEjecucion == SEG || config->modoEjecucion == SPA)
-		memoriaDisponible = posicionesLibres(estadoLineas);
+		memoriaDisponible = posicionesLibres(&estadoLineas);
 	else
-		memoriaDisponible = posicionesLibres(estadoMarcos);
+		memoriaDisponible = posicionesLibres(&estadoMarcos);
 
 	if(memoriaDisponible > cantACargar){
 		//Tengo espacio disponible.
@@ -84,12 +84,12 @@ int tengoMemoriaDisponible(int cantACargar)
 	return EXIT_SUCCESS;
 }
 
-int posicionesLibres(t_bitarray * bitArray)
+int posicionesLibres(t_bitarray ** bitArray)
 {
 	int bit = 0, libres = 0;
 	while(bit <= cantLineas)
 	{
-		if(bitarray_test_bit(bitArray, bit) == 0)
+		if(bitarray_test_bit(*bitArray, bit) == 0)
 		{
 			libres++;
 		}
@@ -400,13 +400,14 @@ bool hayXMarcosLibres(int cantidad)
 t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo, int paginasAReservar)
 {
 	t_segmento * segmento = malloc(sizeof(t_segmento));
-	int lineasLibresContiguas = 0, i = 0, base;
+	int lineasLibresContiguas = 0, i = 0, base =-1;
 	if (config->modoEjecucion == SEG){
 		while(i <= cantLineas)
 		{
 			if(bitarray_test_bit(estadoLineas,i) == 0)
 			{
-				base = i;
+				if(base<0)
+					base = i;
 				lineasLibresContiguas++;
 				if (lineasLibresContiguas == lineasEsperadas)
 				{
@@ -430,11 +431,9 @@ t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos
 	}
 	if (lineasLibresContiguas == lineasEsperadas)
 	{
-		segmento->base = base - lineasEsperadas;
-		segmento->limite = lineasEsperadas;
-		int nroSegmento = 0;
-		if (!dictionary_is_empty(tablaSegmentos))
-			nroSegmento = dictionary_size(tablaSegmentos);
+		segmento->base = base;
+		segmento->limite = lineasEsperadas-1;
+		int nroSegmento = tablaSegmentos->table_current_size;
 		segmento->nroSegmento = nroSegmento;
 		segmento->archivo = archivo;
 		return segmento;
@@ -443,10 +442,10 @@ t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos
 		return NULL;
 }
 
-void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarray * bitArray)
+void actualizarPosicionesLibres(int base, int lineasEsperadas, t_bitarray * bitArray)
 {
-	int posicionInicial = finalBitArray - lineasEsperadas;
-	while (posicionInicial <= finalBitArray)
+	int posicionInicial = base;
+	while (posicionInicial < lineasEsperadas)
 	{
 		bitarray_set_bit(bitArray, posicionInicial);
 		posicionInicial++;

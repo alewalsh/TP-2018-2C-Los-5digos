@@ -31,10 +31,10 @@ extern t_list * tablaPaginasInvertida;
 
 char * intToString(int numero);
 int direccion(int base, int desplazamiento);
-void inicializarBitmap(t_bitarray * bitArray);
+void inicializarBitmap(t_bitarray **bitArray);
 void liberarLineas(int base, int limite);
 int tengoMemoriaDisponible(int cantACargar);
-int posicionesLibres(t_bitarray * bitArray);
+int posicionesLibres(t_bitarray ** bitArray);
 void guardarLinea(int posicionMemoria, char * linea);
 bool filtrarPorPid(t_pagina * pagina);
 void realizarFlush(char * linea, int nroLinea, int transferSize, int socket);
