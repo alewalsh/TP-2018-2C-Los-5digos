@@ -167,7 +167,7 @@ void eleESE(char *rutaDirectorio){
 int lenUltimaCarpeta(char * direcotrioActual){
 
 	char *stringActual= string_from_format(direcotrioActual);
-	int longitudUltimaCareta;
+	int longitudUltimaCareta = 0;
 
 	const char s[2] = "/";
 	char *token;

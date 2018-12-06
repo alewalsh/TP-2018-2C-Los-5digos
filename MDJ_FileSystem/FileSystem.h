@@ -95,4 +95,6 @@ void consoleExit();
 int getExit();
 void setExit();
 
+void manejarDAM(t_package pkg);
+
 #endif /* FileSystem_H_ */

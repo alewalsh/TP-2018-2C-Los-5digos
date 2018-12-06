@@ -206,7 +206,7 @@ void esperarInstruccionDAM(){
 		else{
 			//TODO
 //			pthread_create(&threadDAM, &tattr, (void *) responderDAM, NULL); Si el DAM no es concurrente es al pedo.
-			responderDAM(paquete); //todo en thread distinto por cada recibir.
+			manejarDAM(paquete); //todo en thread distinto por cada recibir.
 		}
 	}
 }

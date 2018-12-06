@@ -4,14 +4,15 @@ void consoleExit() {
 	setExit();
 }
 
-void responderDAM(t_package pkg)
+void manejarDAM(t_package pkg)
 {
 	sleep(configuracion->retardo/1000);
 	int opcion = pkg.code;
 	switch (opcion)
 	{
-		case DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO: //validar archivo ++ [Path]
+		case DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO:
 			{
+				//validar archivo ++ [Path]
 				char *bufferValidar = pkg.data;
 				char * pathValidarSinPM = copyStringFromBuffer(&bufferValidar);
 
@@ -208,6 +209,211 @@ void responderDAM(t_package pkg)
 	}
 }
 
+//void responderDAM(t_package pkg)
+//{
+//	sleep(configuracion->retardo/1000);
+//	int opcion = pkg.code;
+//	switch (opcion)
+//	{
+//		case DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO:
+//			{
+//				//validar archivo ++ [Path]
+//				char *bufferValidar = pkg.data;
+//				char * pathValidarSinPM = copyStringFromBuffer(&bufferValidar);
+//
+//				char *pathValidar = string_new();
+//				char * pathArchivosVal = "Archivos";
+//				string_append(&pathValidar, configuracion->puntoMontaje);
+//				string_append(&pathValidar, pathArchivosVal);
+//				string_append(&pathValidar, pathValidarSinPM);
+//
+//				int statusValidar = validarArchivo(pathValidar);
+//				if (statusValidar) {
+//					log_info_mutex(loggerAtencionDAM, "Archivo: %s OK.", pathValidar);
+//					metadataArchivo * metadataArchivoValidar = leerMetadata(pathValidar);
+//					int tamanio = metadataArchivoValidar->tamanio;
+//					int sizeEnvioValidacion = sizeof(int);
+//					char* bufferEnvioValidacion = malloc(sizeEnvioValidacion);
+//					char * p = bufferEnvioValidacion;
+//					copyIntToBuffer(&p, tamanio);
+//					//envia OK y el tamanio del archivo a validar. No utilizo TS porque seguro entra (?
+//					if(enviar(socketDAM, DAM_MDJ_OK, bufferEnvioValidacion, sizeEnvioValidacion, loggerAtencionDAM->logger)){
+//						log_error_mutex(loggerAtencionDAM, "Error al enviar validacion de archivo al DAM.");
+//					}
+////					free(metadataArchivoValidar->bloques);
+////					free(metadataArchivoValidar);
+////					free(bufferEnvioValidacion);
+//				} else {
+//					//manda fail
+//					int size = sizeof(int);
+//					int respuesta = -1;
+//					char * buffer = malloc(size);
+//					char * p = buffer;
+//					copyIntToBuffer(&p, respuesta);
+//					if(enviar(socketDAM, DAM_MDJ_FAIL, buffer, size,loggerAtencionDAM->logger)){
+//						log_error_mutex(loggerAtencionDAM, "Error al enviar path inexistente al DAM.");
+//					}
+//					log_error_mutex(loggerAtencionDAM, "Error. Path: %s inexistente.", pathValidar);
+//				}
+//				free(pkg.data);
+//				free(pathValidar);
+//				break;
+//			}
+//		case DAM_MDJ_CREAR_ARCHIVO: //crear archivo ++ [Path, N Cantidad de /n's]
+//			{
+//
+//				char *bufferCrear = pkg.data;
+//				char * pathArchivoNuevoSinPM = copyStringFromBuffer(&bufferCrear);
+//				int cantidad_Ns = copyIntFromBuffer(&bufferCrear);
+//
+//				char *pathArchivoNuevo = string_new();
+//
+//				string_append(&pathArchivoNuevo, configuracion->puntoMontaje);
+//				char * pathArchivosCreo = "Archivos";
+//				string_append(&pathArchivoNuevo, pathArchivosCreo);
+//				string_append(&pathArchivoNuevo, pathArchivoNuevoSinPM);
+//
+//				crearPathArchivo(pathArchivoNuevo);
+//
+//				//creo String de /n's a ser escrito
+//				char *NcantidadDeNs = string_new();
+//				int i;
+//				i=0;
+//				while(i < cantidad_Ns){
+//					string_append(&NcantidadDeNs, "\n");
+//					i++;
+//				}
+//
+//				if(escribirStringEnArchivo(pathArchivoNuevo, NcantidadDeNs)){
+//					if(enviar(socketDAM, DAM_MDJ_OK, NULL,0, loggerAtencionDAM->logger)){
+//						log_error_mutex(loggerAtencionDAM, "Error al enviar OK de crear archivo al DAM.");
+//					}
+//				}else{
+//					if(enviar(socketDAM, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger)){
+//						log_error_mutex(loggerAtencionDAM, "Error al enviar FAIL por crear archivo al DAM.");
+//					}
+//				}
+//
+//				free(bufferCrear);
+//				free(pathArchivoNuevo);
+//
+//				break;
+//			}
+//		case DAM_MDJ_CARGAR_ESCRIPTORIO: //obtener datos ++ [Path, Offset, Size]
+//			{
+//				char *bufferObtenerDatos = pkg.data;
+//				char * pathArchivoALeerSinPM = copyStringFromBuffer(&bufferObtenerDatos);
+//				int offset = copyIntFromBuffer(&bufferObtenerDatos);
+//				int size = copyIntFromBuffer(&bufferObtenerDatos);
+//
+//				char *pathArchivoALeer = string_new();
+//				char * pathArchivosCarga = "Archivos";
+//				string_append(&pathArchivoALeer, configuracion->puntoMontaje);
+//				string_append(&pathArchivoALeer, pathArchivosCarga);
+//				string_append(&pathArchivoALeer, pathArchivoALeerSinPM);
+//
+//				int statusObtener;
+//				statusObtener = validarArchivo(pathArchivoALeer);
+//
+//				if (statusObtener) {
+//					//obtengo datos
+//					char *datosArchivo = obtenerDatos(pathArchivoALeer,offset,size);
+//					log_info_mutex(loggerAtencionDAM, "Datos obtenidos de: %s son: %s", pathArchivoALeer, datosArchivo);
+//
+//					//envio datosArchivos en paquetes de tamanio del transferSize.
+//					enviarStringDAMporTRansferSize(datosArchivo);
+//
+//					free(datosArchivo);
+//				} else {
+//					//manda fail
+//					log_error_mutex(loggerAtencionDAM, "Error no se pudo leer de: &s", pathArchivoALeer);
+//					enviar(socketDAM, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger);
+//				}
+//				free(pathArchivoALeer);
+//				break;
+//			}
+//		case DAM_MDJ_HACER_FLUSH: //guardar datos ++ [Path, Offset, Size, Buffer]
+//			{
+//
+//				char *bufferGuardarDatos = pkg.data;
+//				char * pathArchivoAModificarSinPM = copyStringFromBuffer(&bufferGuardarDatos);
+//				int offsetGuardar = copyIntFromBuffer(&bufferGuardarDatos);
+//				int sizeGuardar = copyIntFromBuffer(&bufferGuardarDatos);
+//
+//				//leo por TS cada paquete y lo concateno. sizeGuardar es el peso a recivir.
+//				char * bufferGuardar = rebirStringDAMporTRansferSize(sizeGuardar);
+//
+//				log_info_mutex(loggerAtencionDAM, "Datos recibidos a ser guardados son: %s", bufferGuardar);
+//
+//				char *pathArchivoAModificar = string_new();
+//				char * pathArchivosFlush = "Archivos";
+//				string_append(&pathArchivoAModificar, configuracion->puntoMontaje);
+//				string_append(&pathArchivoAModificar, pathArchivosFlush);
+//				string_append(&pathArchivoAModificar, pathArchivoAModificarSinPM);
+//
+//				int statusGuardar;
+//				statusGuardar = validarArchivo(pathArchivoAModificar);
+//				if (statusGuardar) {
+//					//obtengo datos
+//					char *datosArchivo = obtenerDatos(pathArchivoAModificar,offsetGuardar,sizeGuardar);
+//
+//					//moficio dichos datos
+//					char *principio = string_substring_until(datosArchivo, offsetGuardar);
+//					char *final = string_substring_from(datosArchivo, offsetGuardar);
+//
+//					char *stringModificado = string_new();
+//					string_append(&stringModificado, principio);
+//					string_append(&stringModificado, bufferGuardar);
+//					string_append(&stringModificado, final);
+//
+//					//borro archivo anterior.
+//					borrarArchivo(pathArchivoAModificar);
+//					//creo nuevo archivo
+//					escribirStringEnArchivo(pathArchivoAModificar, stringModificado);
+//
+//					log_info_mutex(loggerAtencionDAM, "Datos guardados de: %s\n Antiguos: %s\n Nuevos: %s\n", pathArchivoAModificar, datosArchivo, stringModificado);
+//
+//				} else {
+//					log_error_mutex(loggerAtencionDAM, "Error no se pudo leer de: %s", pathArchivoAModificar);
+//					enviar(socketDAM, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger);
+//				}
+//				free(pathArchivoAModificar);
+//				free(bufferGuardar);
+//				break;
+//			}
+//		case DAM_MDJ_BORRAR_ARCHIVO: //borrar archivo ++ [Path]
+//			{
+//
+//				char *bufferBorrar = pkg.data;
+//				char * pathArchivoAEliminarSinPM = copyStringFromBuffer(&bufferBorrar);
+//
+//				char *pathArchivoAEliminar = string_new();
+//				char * pathArchivosBorra = "Archivos";
+//				string_append(&pathArchivoAEliminar, configuracion->puntoMontaje);
+//				string_append(&pathArchivoAEliminar, pathArchivosBorra);
+//				string_append(&pathArchivoAEliminar, pathArchivoAEliminarSinPM);
+//
+//				borrarArchivo(pathArchivoAEliminar);
+//
+//				int statusEliminiar;
+//				statusEliminiar = validarArchivo(pathArchivoAEliminar);
+//				if (statusEliminiar) {
+//					log_error_mutex(loggerAtencionDAM, "Error no se pudo borrar: %s", pathArchivoAEliminar);
+//				}else{
+//					log_error_mutex(loggerAtencionDAM, "Archivo: %s Borrado\n", pathArchivoAEliminar);
+//				}
+//
+//				free(pathArchivoAEliminar);
+//			}
+//			break;
+//		case 6:
+//			break;
+//		default:
+//			log_warning_mutex(loggerAtencionDAM, "Ojo, estás recibiendo una operacion que no esperabas.");
+//			break;
+//	}
+//}
+
 int validarArchivo(char *path) {
 	struct stat buffer;
 	int status;
@@ -356,18 +562,21 @@ int escribirStringEnArchivo(char *pathArchivo, char *stringAEscribir) {
 	return 1;
 }
 
-metadataArchivo * leerMetadata(char *path) {
+metadataArchivo * leerMetadata(char *path)
+{
 	FILE *archivoNuevo = fopen(path, "rb");
-	if(archivoNuevo == NULL){
+	if(archivoNuevo == NULL)
+	{
 		log_error_mutex(loggerAtencionDAM, "Error al arbir el archivo: %s para leer su metadata.", path);
 	}
-
 	metadataArchivo * metadata = malloc(sizeof(metadataArchivo));
 	char stringMetadata [200];
 
-	fread(stringMetadata, 200, 1, archivoNuevo);
+	//TODO: Ojo, te agrego el int tamanioLeido para evitar warnings, verificar si sigue funcionando como lo esperabas. - Ale
+	int tamanioLeido = fread(stringMetadata, 200, 1, archivoNuevo);
 	fclose(archivoNuevo);
-
+	if (tamanioLeido < 0)
+		return NULL;
 	char *token;
 
 	token = strtok(stringMetadata, "=]");
@@ -422,8 +631,10 @@ char* obtenerDatos(char*pathArhivo,int offset,int size){
 		char* contenidoBloque = malloc(tamanioReal+1);
 
 		fseek(archivoBloqueI, 0, SEEK_SET);
-		fread(contenidoBloque, 1, tamanioReal, archivoBloqueI);
-
+		//TODO: Ojo, te agrego el int tamanioLeido para evitar warnings, verificar si sigue funcionando como lo esperabas. - Ale
+		int tamanioLeido = fread(contenidoBloque, 1, tamanioReal, archivoBloqueI);
+		if (tamanioLeido < 0)
+				return NULL;
 		contenidoBloque[tamanioReal] = '\0';
 
 		string_append(&contenido,contenidoBloque);
