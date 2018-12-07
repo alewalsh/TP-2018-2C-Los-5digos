@@ -72,7 +72,8 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 	char * bufferGuardado = malloc(config->tamMaxLinea);
 	int i = 0, offset = 0;
 	int lineaLeida = 1;
-	while(i < segmento->limite)
+	int limite = segmento->limite;
+	while(i < limite)
 	{
 		t_package paquete;
 		if(recibir(socketSolicitud,&paquete,logger->logger))
@@ -92,10 +93,10 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 		{
 			int tamanioBuffer = strlen(bufferGuardado);
 			bufferGuardado[tamanioBuffer] = '\n';
-			guardarLinea(direccion(segmento->base,i), bufferGuardado);
+			log_trace_mutex(logger, "Se guardó la linea '%s' en la posicion de memoria: %d°",bufferGuardado, direccion(segmento->base,(i-1)));
+			guardarLinea(direccion(segmento->base,(i-1)), bufferGuardado);
 			i++;
-			free(bufferGuardado);
-			bufferGuardado = malloc(config->tamMaxLinea);
+			offset = 0;
 			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquete - 2*sizeof(int));
 			offset += tamanioPaquete - 2*sizeof(int);
 		}

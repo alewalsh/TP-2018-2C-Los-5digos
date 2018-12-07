@@ -111,17 +111,32 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 			log_error_mutex(logger, "Error al recibir el paquete %d", i);
 		} else {
 			//Concatenar buffer
-			copyStringToBuffer(&ptr, pkgTransferSize.data);
+			char * buffer = pkgTransferSize.data;
+			char * stringRecibido = copyStringFromBuffer(&buffer);
+			copyStringToBuffer(&ptr, stringRecibido);
 		}
 	}
+	// ESTO DEBE HACERSE PORQUE EL STRING MANDA PRIMERO EL TAMAÑO, Y AL SUCEDER ESO, ROMPE EL STRING_SPLIT PORQUE NO ESPERA UN INT AL PRINCIPIO
+	bufferConcatenado += sizeof(int);
 
 	//una vez recibido tudo el archivo y de haberlo concatenado en un char *
 	//realizo un split con cada /n y cuento la cantidad de lineas que contiene el mensaje
 	int cantLineas = 0;
 
-	char** arrayLineas = str_split(bufferConcatenado, '\n', &cantLineas);
+	//char** arrayLineas = str_split(bufferConcatenado, '\n', &cantLineas);
+	char ** arrayLineas = string_split(bufferConcatenado,"\n");
+	int j = 0;
+	while(arrayLineas[j])
+	{
+		cantLineas++;
+		j++;
+	}
+	// SE LE RESTA UNO DE MANERA FORZADA PORQUE, SI NO, CUENTA LA LINEA VACIA DEL FINAL Y OCUPARIA MEMORIA DE MANERA INCORRECTA
+	cantLineas -= 1;
 
 	cantidadLineasScriptorio = cantLineas;
+	// LO VUELVO A LA POSICION NORMAL PARA QUE REALICE EL FREE CORRECTAMENTE
+	bufferConcatenado -= sizeof(int);
 	free(bufferConcatenado);
 
 	//Se envia un msj al fm9 con los siguientes parametros
@@ -132,21 +147,20 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 	copyStringToBuffer(&ptr2, path); //Path del archivo
 	copyIntToBuffer(&ptr2, cantLineas); //Cantidad De lineas
 
-	if (enviar(t_socketFm9->socket, DAM_FM9_CARGAR_ESCRIPTORIO, buffer,
-			sizeOfBuffer, logger->logger)) {
-		log_error_mutex(logger,
-				"Error al enviar info del escriptorio a FM9");
+	if (enviar(t_socketFm9->socket, DAM_FM9_CARGAR_ESCRIPTORIO, buffer, sizeOfBuffer, logger->logger)) {
+		log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
 		free(buffer);
 		return EXIT_FAILURE;
 	}
 	free(buffer);
 
 	//SE ENVIA LINEA POR LINEA AL FM9
-	for (int i = 0; *(arrayLineas + i); i++) {
+	// Agrego el i < cantLineas en vez de arrayLineas[i] porque de esta manera, evito enviar la linea vacia del final.
+	for (int i = 0; i < cantLineas; i++) {
 		//Linea -> buffer
-		char * buffer = *(arrayLineas + i);
+		char * buffer = arrayLineas[i];
 		//Tomo el tamaño total de la linea
-		int tamanioLinea = strlen(buffer);
+		int tamanioLinea = string_length(buffer);
 
 		//Si la linea es mayor a mi transfer size debo enviarlo en varios paquetes
 		if (tamanioLinea > configDMA->transferSize) {
@@ -202,7 +216,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 				return EXIT_FAILURE;
 			}
 		}
-		free(*(arrayLineas + i));
+		free(arrayLineas[i]);
 		i++;
 	}
 	free(arrayLineas);

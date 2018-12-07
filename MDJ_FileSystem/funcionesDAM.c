@@ -509,8 +509,16 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 	}
 
 	// TODO: Lo cambie porque aca tiene que iniciar con el transfer size, si no, el primer paquete va vacío - Ale 5/12/2018 - 23:11
-	int offset = trasnfer_size;
-	char * bufferEnvio = malloc(trasnfer_size);
+	int offset = 0;
+	if (cuantosPaquetes == 1)
+	{
+		offset = string_length(datosEnvio) + 1;
+	}
+	else
+	{
+		offset = trasnfer_size;
+	}
+	char * bufferEnvio = malloc(offset);
 	char * p = bufferEnvio;
 
 	while(cuantosPaquetes > 0){
