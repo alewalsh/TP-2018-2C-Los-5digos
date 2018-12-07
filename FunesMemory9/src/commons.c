@@ -241,7 +241,6 @@ void crearProceso(int pid)
 	char * pidString = intToString(pid);
 	dictionary_put(tablaProcesos,pidString,gdt);
 	free(pidString);
-	free(gdt);
 }
 
 int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar, int nroSegmento)
