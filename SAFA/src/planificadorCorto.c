@@ -135,17 +135,16 @@ void ejecutarVRR(int socketCPU){
 
 void ejecutarIOBF(int socketCPU){
 
-	t_dtb * dtb;
-
 	if(list_size(colaReady) > 0){
 		list_sort(colaReady,(void *) procesoConMayorCantIO);
 	}
 
-	for(int i=0; i < list_size(colaReady);i++){
-		dtb = list_get(colaReady,i);
-		log_info_mutex(logger,"El proceso %d tiene %d operaciones de I/O \n",dtb->idGDT, dtb->cantIO);
-	}
+//	for(int i=0; i < list_size(colaReady);i++){
+//		dtb = list_get(colaReady,i);
+//		log_info_mutex(logger,"El proceso %d tiene %d operaciones de I/O \n",dtb->idGDT, dtb->cantIO);
+//	}
 
+	t_dtb * dtb = list_get(colaReady,0);
 	pasarDTBdeREADYaEXEC(dtb);
 	log_info_mutex(logger,"Se va a enviar el proceso %d al CPU",dtb->idGDT);
 	enviarDTBaCPU(dtb,socketCPU);

@@ -200,6 +200,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 
 			t_dtb * dtb = buscarDTBPorPIDenCola(colaNew, pid);
 			if(result == EXIT_SUCCESS){
+				actualizarIODtb(dtb, cantIOProcess);
 				pasarDTBdeNEWaREADY(dtb); //Se cargó en memoria correctamente
 				log_info_mutex(logger, "Se cargó correctamente en memoria el proceso: %d", pid);
 			}else{

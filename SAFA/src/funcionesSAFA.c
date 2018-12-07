@@ -283,6 +283,15 @@ int desbloquearDTBsegunAlgoritmo(int pid){
 
 	return EXIT_SUCCESS;
 }
+
+void actualizarIODtb(t_dtb * dtb, int cantIo){
+
+	int index = buscarDTBEnCola(colaNew,dtb);
+	t_dtb * dtbAModificar = list_get(colaNew,index);
+	dtbAModificar->cantIO = cantIo;
+	list_add_in_index(colaNew,index,dtbAModificar);
+
+}
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA MANEJO DEL DUMMY
 //------------------------------------------------------------------------------------------------------------------
