@@ -156,9 +156,9 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 
 	//SE ENVIA LINEA POR LINEA AL FM9
 	// Agrego el i < cantLineas en vez de arrayLineas[i] porque de esta manera, evito enviar la linea vacia del final.
-	for (int i = 0; i < cantLineas; i++) {
+	for (int k = 0; k < cantLineas; k++) {
 		//Linea -> buffer
-		char * buffer = arrayLineas[i];
+		char * buffer = arrayLineas[k];
 		//Tomo el tamaño total de la linea
 		int tamanioLinea = string_length(buffer);
 
@@ -168,13 +168,13 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 			int cantPaquetes = calcularCantidadPaquetes(tamanioLinea);
 
 			//por cada paquete...
-			for (i = 0; i < cantPaquetes; i++) {
+			for (int l = 0; j < cantPaquetes; l++) {
 				char * sub; //substring a enviar
-				int inicio = configDMA->transferSize * i, //posicion inicial del substring
-				fin = (configDMA->transferSize * (i + 1))-1; //posicion final del substring
+				int inicio = configDMA->transferSize * k, //posicion inicial del substring
+				fin = (configDMA->transferSize * (k + 1))-1; //posicion final del substring
 
 				//Si es el ultimo paquete a enviar el fin es el tamanio de linea
-				if (i + 1 == cantPaquetes) {
+				if (k + 1 == cantPaquetes) {
 					fin = tamanioLinea;
 				}
 
@@ -183,7 +183,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 				int size = sizeof(int) * 3 + (strlen(sub)+1) * sizeof(char);
 				char * bufferAEnviar = (char *) malloc(size);
 				char * p = bufferAEnviar;
-				copyIntToBuffer(&p, i + 1); //NRO LINEA
+				copyIntToBuffer(&p, k + 1); //NRO LINEA
 				copyIntToBuffer(&p, strlen(sub) * sizeof(char)); //SIZE
 				copyStringToBuffer(&p, sub); //BUFFER
 
@@ -204,7 +204,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 			int size = (sizeof(int) * 3) + (tamanioLinea+1) * sizeof(char);
 			char * bufferAEnviar = (char *) malloc(size);
 			char * p = bufferAEnviar;
-			copyIntToBuffer(&p, (i + 1));
+			copyIntToBuffer(&p, (k + 1));
 			copyIntToBuffer(&p, tamanioLinea * sizeof(char));
 			copyStringToBuffer(&p, buffer);
 
@@ -215,9 +215,10 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 				free(buffer);
 				return EXIT_FAILURE;
 			}
+			free(bufferAEnviar);
+			free(buffer);
 		}
-		free(arrayLineas[i]);
-		i++;
+		//free(arrayLineas[k]);
 	}
 	free(arrayLineas);
 	log_info_mutex(logger, "Se enviaron todos los datos a memoria del proceso: %d", pid);
