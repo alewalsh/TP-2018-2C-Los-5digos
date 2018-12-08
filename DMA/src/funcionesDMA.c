@@ -46,27 +46,27 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 	int result;
 
 	//Declaro aca el cantIO pq si no, no funciona el enviar
-	int cantIO = 0;
+	cantIODelProceso = 0;
 
-	if(sizeOfFile >=0){
-		cantidadLineasScriptorio = 0;
+	if(sizeOfFile >0){
 		//Se reciben los paquetes del mdj y se envian al fm9
 		result = enviarPkgDeMdjAFm9(pid, path, sizeOfFile );
 
-		//ALGORITMO PROPIO
-		t_list * listaInstrucciones = parseoInstrucciones(path, cantidadLineasScriptorio, logger);
-		cantIO = contarCantidadIODelArchivo(listaInstrucciones);
-
+	}else if(sizeOfFile == 0){
+		//El archivo existe pero no tiene nada -> Se envia error al safa
+		result = EXIT_FAILURE;
+		enviarConfirmacionSafa(pid, result, 0, ARCHIVO_INICIALIZADO);
+		free(bufferEnvio);
+		return false;
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
-		// TODO: Agregue el 0 como cantIO para que compile
 		enviarConfirmacionSafa(pid, result, 0, ARCHIVO_INICIALIZADO);
 		free(bufferEnvio);
 		return false;
 	}
 
-	enviarConfirmacionSafa(pid, result, cantIO,ARCHIVO_INICIALIZADO);
+	enviarConfirmacionSafa(pid, result, cantIODelProceso,ARCHIVO_INICIALIZADO);
 
 	free(bufferEnvio);
 	free(path);
@@ -128,13 +128,20 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 	int j = 0;
 	while(arrayLineas[j])
 	{
+		//ALGORITMO PROPIO
+		char * line = arrayLineas[j];
+		t_cpu_operacion operacionDeLaLinea = parse(line, false);
+		bool flag = esOperacionDeIO(operacionDeLaLinea);
+		if(flag){
+			cantIODelProceso ++;
+		}
+
 		cantLineas++;
 		j++;
 	}
 	// SE LE RESTA UNO DE MANERA FORZADA PORQUE, SI NO, CUENTA LA LINEA VACIA DEL FINAL Y OCUPARIA MEMORIA DE MANERA INCORRECTA
 	cantLineas -= 1;
 
-	cantidadLineasScriptorio = cantLineas;
 	// LO VUELVO A LA POSICION NORMAL PARA QUE REALICE EL FREE CORRECTAMENTE
 	bufferConcatenado -= sizeof(int);
 	free(bufferConcatenado);
@@ -265,13 +272,11 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
-		// TODO: Agregue el 0 como cantIO para que compile
 		enviarConfirmacionSafa(pid, result, 0,ARCHIVO_CARGADO);
 		free(keyCompress);
 		return false;
 	}
 
-	// TODO: Agregue el 0 como cantIO para que compile
 	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_CARGADO);
 	free(keyCompress);
 
@@ -307,7 +312,6 @@ bool hacerFlush(t_package paquete, int socketEnUso) {
 
 	//Se reciben los paquetes del mdj y se envian al fm9
 	int result = enviarPkgDeFm9AMdj(path);
-	// TODO: Agregue el 0 como cantIO para que compile
 	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_GUARDADO);
 	return true;
 }
@@ -454,7 +458,6 @@ int enviarPkgDeFm9AMdj(char * path) {
 	if (enviar(t_socketMdj->socket, DAM_MDJ_CREAR_ARCHIVO, bufferEnvio, size, logger->logger)) {
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
 		free(bufferEnvio);
-		// TODO: Agregue el 0 como cantIO para que compile
 		enviarConfirmacionSafa(pid, EXIT_FAILURE, 0, ARCHIVO_CREADO);
 		return false;
 	}
@@ -462,7 +465,6 @@ int enviarPkgDeFm9AMdj(char * path) {
 	t_package response;
 	if(recibir(t_socketMdj->socket, &response, logger->logger)){
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
-		// TODO: Agregue el 0 como cantIO para que compile
 		enviarConfirmacionSafa(pid,EXIT_FAILURE,0,ARCHIVO_CREADO);
 		return false;
 	}
@@ -475,7 +477,6 @@ int enviarPkgDeFm9AMdj(char * path) {
 	}
 
 	//SE ENVIA CONFIRMACION A SAFA
-	// TODO: Agregue el 0 como cantIO para que compile
 	enviarConfirmacionSafa(pid, result,0, ARCHIVO_CREADO);
 	free(bufferEnvio);
 	return true;
@@ -502,7 +503,6 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 		log_error_mutex(logger,
 				"Error al enviar el path al MDJ del archivo a borrar");
 		free(buffer);
-		// TODO: Agregue el 0 como cantIO para que compile
 		enviarConfirmacionSafa(pid, EXIT_FAILURE, 0, ARCHIVO_BORRADO);
 		return false;
 	}
@@ -511,7 +511,6 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 	t_package response;
 	if(recibir(t_socketMdj->socket, &response, logger->logger)){
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
-		// TODO: Agregue el 0 como cantIO para que compile
 		enviarConfirmacionSafa(pid,EXIT_FAILURE, 0, ARCHIVO_CREADO);
 		return false;
 	}
@@ -524,7 +523,6 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 	}
 
 	//SE ENVIA LA CONFIRMACION A SAFA
-	// TODO: Agregue el 0 como cantIO para que compile
 	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_BORRADO);
 	return true;
 }
@@ -728,19 +726,6 @@ int calcularCantidadPaquetes(int sizeOfFile) {
 	if(sizeOfFile % configDMA->transferSize != 0){
 		cantPart++;
 	}
-//	double num = sizeOfFile / configDMA->transferSize;
-//
-//	double p_entera;
-//	double p_decimal;
-//	//Separo la parte entera
-//	p_decimal = modf(num, &p_entera);
-//	//Calculo la cantidad de paquetes
-//	int cantPart;
-//	if (p_decimal != 0) {
-//		cantPart = p_entera + 1;
-//	} else {
-//		cantPart = p_entera;
-//	}
 //	log_info_mutex(logger, "Se recibiran %d paquetes", cantPart);
 
 	return cantPart;
@@ -795,21 +780,15 @@ int recibirConfirmacionMemoria() {
 	}
 }
 
-int contarCantidadIODelArchivo(t_list * listaInstrucciones){
-	int cantidadEntradasSalidas = 0;
-	for(int i= 0; i < list_size(listaInstrucciones); i++){
-		t_cpu_operacion * operacion = list_get(listaInstrucciones, i);
-
-		switch(operacion->keyword){
-			case ABRIR: case FLUSH: case CREAR: case BORRAR:
-				cantidadEntradasSalidas ++;
-				break;
-			default:
-				break;
-		}
+int esOperacionDeIO(t_cpu_operacion operacion){
+	switch(operacion.keyword){
+		case ABRIR: case FLUSH: case CREAR: case BORRAR:
+			return true;
+		default:
+			return false;
 	}
-	return cantidadEntradasSalidas;
 }
+
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA EL MANEJO DEL SELECT
 //------------------------------------------------------------------------------------------------------------------
