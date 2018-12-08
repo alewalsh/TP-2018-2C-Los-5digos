@@ -253,7 +253,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 
     }
 
-    free(pkg.data);
+//    free(pkg.data);
 
 }
 

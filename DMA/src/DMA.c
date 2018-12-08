@@ -93,7 +93,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 		 */
 
         case CPU_DAM_BUSQUEDA_ESCRIPTORIO:
-        	if(leerEscriptorio(pkg,socketFD)){
+        	if(!(leerEscriptorio(pkg,socketFD))){
 				log_error_mutex(logger, "Hubo un error en la inicializacion del escriptorio");
 				break;
 			}
