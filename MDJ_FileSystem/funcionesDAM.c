@@ -35,9 +35,9 @@ void manejarDAM(t_package pkg)
 					if(enviar(socketDAM, DAM_MDJ_OK, bufferEnvioValidacion, sizeEnvioValidacion, loggerAtencionDAM->logger)){
 						log_error_mutex(loggerAtencionDAM, "Error al enviar validacion de archivo al DAM.");
 					}
-//					free(metadataArchivoValidar->bloques);
-//					free(metadataArchivoValidar);
-//					free(bufferEnvioValidacion);
+					free(metadataArchivoValidar->bloques);
+					free(metadataArchivoValidar);
+					free(bufferEnvioValidacion);
 				} else {
 					//manda fail
 					int size = sizeof(int);
@@ -502,13 +502,13 @@ void borrarArchivo(char *path){
 }
 
 void enviarStringDAMporTRansferSize(char *datosEnvio){
-	//calculo cantidad de paquetes.
+	// Calculo cantidad de paquetes.
 	int cuantosPaquetes = strlen(datosEnvio)/trasnfer_size;
 	if(strlen(datosEnvio) % trasnfer_size != 0){
 		cuantosPaquetes ++;
 	}
 
-	// TODO: Lo cambie porque aca tiene que iniciar con el transfer size, si no, el primer paquete va vacío - Ale 5/12/2018 - 23:11
+	// Lo cambie porque aca tiene que iniciar con el transfer size, si no, el primer paquete va vacío - Ale 5/12/2018 - 23:11
 	int offset = 0;
 	if (cuantosPaquetes == 1)
 	{
@@ -518,11 +518,16 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 	{
 		offset = trasnfer_size;
 	}
-	char * bufferEnvio = malloc(offset);
-	char * p = bufferEnvio;
+
+	char * bufferEnvio;
+	char * p;
 
 	while(cuantosPaquetes > 0){
 		char*retornoOffset = string_substring_until(datosEnvio, offset);
+
+		bufferEnvio = malloc(strlen(retornoOffset));
+		p = bufferEnvio;
+
 		offset = offset + trasnfer_size;
 
 		copyStringToBuffer(&p,retornoOffset);
@@ -532,8 +537,8 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 			free(bufferEnvio);
 		}
 
-		p = bufferEnvio;
 		cuantosPaquetes--;
+		free(bufferEnvio);
 	}
 }
 
