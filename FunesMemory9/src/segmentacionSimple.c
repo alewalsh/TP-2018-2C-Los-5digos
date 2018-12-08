@@ -65,6 +65,44 @@ int cerrarArchivoSegmentacion(t_package pkg, t_infoCerrarArchivo* datosPaquete, 
 	return EXIT_SUCCESS;
 }
 
+int devolverInstruccionSegmentacion(t_package pkg, t_infoDevolverInstruccion* datosPaquete, int socketSolicitud)
+{
+	t_gdt * gdt = dictionary_get(tablaProcesos,intToString(datosPaquete->pid));
+	if (gdt == NULL)
+	{
+		return FM9_CPU_PROCESO_INEXISTENTE;
+	}
+	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
+	bool pudeObtener = false;
+	char * linea;
+	if(cantidadSegmentos > 0)
+	{
+		for(int i = 0; i < cantidadSegmentos; i++)
+		{
+			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
+			if (strcmp(segmento->archivo,datosPaquete->path) == 0 && segmento->limite >= datosPaquete->posicion)
+			{
+				linea = obtenerLinea(direccion(segmento->base,datosPaquete->posicion));
+				pudeObtener = true;
+				break;
+			}
+		}
+		if (pudeObtener)
+		{
+			enviarInstruccion(linea, socketSolicitud);
+		}
+		else
+		{
+			return FM9_CPU_ACCESO_INVALIDO;
+		}
+	}
+	else
+	{
+		return FM9_CPU_FALLO_SEGMENTO_MEMORIA;
+	}
+	return EXIT_SUCCESS;
+}
+
 // Lógica de segmentacion pura
 int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud)
 {
@@ -139,16 +177,6 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 		lineaLeida = nroLinea;
 	}
 	free(bufferGuardado);
-	//TODO: Esto queda para revisar, sin embargo, ya estuve viendo que funciona bien. Habria que verificar los free de memoria.
-//	for (int j = 0; j < limite; j++)
-//	{
-//		int dir = direccion(segmento->base, j);
-//		char * linea = obtenerLinea(dir);
-//		char * logeo = string_from_format("Posicion %d: Linea %s ", dir, linea);
-//		printf("%s", logeo);
-//		free(linea);
-//		free(logeo);
-//	}
 	//ENVIAR MSJ DE EXITO A DAM
 	if (enviar(socketSolicitud,FM9_DAM_ESCRIPTORIO_CARGADO,pkg.data,pkg.size,logger->logger))
 	{

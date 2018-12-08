@@ -140,6 +140,12 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 				log_error_mutex(logger,"Error al finalizar el GDT en memoria");
 			}
 			break;
+        case CPU_FM9_DAME_INSTRUCCION:
+			if(devolverInstruccionSegunEsquemaMemoria(pkg,socketFD)){
+				log_error_mutex(logger,"Error al finalizar el GDT en memoria");
+			}
+			break;
+
         case SOCKET_DISCONECT:
             close(socketFD);
             deleteSocketFromMaster(socketFD);
@@ -153,6 +159,61 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 
     free(pkg.data);
 
+}
+
+//--------------------------------------FINALIZAR GDT SEGUN ESQUEMA ELEGIDO
+
+int devolverInstruccionSegunEsquemaMemoria(t_package pkg, int socketSolicitud)
+{
+	switch(config->modoEjecucion)
+	{
+		case SEG:
+			logicaDevolverInstruccion(pkg, socketSolicitud, SEG);
+			break;
+		case TPI:
+			logicaDevolverInstruccion(pkg, socketSolicitud, TPI);
+			break;
+		case SPA:
+			logicaDevolverInstruccion(pkg, socketSolicitud, SPA);
+			break;
+		default:
+			return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+void logicaDevolverInstruccion(t_package pkg, int socketSolicitud, int code)
+{
+	t_infoDevolverInstruccion * datosPaquete = guardarDatosPaqueteInstruccion(pkg);
+	int resultado = 0;
+	switch(code)
+	{
+		case SEG:
+			resultado = devolverInstruccionSegmentacion(pkg, datosPaquete, socketSolicitud);
+			break;
+		case TPI:
+			resultado = devolverInstruccionTPI(pkg, datosPaquete, socketSolicitud);
+			break;
+		case SPA:
+			resultado = devolverInstruccionSegPag(pkg, datosPaquete, socketSolicitud);
+			break;
+		default:
+			log_warning_mutex(logger, "No se especifico el esquema para cerrar un archivo.");
+	}
+	if (resultado != 0)
+	{
+		int errorCode = FM9_CPU_ERROR;
+		log_error_mutex(logger,"Error al cerrar el archivo indicado.");
+		if (enviar(socketSolicitud,errorCode,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU del error al cerrar un archivo.");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "Se cerró correctamente el archivo indicado.");
+	}
 }
 
 //--------------------------------------FINALIZAR GDT SEGUN ESQUEMA ELEGIDO

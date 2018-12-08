@@ -37,6 +37,7 @@ t_list * parseoInstrucciones(char * path, int cantidadLineas, t_log_mutex * logg
 	}
 	t_list * listaInstrucciones = list_create();
 	int i = 1;
+	//TODO: no hay ningun archivo que explicitamente contenga todas las instrucciones, podria ser un char ** e ir utilizando las posiciones. Esto esta bien?
 	while ((read = getline(&line, &len, fp)) != -1)
 	{
 		bool ultimaLinea = (i == cantidadLineas);

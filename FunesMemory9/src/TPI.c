@@ -7,6 +7,56 @@
 
 #include "TPI.h"
 
+int devolverInstruccionTPI(t_package pkg, t_infoDevolverInstruccion* datosPaquete, int socketSolicitud)
+{
+	bool pudeObtener = false;
+	char * linea;
+	pthread_mutex_lock(&mutexPIDBuscado);
+	pidBuscado = datosPaquete->pid;
+	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+	pthread_mutex_unlock(&mutexPIDBuscado);
+	int cantidadPaginas = list_size(paginasProceso);
+	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid);
+	if (cantidadPaginas <= 0)
+	{
+		return FM9_CPU_PROCESO_INEXISTENTE;
+	}
+	else if (cantidadPaginas > 0)
+	{
+		if (cantidadLineas >= datosPaquete->posicion)
+		{
+			int nroPaginaCorrespondiente = datosPaquete->posicion / lineasXPagina;
+			t_pagina * paginaCorrespondiente = list_get(paginasProceso, nroPaginaCorrespondiente);
+			if (strcmp(paginaCorrespondiente->path,datosPaquete->path) == 0)
+			{
+				while (datosPaquete->posicion >= lineasXPagina)
+				{
+					datosPaquete->posicion -= lineasXPagina;
+				}
+				linea = obtenerLinea(direccion(paginaCorrespondiente->nroMarco,datosPaquete->posicion));
+				pudeObtener = true;
+			}
+		}
+		else
+		{
+			return FM9_CPU_ACCESO_INVALIDO;
+		}
+		if (pudeObtener)
+		{
+			enviarInstruccion(linea, socketSolicitud);
+		}
+		else
+		{
+			return FM9_CPU_ACCESO_INVALIDO;
+		}
+	}
+	else
+	{
+		return FM9_CPU_FALLO_SEGMENTO_MEMORIA;
+	}
+	return EXIT_SUCCESS;
+}
+
 int finGDTTPI(t_package pkg, int idGDT, int socketSolicitud)
 {
 	pthread_mutex_lock(&mutexPIDBuscado);
@@ -225,7 +275,8 @@ int ejecutarGuardarEsquemaTPI(t_package pkg, t_infoGuardadoLinea* datosPaquete, 
 			t_pagina * paginaCorrespondiente = list_get(paginasProceso, nroPaginaCorrespondiente);
 			if (strcmp(paginaCorrespondiente->path,datosPaquete->path) == 0)
 			{
-				while (datosPaquete->linea >= lineasXPagina){
+				while (datosPaquete->linea >= lineasXPagina)
+				{
 					datosPaquete->linea -= lineasXPagina;
 				}
 				guardarLinea(direccion(paginaCorrespondiente->nroMarco,datosPaquete->linea), datosPaquete->datos);

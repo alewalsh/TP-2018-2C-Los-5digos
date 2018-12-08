@@ -70,4 +70,6 @@ void logicaFlush(t_package pkg, int socketSolicitud, int code);
 int finGDTSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 void logicaFinGDT(t_package pkg, int socketSolicitud, int code);
 
+int devolverInstruccionSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
+void logicaDevolverInstruccion(t_package pkg, int socketSolicitud, int code);
 #endif /* FUNESMEMORY9_H_ */

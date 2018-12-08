@@ -7,6 +7,65 @@
 
 #include "segPaginada.h"
 
+int devolverInstruccionSegPag(t_package pkg, t_infoDevolverInstruccion* datosPaquete, int socketSolicitud)
+{
+	t_gdt * gdt = dictionary_get(tablaProcesos,intToString(datosPaquete->pid));
+	if (gdt == NULL)
+	{
+		return FM9_CPU_PROCESO_INEXISTENTE;
+	}
+	char * linea;
+	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
+	bool pudeGuardar = false;
+	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid);
+	int lineaBuscada = datosPaquete->posicion;
+	// PRIMERO VERIFICO SI TENGO LA CANTIDAD DE LINEAS DISPONIBLES PARA REALIZAR EL GUARDADO
+	if (cantidadLineas < datosPaquete->posicion)
+	{
+		return FM9_CPU_ACCESO_INVALIDO;
+	}
+	if(cantidadSegmentos > 0)
+	{
+		for(int i = 0; i < cantidadSegmentos; i++)
+		{
+			// LUEGO RECORRO DE A SEGMENTOS Y DE A PAGINAS PARA LOCALIZAR DONDE IRÍA EL DATO
+			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
+			if (strcmp(segmento->archivo,datosPaquete->path) == 0)
+			{
+					int posicionPagina = lineaBuscada / lineasXPagina;
+					t_pagina * pagina = list_get(gdt->tablaPaginas,posicionPagina);
+					while(lineaBuscada > lineasXPagina)
+					{
+						lineaBuscada -= lineasXPagina;
+					}
+					if (strcmp(pagina->path,datosPaquete->path) == 0)
+					{
+						linea = obtenerLinea(direccion(pagina->nroMarco, lineaBuscada));
+						pudeGuardar = true;
+						break;
+					}
+			}
+			if (pudeGuardar)
+			{
+				break;
+			}
+		}
+		if (pudeGuardar)
+		{
+			enviarInstruccion(linea, socketSolicitud);
+		}
+		else
+		{
+			return FM9_CPU_ACCESO_INVALIDO;
+		}
+	}
+	else
+	{
+		return FM9_CPU_FALLO_SEGMENTO_MEMORIA;
+	}
+	return EXIT_SUCCESS;
+}
+
 int finGDTSegPag(t_package pkg, int idGDT, int socketSolicitud)
 {
 	char * pidString = intToString(idGDT);

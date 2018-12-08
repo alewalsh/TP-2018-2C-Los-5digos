@@ -14,6 +14,24 @@ char * intToString(int numero)
 	return string;
 }
 
+void enviarInstruccion(char * linea, int socketSolicitud)
+{
+	char ** split = string_split(linea,"\n");
+	//ENVIAR MSJ DE EXITO A CPU
+	int size = strlen(split[0]) + 1;
+	char * buffer = malloc(size);
+	char * p = buffer;
+	copyStringToBuffer(&p, split[0]);
+	if (enviar(socketSolicitud,FM9_CPU_DEVUELVO_LINEA,buffer,size,logger->logger))
+	{
+		log_error_mutex(logger, "Error al avisar al CPU que se ha devuelto correctamente la línea.");
+		exit_gracefully(-1);
+	}
+	free(split);
+	free(buffer);
+	free(linea);
+}
+
 int direccion(int base, int desplazamiento)
 {
 	// Usar la la base que llega como parametro, sumar el desplazamiento.
@@ -107,7 +125,7 @@ void realizarFlush(char * linea, int nroLinea, int transferSize, int socket)
 {
 	char** arrayLineas = string_split(linea,"\n");
 	char * lineaAEnviar = arrayLineas[0];
-	int tamanioLinea = string_length(lineaAEnviar);
+	int tamanioLinea = string_length(lineaAEnviar) + 1;
 	int cantidadPaquetes = tamanioLinea / transferSize;
 	if(tamanioLinea % transferSize != 0){
 		cantidadPaquetes++;

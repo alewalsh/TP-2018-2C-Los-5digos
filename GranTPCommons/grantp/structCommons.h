@@ -91,6 +91,12 @@ typedef struct{
 	char * path;
 } t_infoCerrarArchivo;
 
+typedef struct{
+	int pid;
+	int posicion;
+	char * path;
+} t_infoDevolverInstruccion;
+
 typedef enum
 {
 	AccionDUMP = 1,
@@ -177,5 +183,7 @@ t_infoCargaEscriptorio * guardarDatosPaqueteCargaEscriptorio(t_package pkg);
 t_infoCerrarArchivo * guardarDatosPaqueteCierreArchivo(t_package pkg);
 
 t_datosFlush * guardarDatosPaqueteFlush(t_package pkg);
+
+t_infoDevolverInstruccion * guardarDatosPaqueteInstruccion(t_package pkg);
 
 #endif /* COMANDOS_H_ */

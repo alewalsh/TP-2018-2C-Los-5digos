@@ -59,4 +59,5 @@ bool hayXMarcosLibres(int cantidad);
 t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo, int paginasAReservar);
 void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarray * bitArray);
 
+void enviarInstruccion(char * linea, int socketSolicitud);
 #endif /* SRC_COMMONS_H_ */

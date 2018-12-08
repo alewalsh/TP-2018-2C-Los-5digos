@@ -19,6 +19,7 @@ extern t_dictionary * tablaProcesos;
 extern t_log_mutex * logger;
 extern configFM9 * config;
 
+int devolverInstruccionSegmentacion(t_package pkg, t_infoDevolverInstruccion* datosPaquete, int socketSolicitud);
 int finGDTSegmentacion(t_package pkg, int idGDT, int socketSolicitud);
 int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion);
 void imprimirInfoAdministrativaSegmentacion(int pid);

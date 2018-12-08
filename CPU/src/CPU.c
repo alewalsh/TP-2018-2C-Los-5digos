@@ -154,63 +154,53 @@ int realizarEjecucion(t_dtb * dtb)
 {
 	// Si es 1, levanto un hilo y comienzo la ejecución de sentencias
 	// if DTB->flagInicializado == 1
-	t_list * listaInstrucciones = parseoInstrucciones(dtb->dirEscriptorio, dtb->cantidadLineas, loggerCPU);
-	int cantidadInstrucciones = list_size(listaInstrucciones);
-	if (cantidadInstrucciones <= 0)
+	// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
+	// Por cada unidad de tiempo de quantum, se ejecutara una linea del Escriptorio indicado en el DTB
+	pthread_mutex_lock(&mutexQuantum);
+	// RETARDO DE EJECUCION:
+	usleep(config->retardo * 1000);
+	int periodoEjecucion = 0;
+	while(periodoEjecucion < quantum)
 	{
-		log_warning_mutex(loggerCPU, "Se está intentando ejecutar un DTB sin instrucciones.");
-		list_destroy_and_destroy_elements(listaInstrucciones, (void *) liberarOperacion);
-		return EXIT_FAILURE;
-	}
-	else
-	{
-		// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
-		// Por cada unidad de tiempo de quantum, se ejecutara una linea del Escriptorio indicado en el DTB
-		pthread_mutex_lock(&mutexQuantum);
-		// RETARDO DE EJECUCION:
-		usleep(config->retardo * 1000);
-		int periodoEjecucion = 0;
-		while(periodoEjecucion < quantum)
+		// Comunicarse con el FM9 en caso de ser necesario.
+		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
+		// lo pase a la cola de Exit.
+		t_cpu_operacion operacion = obtenerInstruccionMemoria(dtb->dirEscriptorio, dtb->idGDT, dtb->programCounter);
+//		ANTES ERA ASI: t_cpu_operacion * operacion = list_get(listaInstrucciones, dtb->programCounter);
+
+		int quantumRestante = (quantum - periodoEjecucion)-1;
+		dtb->quantumRestante = quantumRestante;
+
+		int respuesta = ejecutarOperacion(&operacion, &dtb);
+		switch(respuesta)
 		{
-			// Comunicarse con el FM9 en caso de ser necesario.
-			// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
-			// lo pase a la cola de Exit.
-			t_cpu_operacion * operacion = list_get(listaInstrucciones, dtb->programCounter);
+			case EXIT_FAILURE:
+				log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
+				if (finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
+				{
+					log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
+				}
 
-			int quantumRestante = (quantum - periodoEjecucion)-1;
-			dtb->quantumRestante = quantumRestante;
-
-			int respuesta = ejecutarOperacion(operacion, &dtb);
-			switch(respuesta)
-			{
-				case EXIT_FAILURE:
-					log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
-					if (finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
-					{
-						log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
-					}
-
-					break;
-				case CONCENTRAR_EJECUTADO:
-					continue;
-					break;
-				default:
-					break;
-			}
-			if (respuesta == DTB_DESALOJADO)
-			{
 				break;
-			}
-			periodoEjecucion++;
-			dtb->programCounter++;
+			case CONCENTRAR_EJECUTADO:
+				continue;
+				break;
+			default:
+				break;
 		}
-		pthread_mutex_unlock(&mutexQuantum);
-		if (dtb->programCounter == cantidadInstrucciones)
+		if (respuesta == DTB_DESALOJADO)
 		{
-			if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_DTB))
-			{
-				log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
-			}
+			break;
+		}
+		periodoEjecucion++;
+		dtb->programCounter++;
+	}
+	pthread_mutex_unlock(&mutexQuantum);
+	if (dtb->programCounter == dtb->cantidadLineas)
+	{
+		if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_DTB))
+		{
+			log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
 		}
 	}
 	if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB))
@@ -218,8 +208,31 @@ int realizarEjecucion(t_dtb * dtb)
 		log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
 	}
 	free(dtb);
-	list_destroy_and_destroy_elements(listaInstrucciones, (void *) liberarOperacion);
+//	list_destroy_and_destroy_elements(listaInstrucciones, (void *) liberarOperacion);
 	return EXIT_SUCCESS;
+}
+
+t_cpu_operacion obtenerInstruccionMemoria(char * direccionEscriptorio, int idGDT, int posicion)
+{
+	int size = strlen(direccionEscriptorio)+1 + 3*sizeof(int);
+	char * buffer = malloc(size);
+	char * p = buffer;
+	copyStringToBuffer(&p, direccionEscriptorio);
+	copyIntToBuffer(&p, idGDT);
+	copyIntToBuffer(&p, posicion);
+	if (enviar(t_socketFM9->socket,CPU_FM9_DAME_INSTRUCCION,buffer,size,loggerCPU->logger))
+	{
+		log_error_mutex(loggerCPU, "Hubo un error en el envio de la accion dame instruccion al FM9.");
+	}
+	t_package paquete;
+	if (recibir(t_socketFM9->socket, &paquete, loggerCPU->logger))
+	{
+		log_error_mutex(loggerCPU, "Hubo un error la recepción de la instruccion desde el FM9.");
+	}
+	char * bufferRecepcion = paquete.data;
+	char * instruccion = copyStringFromBuffer(&bufferRecepcion);
+	t_cpu_operacion operacion = parse(instruccion, false);
+	return operacion;
 }
 
 int finalizoEjecucionDTB(t_dtb * dtb, int code)

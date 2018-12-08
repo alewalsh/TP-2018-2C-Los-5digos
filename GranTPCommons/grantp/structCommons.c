@@ -81,7 +81,7 @@ void liberarOperacion(t_cpu_operacion * self)
 t_infoGuardadoLinea * guardarDatosPaqueteGuardadoLinea(t_package pkg){
 
 	char * buffer = pkg.data;
-	t_infoGuardadoLinea * datosPaquete = malloc(sizeof(t_infoGuardadoLinea*));
+	t_infoGuardadoLinea * datosPaquete = malloc(pkg.size);
 
 	datosPaquete->pid = copyIntFromBuffer(&buffer);
 	datosPaquete->path = copyStringFromBuffer(&buffer);
@@ -95,7 +95,7 @@ t_infoGuardadoLinea * guardarDatosPaqueteGuardadoLinea(t_package pkg){
 t_infoCargaEscriptorio * guardarDatosPaqueteCargaEscriptorio(t_package pkg){
 
 	char * buffer = pkg.data;
-	t_infoCargaEscriptorio * datosPaquete = malloc(sizeof(t_infoCargaEscriptorio));
+	t_infoCargaEscriptorio * datosPaquete = malloc(pkg.size);
 
 	datosPaquete->pid = copyIntFromBuffer(&buffer);
 	datosPaquete->path = copyStringFromBuffer(&buffer);
@@ -108,7 +108,7 @@ t_infoCargaEscriptorio * guardarDatosPaqueteCargaEscriptorio(t_package pkg){
 t_infoCerrarArchivo * guardarDatosPaqueteCierreArchivo(t_package pkg){
 
 	char * buffer = pkg.data;
-	t_infoCerrarArchivo * datosPaquete = malloc(sizeof(t_infoCerrarArchivo*));
+	t_infoCerrarArchivo * datosPaquete = malloc(pkg.size);
 
 	datosPaquete->pid = copyIntFromBuffer(&buffer);
 	datosPaquete->path = copyStringFromBuffer(&buffer);
@@ -120,7 +120,7 @@ t_infoCerrarArchivo * guardarDatosPaqueteCierreArchivo(t_package pkg){
 t_datosFlush * guardarDatosPaqueteFlush(t_package pkg)
 {
 	char * buffer = pkg.data;
-	t_datosFlush * infoFlush = malloc(sizeof(t_datosFlush));
+	t_datosFlush * infoFlush = malloc(pkg.size);
 
 	infoFlush->pid = copyIntFromBuffer(&buffer);
 	infoFlush->path = copyStringFromBuffer(&buffer);
@@ -128,6 +128,19 @@ t_datosFlush * guardarDatosPaqueteFlush(t_package pkg)
 
 	free(buffer);
 	return infoFlush;
+}
+
+t_infoDevolverInstruccion * guardarDatosPaqueteInstruccion(t_package pkg)
+{
+	char * buffer = pkg.data;
+	t_infoDevolverInstruccion * infoInstruccion = malloc(pkg.size);
+
+	infoInstruccion->path = copyStringFromBuffer(&buffer);
+	infoInstruccion->pid = copyIntFromBuffer(&buffer);
+	infoInstruccion->posicion = copyIntFromBuffer(&buffer);
+
+	free(buffer);
+	return infoInstruccion;
 }
 
 t_dtb * transformarPaqueteADTB(t_package paquete)

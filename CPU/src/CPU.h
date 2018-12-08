@@ -125,4 +125,5 @@ int ejecucionDAM(t_dtb ** dtb);
 int ejecucionFM9(t_dtb ** dtb, int socket);
 int finEjecucionFM9(int idGDT);
 
+t_cpu_operacion obtenerInstruccionMemoria(char * direccionEscriptorio, int idGDT, int posicion);
 #endif /* CPU_H_ */
