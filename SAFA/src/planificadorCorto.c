@@ -26,18 +26,19 @@ void planificadorCP() {
     	 *      -> Debo desbloquear el dtbdummy y agregarlo al a lista de ready
     	 */
 
-    	pthread_mutex_lock(&mutexNewList);
-        pthread_mutex_lock(&mutexDummy);
+//    	pthread_mutex_lock(&mutexNewList);
+//        pthread_mutex_lock(&mutexDummy);
     	if(list_size(colaNew) > 0 && dummyBloqueado == 1){
-    	    pthread_mutex_unlock(&mutexDummy);
-        	pthread_mutex_unlock(&mutexNewList);
+//    	    pthread_mutex_unlock(&mutexDummy);
+//        	pthread_mutex_unlock(&mutexNewList);
     		int index = buscarDtbParaInicializar();
     		if(index >= 0){
     			//Se desbloquea el dummy y se agrega a la lista de ready
     			desbloquearDummy();
     		}
     	}
-
+//    	pthread_mutex_unlock(&mutexDummy);
+//		pthread_mutex_unlock(&mutexNewList);
     	/* FUNCIONALIDAD 2:
     	 * Si hay procesos en la cola de ready y hay cpus libres
     	 * 		->Se manda a ejecutar s/ el algoritmo

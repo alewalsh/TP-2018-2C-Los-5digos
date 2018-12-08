@@ -171,7 +171,9 @@ t_cpus *crearCpu() {
 
 int bloquearDTB(t_dtb * dtb){
 	//logica para bloquear dtb
+	pthread_mutex_lock(&mutexEjecutandoList);
 	int i = buscarDTBEnCola(colaEjecutando,dtb);
+	pthread_mutex_unlock(&mutexEjecutandoList);
 	if(i<0){
 		log_error_mutex(logger, "Error al bloquear el dtb: %d", dtb->idGDT);
 		return EXIT_FAILURE;
@@ -185,7 +187,9 @@ int bloquearDTB(t_dtb * dtb){
 
 int desbloquearDTB(t_dtb * dtb){
 	//logica para desbloquear dtb
+	pthread_mutex_lock(&mutexBloqueadosList);
 	int i = buscarDTBEnCola(colaBloqueados,dtb);
+	pthread_mutex_unlock(&mutexBloqueadosList);
 	if(i<0){
 		return EXIT_FAILURE;
 	}
@@ -226,7 +230,9 @@ int confirmacionDMA(int pid, int result){
 		result = desbloquearDTBsegunAlgoritmo(pid);
 	}else{ //HUBO UN ERROR AL CARGAR EL PROCESO EN MEMORIA
 		//se finaliza el proceso
+		pthread_mutex_lock(&mutexBloqueadosList);
 		t_dtb * dtb = buscarDTBPorPIDenCola(colaBloqueados, pid);
+		pthread_mutex_unlock(&mutexBloqueadosList);
 		pasarDTBdeBLOQUEADOaFINALIZADO(dtb);
 	}
 	return result;
@@ -264,8 +270,9 @@ t_dtb * buscarDTBPorPIDenCola(t_list * cola, int pid){
 
 int desbloquearDTBsegunAlgoritmo(int pid){
 	//desbloqueo el proceso dependiendo del algoritmo indicado
+	pthread_mutex_lock(&mutexBloqueadosList);
 	t_dtb * dtb = buscarDTBPorPIDenCola(colaBloqueados,pid);
-
+	pthread_mutex_unlock(&mutexBloqueadosList);
 	if(dtb->idGDT > 0){
 		switch(conf->algoritmo){
 		case RR:

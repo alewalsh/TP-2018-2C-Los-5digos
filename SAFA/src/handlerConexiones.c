@@ -309,7 +309,9 @@ void hacerWaitDeRecurso(char * recursoSolicitado, int pid){
 				list_add(recursoUsado->listProcesos,&pid);
 
 				//Se bloquea el proceso
+				pthread_mutex_lock(&mutexEjecutandoList);
 				t_dtb * dtb = buscarDTBPorPIDenCola(colaEjecutando,pid);
+				pthread_mutex_unlock(&mutexEjecutandoList);
 				pasarDTBdeEXECaBLOQUED(dtb);
 			}
 			list_add_in_index(listaRecursoAsignados, posicion, recursoUsado);
