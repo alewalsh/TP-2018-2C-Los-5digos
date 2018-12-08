@@ -7,6 +7,39 @@
 
 #include "segPaginada.h"
 
+int finGDTSegPag(t_package pkg, int idGDT, int socketSolicitud)
+{
+	char * pidString = intToString(idGDT);
+	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
+	if (gdt == NULL)
+	{
+		return FM9_CPU_PROCESO_INEXISTENTE;
+	}
+	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
+	if(cantidadSegmentos > 0)
+	{
+//		for(int i = 0; i < cantidadSegmentos; i++)
+//		{
+//			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
+			for(int j = 0; j < list_size(gdt->tablaPaginas);j++)
+			{
+				t_pagina * pagina = list_get(gdt->tablaPaginas,j);
+				liberarMarco(pagina);
+			}
+//		}
+		//ENVIAR MSJ DE EXITO A CPU
+		if (enviar(socketSolicitud,FM9_CPU_GDT_FINALIZADO,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
+			exit_gracefully(-1);
+		}
+		dictionary_clean_and_destroy_elements(gdt->tablaSegmentos,(void *)liberarSegmento);
+		list_clean_and_destroy_elements(gdt->tablaPaginas,(void *)liberarPagina);
+	}
+	return EXIT_SUCCESS;
+
+}
+
 int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud)
 {
 	//logica de segmentacion paginada
@@ -380,7 +413,7 @@ int cerrarArchivoSegPag(t_package pkg, t_infoCerrarArchivo* datosPaquete, int so
 			exit_gracefully(-1);
 		}
 		dictionary_clean_and_destroy_elements(gdt->tablaSegmentos,(void *)liberarSegmento);
-		list_clean_and_destroy_elements(gdt->tablaPaginas,(void *)liberarSegmento);
+		list_clean_and_destroy_elements(gdt->tablaPaginas,(void *)liberarPagina);
 	}
 	return EXIT_SUCCESS;
 }

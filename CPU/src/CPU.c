@@ -185,10 +185,11 @@ int realizarEjecucion(t_dtb * dtb)
 			{
 				case EXIT_FAILURE:
 					log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
-					if (eventoSAFA(&dtb, CPU_SAFA_ABORTAR_DTB))
+					if (finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
 					{
 						log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
 					}
+
 					break;
 				case CONCENTRAR_EJECUTADO:
 					continue;
@@ -228,7 +229,34 @@ int finalizoEjecucionDTB(t_dtb * dtb, int code)
 		log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
 		return EXIT_FAILURE;
 	}
+	if (finEjecucionFM9(dtb->idGDT))
+	{
+		log_error_mutex(loggerCPU, "Hubo un error en el envio de la finalizacion del proceso al FM9.");
+		return EXIT_FAILURE;
+
+	}
 	return EXIT_SUCCESS;
+}
+
+int finEjecucionFM9(int idGDT)
+{
+	int code = CPU_FM9_FIN_GDT;
+	int size = sizeof(int);
+	char * buffer = malloc(size);
+	char * p = buffer;
+	copyIntToBuffer(&p, idGDT);
+	if (enviar(t_socketFM9->socket, code, buffer, size, loggerCPU->logger)){
+		return EXIT_FAILURE;
+	}
+	t_package pkg;
+	if (recibir(t_socketFM9->socket, &pkg, loggerCPU->logger))
+	{
+		return EXIT_FAILURE;
+	}
+	if (pkg.code == FM9_CPU_GDT_FINALIZADO)
+		return EXIT_SUCCESS;
+	else
+		return EXIT_FAILURE;
 }
 
 int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb)

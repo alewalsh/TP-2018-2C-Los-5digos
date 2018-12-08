@@ -14,6 +14,7 @@ extern int pidBuscado;
 extern int contLineasUsadas;
 extern t_list * tablaPaginasInvertida;
 
+int finGDTTPI(t_package pkg, int idGDT, int socketSolicitud);
 int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud);
 int flushTPI(int socketSolicitud, t_datosFlush * data, int accion);
 int ejecutarGuardarEsquemaTPI(t_package pkg, t_infoGuardadoLinea* datosPaquete, int socket);

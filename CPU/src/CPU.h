@@ -123,4 +123,6 @@ int eventoSAFA(t_dtb ** dtb, int code);
 int ejecucionDAM(t_dtb ** dtb);
 
 int ejecucionFM9(t_dtb ** dtb, int socket);
+int finEjecucionFM9(int idGDT);
+
 #endif /* CPU_H_ */

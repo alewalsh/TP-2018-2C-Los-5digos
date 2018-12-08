@@ -7,6 +7,34 @@
 
 #include "TPI.h"
 
+int finGDTTPI(t_package pkg, int idGDT, int socketSolicitud)
+{
+	pthread_mutex_lock(&mutexPIDBuscado);
+	pidBuscado = idGDT;
+	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+	pthread_mutex_unlock(&mutexPIDBuscado);
+	int cantidadPaginas = list_size(paginasProceso);
+	if (list_is_empty(paginasProceso))
+	{
+		return FM9_CPU_PROCESO_INEXISTENTE;
+	}
+	int i = 0;
+	while(i < cantidadPaginas)
+	{
+		t_pagina * pagina = list_get(paginasProceso, i);
+		liberarMarco(pagina);
+	}
+	//ENVIAR MSJ DE EXITO A CPU
+	if (enviar(socketSolicitud,FM9_CPU_GDT_FINALIZADO,pkg.data,pkg.size,logger->logger))
+	{
+		log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
+		exit_gracefully(-1);
+	}
+	list_clean_and_destroy_elements(paginasProceso,(void *)liberarPagina);
+
+	return EXIT_SUCCESS;
+}
+
 int flushTPI(int socketSolicitud, t_datosFlush * data, int accion)
 {
 	pthread_mutex_lock(&mutexPIDBuscado);

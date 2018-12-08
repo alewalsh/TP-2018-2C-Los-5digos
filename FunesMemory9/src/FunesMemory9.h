@@ -67,4 +67,7 @@ void logicaCargarEscriptorio(t_package pkg, int socketSolicitud, int code);
 int realizarFlushSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
 void logicaFlush(t_package pkg, int socketSolicitud, int code);
 
+int finGDTSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
+void logicaFinGDT(t_package pkg, int socketSolicitud, int code);
+
 #endif /* FUNESMEMORY9_H_ */

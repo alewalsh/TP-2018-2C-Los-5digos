@@ -135,6 +135,11 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 				log_error_mutex(logger,"Error al cerrar el archivo en memoria");
 			}
 			break;
+        case CPU_FM9_FIN_GDT:
+			if(finGDTSegunEsquemaMemoria(pkg,socketFD)){
+				log_error_mutex(logger,"Error al finalizar el GDT en memoria");
+			}
+			break;
         case SOCKET_DISCONECT:
             close(socketFD);
             deleteSocketFromMaster(socketFD);
@@ -148,6 +153,62 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 
     free(pkg.data);
 
+}
+
+//--------------------------------------FINALIZAR GDT SEGUN ESQUEMA ELEGIDO
+
+int finGDTSegunEsquemaMemoria(t_package pkg, int socketSolicitud)
+{
+	switch(config->modoEjecucion)
+	{
+		case SEG:
+				logicaFinGDT(pkg, socketSolicitud, SEG);
+				break;
+		case TPI:
+				logicaFinGDT(pkg, socketSolicitud, TPI);
+				break;
+		case SPA:
+				logicaFinGDT(pkg, socketSolicitud, SPA);
+				break;
+		default:
+				return EXIT_FAILURE;
+		}
+	return EXIT_SUCCESS;
+}
+
+void logicaFinGDT(t_package pkg, int socketSolicitud, int code)
+{
+	char * buffer = pkg.data;
+	int idGDT = copyIntFromBuffer(&buffer);
+	int resultado = 0;
+	switch(code)
+	{
+		case SEG:
+			resultado = finGDTSegmentacion(pkg, idGDT, socketSolicitud);
+			break;
+		case TPI:
+			resultado = finGDTTPI(pkg, idGDT, socketSolicitud);
+			break;
+		case SPA:
+			resultado = finGDTSegPag(pkg, idGDT, socketSolicitud);
+			break;
+		default:
+			log_warning_mutex(logger, "No se especifico el esquema para cerrar un archivo.");
+	}
+	if (resultado != 0)
+	{
+		int errorCode = FM9_CPU_ERROR;
+		log_error_mutex(logger,"Error al cerrar el archivo indicado.");
+		if (enviar(socketSolicitud,errorCode,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU del error al cerrar un archivo.");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "Se cerró correctamente el archivo indicado.");
+	}
 }
 
 //--------------------------------------CERRAR ARCHIVO SEGUN ESQUEMA ELEGIDO
