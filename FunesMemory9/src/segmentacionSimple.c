@@ -97,7 +97,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 	contLineasUsadas += datosPaquete->cantidadLineasARecibir;
 
 	char * bufferGuardado = malloc(config->tamMaxLinea);
-	int i = 0, offset = 0;
+	int i = 0, offset = 0, tamanioPaqueteReal = 0;
 	int lineaLeida = 1;
 	int limite = segmento->limite;
 	while(i < limite)
@@ -118,24 +118,37 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 		char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
 		if (nroLinea != lineaLeida)
 		{
-			int tamanioBuffer = strlen(bufferGuardado);
-			bufferGuardado[tamanioBuffer] = '\n';
-			log_trace_mutex(logger, "Se guardó la linea '%s' en la posicion de memoria: %d°",bufferGuardado, direccion(segmento->base,(i-1)));
-			guardarLinea(direccion(segmento->base,(i-1)), bufferGuardado);
+			bufferGuardado[tamanioPaqueteReal] = '\n';
+			log_trace_mutex(logger, "Se guardó la linea '%s' en la posicion de memoria: %d°",bufferGuardado, direccion(segmento->base,i));
+			guardarLinea(direccion(segmento->base,i), bufferGuardado);
 			i++;
 			offset = 0;
-			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquete - 2*sizeof(int));
-			offset += tamanioPaquete - 2*sizeof(int);
+			tamanioPaqueteReal = 0;
+			free(bufferGuardado);
+			bufferGuardado = malloc(config->tamMaxLinea);
+			memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
+			offset += (tamanioPaquete);
+			tamanioPaqueteReal += tamanioPaquete;
 		}
 		else
 		{
-			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquete - 2*sizeof(int));
-			offset += tamanioPaquete - 2*sizeof(int);
+			memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
+			offset += (tamanioPaquete);
+			tamanioPaqueteReal += tamanioPaquete;
 		}
 		lineaLeida = nroLinea;
 	}
 	free(bufferGuardado);
-
+	//TODO: Esto queda para revisar, sin embargo, ya estuve viendo que funciona bien. Habria que verificar los free de memoria.
+//	for (int j = 0; j < limite; j++)
+//	{
+//		int dir = direccion(segmento->base, j);
+//		char * linea = obtenerLinea(dir);
+//		char * logeo = string_from_format("Posicion %d: Linea %s ", dir, linea);
+//		printf("%s", logeo);
+//		free(linea);
+//		free(logeo);
+//	}
 	//ENVIAR MSJ DE EXITO A DAM
 	if (enviar(socketSolicitud,FM9_DAM_ESCRIPTORIO_CARGADO,pkg.data,pkg.size,logger->logger))
 	{

@@ -100,15 +100,14 @@ int posicionesLibres(t_bitarray ** bitArray)
 
 void guardarLinea(int posicionMemoria, char * linea)
 {
-	memcpy(&storage+posicionMemoria, &linea, strlen(linea));
+	memcpy(storage+posicionMemoria, linea, strlen(linea) + 1);
 }
 
 void realizarFlush(char * linea, int nroLinea, int transferSize, int socket)
 {
-	int noLoUso = 0;
-	char** arrayLineas = str_split(linea,'\n',noLoUso);
+	char** arrayLineas = string_split(linea,"\n");
 	char * lineaAEnviar = arrayLineas[0];
-	int tamanioLinea = strlen(lineaAEnviar);
+	int tamanioLinea = string_length(lineaAEnviar);
 	int cantidadPaquetes = tamanioLinea / transferSize;
 	if(tamanioLinea % transferSize != 0){
 		cantidadPaquetes++;
@@ -203,7 +202,7 @@ void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int transfer
 char * obtenerLinea(int posicionMemoria)
 {
 	char * buffer = malloc(sizeof(config->tamMaxLinea));
-	memcpy(&buffer, &storage+posicionMemoria, config->tamMaxLinea);
+	memcpy(buffer, storage+posicionMemoria, config->tamMaxLinea);
 	return buffer;
 }
 
@@ -398,7 +397,8 @@ bool hayXMarcosLibres(int cantidad)
 
 t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo, int paginasAReservar)
 {
-	t_segmento * segmento = malloc(sizeof(t_segmento));
+	int size = sizeof(t_segmento) + strlen(archivo) + 1;
+	t_segmento * segmento = malloc(size);
 	int lineasLibresContiguas = 0, i = 0, base =-1;
 	if (config->modoEjecucion == SEG){
 		while(i <= cantLineas)
