@@ -286,11 +286,12 @@ int desbloquearDTBsegunAlgoritmo(int pid){
 
 void actualizarIODtb(t_dtb * dtb, int cantIo){
 
+	pthread_mutex_lock(&mutexNewList);
 	int index = buscarDTBEnCola(colaNew,dtb);
 	t_dtb * dtbAModificar = list_get(colaNew,index);
 	dtbAModificar->cantIO = cantIo;
 	list_add_in_index(colaNew,index,dtbAModificar);
-
+	pthread_mutex_unlock(&mutexNewList);
 }
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA MANEJO DEL DUMMY
@@ -323,6 +324,7 @@ void desbloquearDummy(){
     pthread_mutex_lock(&mutexDummy);
     dummyBloqueado = 0;
     //desbloquear dummy
+    pthread_mutex_lock(&mutexDummy);
     t_dtb * dummy = list_find(colaBloqueados,(void *)obtenerDummy);
     desbloquearDTB(dummy);
     pthread_mutex_unlock(&mutexDummy);

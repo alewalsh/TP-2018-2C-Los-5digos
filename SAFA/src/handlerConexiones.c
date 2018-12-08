@@ -194,11 +194,14 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 
         //EL SCRIPTORIO SE INCIALIZÓ
         case DAM_SAFA_CONFIRMACION_SCRIPT_INICIALIZADO:{
-        	int pid = copyIntFromBuffer(&pkg.data);
-			int result = copyIntFromBuffer(&pkg.data);
-			int cantIOProcess = copyIntFromBuffer(&pkg.data);
+        	char * buffer = pkg.data;
+        	int pid = copyIntFromBuffer(&buffer);
+			int result = copyIntFromBuffer(&buffer);
+			int cantIOProcess = copyIntFromBuffer(&buffer);
 
+			pthread_mutex_lock(&mutexNewList);
 			t_dtb * dtb = buscarDTBPorPIDenCola(colaNew, pid);
+			pthread_mutex_unlock(&mutexNewList);
 			if(result == EXIT_SUCCESS){
 				actualizarIODtb(dtb, cantIOProcess);
 				pasarDTBdeNEWaREADY(dtb); //Se cargó en memoria correctamente
