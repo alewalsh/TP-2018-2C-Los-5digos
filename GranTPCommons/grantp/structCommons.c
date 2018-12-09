@@ -88,7 +88,7 @@ t_infoGuardadoLinea * guardarDatosPaqueteGuardadoLinea(t_package pkg){
 	datosPaquete->linea = copyIntFromBuffer(&buffer);
 	datosPaquete->datos = copyStringFromBuffer(&buffer);
 
-	free(buffer);
+//	free(buffer);
 	return datosPaquete;
 }
 
@@ -113,7 +113,7 @@ t_infoCerrarArchivo * guardarDatosPaqueteCierreArchivo(t_package pkg){
 	datosPaquete->pid = copyIntFromBuffer(&buffer);
 	datosPaquete->path = copyStringFromBuffer(&buffer);
 
-	free(buffer);
+//	free(buffer);
 	return datosPaquete;
 }
 
@@ -126,7 +126,7 @@ t_datosFlush * guardarDatosPaqueteFlush(t_package pkg)
 	infoFlush->path = copyStringFromBuffer(&buffer);
 	infoFlush->transferSize = copyIntFromBuffer(&buffer);
 
-	free(buffer);
+//	free(buffer);
 	return infoFlush;
 }
 
@@ -139,7 +139,8 @@ t_infoDevolverInstruccion * guardarDatosPaqueteInstruccion(t_package pkg)
 	infoInstruccion->pid = copyIntFromBuffer(&buffer);
 	infoInstruccion->posicion = copyIntFromBuffer(&buffer);
 
-	free(buffer);
+	//TODO: Revisar este free que me estaba rompiendo.
+//	free(buffer);
 	return infoInstruccion;
 }
 

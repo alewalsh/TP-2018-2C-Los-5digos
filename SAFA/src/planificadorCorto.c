@@ -26,19 +26,23 @@ void planificadorCP() {
     	 *      -> Debo desbloquear el dtbdummy y agregarlo al a lista de ready
     	 */
 
-//    	pthread_mutex_lock(&mutexNewList);
-//        pthread_mutex_lock(&mutexDummy);
-    	if(list_size(colaNew) > 0 && dummyBloqueado == 1){
-//    	    pthread_mutex_unlock(&mutexDummy);
-//        	pthread_mutex_unlock(&mutexNewList);
+    	pthread_mutex_lock(&mutexNewList);
+        pthread_mutex_lock(&mutexDummy);
+    	if(list_size(colaNew) > 0 && dummyBloqueado == 1)
+    	{
+        	pthread_mutex_unlock(&mutexNewList);
+            pthread_mutex_unlock(&mutexDummy);
     		int index = buscarDtbParaInicializar();
     		if(index >= 0){
     			//Se desbloquea el dummy y se agrega a la lista de ready
     			desbloquearDummy();
     		}
     	}
-//    	pthread_mutex_unlock(&mutexDummy);
-//		pthread_mutex_unlock(&mutexNewList);
+    	else
+    	{
+        	pthread_mutex_unlock(&mutexNewList);
+            pthread_mutex_unlock(&mutexDummy);
+    	}
     	/* FUNCIONALIDAD 2:
     	 * Si hay procesos en la cola de ready y hay cpus libres
     	 * 		->Se manda a ejecutar s/ el algoritmo
@@ -82,6 +86,7 @@ int buscarDtbParaInicializar()
 			t_dtb * dtbActualizado = list_remove(colaNew,i);
 			dtbActualizado->realizOpDummy = 1;
 			list_add_in_index(colaNew,i,dtbActualizado);
+			pthread_mutex_unlock(&mutexNewList);
 			return i;
 		}
 	}
@@ -200,32 +205,38 @@ t_dtb *pasarDTBdeREADYaEXEC(){
 t_dtb * pasarDTBdeREADYESPaEXEC(){
 
 	pthread_mutex_lock(&mutexReadyEspList);
-	pthread_mutex_lock(&mutexEjecutandoList);
 	t_dtb *primerDTBenReadyEsp = (t_dtb *) list_remove(colaReadyEspecial,0);
+	pthread_mutex_unlock(&mutexReadyEspList);
+	pthread_mutex_lock(&mutexEjecutandoList);
 	list_add(colaEjecutando, primerDTBenReadyEsp);
 	pthread_mutex_unlock(&mutexEjecutandoList);
-	pthread_mutex_unlock(&mutexReadyEspList);
 	return primerDTBenReadyEsp;
 }
 int pasarDTBdeEXECaREADY(t_dtb * dtbABloq){
 
 	pthread_mutex_lock(&mutexBloqueadosList);
 	pthread_mutex_lock(&mutexEjecutandoList);
+	pthread_mutex_lock(&mutexReadyList);
 
 	int index = buscarDTBEnCola(colaEjecutando,dtbABloq);
 
-	if(index > 0){
+	if(index > 0)
+	{
 		t_dtb * dtbEjecutandoABloquear = (t_dtb *) list_remove(colaEjecutando,index);
 		list_add(colaReady, dtbEjecutandoABloquear);
-	}else{
+	}
+	else
+	{
 		//Error
 		pthread_mutex_unlock(&mutexEjecutandoList);
 		pthread_mutex_unlock(&mutexBloqueadosList);
+		pthread_mutex_unlock(&mutexReadyList);
 		return EXIT_FAILURE;
 	}
 
 	pthread_mutex_unlock(&mutexEjecutandoList);
 	pthread_mutex_unlock(&mutexBloqueadosList);
+	pthread_mutex_unlock(&mutexReadyList);
 	return EXIT_SUCCESS;
 }
 
@@ -262,7 +273,9 @@ int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq){
 		t_dtb * dtbEjecutandoAFinalizar = (t_dtb *) list_remove(colaEjecutando,index);
 	    list_add(colaExit, dtbEjecutandoAFinalizar);
 	    //TODO: SE DEBE HACER UN SIGNAL DEL MUTEX PARA EL GRADO DE MULTIPROGRAMACION
-	}else{
+	}
+	else
+	{
 		//Error
 		pthread_mutex_unlock(&mutexExitList);
 		pthread_mutex_unlock(&mutexEjecutandoList);

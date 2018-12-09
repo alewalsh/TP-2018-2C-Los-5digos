@@ -48,16 +48,39 @@ void consolaEjecutar(char *args) {
 void consolaStatus() {
 
 	//TODO: Separar en si tiene argumento o no tiene argumento. Hacer una funcion para printear cada cola
-
-	if(list_size(colaNew) != 0){
+	pthread_mutex_lock(&mutexNewList);
+	if(list_size(colaNew) != 0)
+	{
+		pthread_mutex_unlock(&mutexNewList);
 		imprimirNEW();
-	} else {printf("Cola NEW sin elementos\n");}
-	if(list_size(colaReady) != 0){
+	}
+	else
+	{
+		pthread_mutex_unlock(&mutexNewList);
+		printf("Cola NEW sin elementos\n");
+	}
+	pthread_mutex_lock(&mutexReadyList);
+	if(list_size(colaReady) != 0)
+	{
+		pthread_mutex_unlock(&mutexReadyList);
 		imprimirREADY();
-	} else{printf("Cola READY sin elementos\n");}
-	if(list_size(colaEjecutando) != 0){
+	}
+	else
+	{
+		pthread_mutex_unlock(&mutexReadyList);
+		printf("Cola READY sin elementos\n");
+	}
+	pthread_mutex_lock(&mutexEjecutandoList);
+	if(list_size(colaEjecutando) != 0)
+	{
+		pthread_mutex_unlock(&mutexEjecutandoList);
 		imprimirEJECUTANDO();
-	} else{printf("Cola EJECUTANDO sin elementos\n");}
+	}
+	else
+	{
+		pthread_mutex_unlock(&mutexEjecutandoList);
+		printf("Cola EJECUTANDO sin elementos\n");
+	}
 //	if(list_size(colaBloqueados) != 0){
 //
 //} else{printf("Cola BLOCKED sin elementos\n");}

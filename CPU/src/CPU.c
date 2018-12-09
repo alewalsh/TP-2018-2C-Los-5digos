@@ -517,6 +517,7 @@ int setQuantum(t_package paquete)
 	if (quantum > 0)
 	{
 		log_info_mutex(loggerCPU, "El valor del quantum es %d", quantum);
+	    pthread_mutex_unlock(&mutexQuantum);
 		return EXIT_SUCCESS;
 	}
     pthread_mutex_unlock(&mutexQuantum);

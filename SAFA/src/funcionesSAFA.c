@@ -173,15 +173,17 @@ int bloquearDTB(t_dtb * dtb){
 	//logica para bloquear dtb
 	pthread_mutex_lock(&mutexEjecutandoList);
 	int i = buscarDTBEnCola(colaEjecutando,dtb);
-	pthread_mutex_unlock(&mutexEjecutandoList);
 	if(i<0){
 		log_error_mutex(logger, "Error al bloquear el dtb: %d", dtb->idGDT);
 		return EXIT_FAILURE;
 	}
 	t_dtb * dtbABloquear = list_remove(colaEjecutando,i);
+	pthread_mutex_unlock(&mutexEjecutandoList);
 	//actualizo el quantum restante
 	dtbABloquear->quantumRestante = dtb->quantumRestante;
+	pthread_mutex_lock(&mutexBloqueadosList);
 	list_add(colaBloqueados,dtbABloquear);
+	pthread_mutex_unlock(&mutexBloqueadosList);
 	return EXIT_SUCCESS;
 }
 
@@ -193,8 +195,12 @@ int desbloquearDTB(t_dtb * dtb){
 	if(i<0){
 		return EXIT_FAILURE;
 	}
+	pthread_mutex_lock(&mutexBloqueadosList);
 	t_dtb * dtbADesbloquear = list_remove(colaBloqueados,i);
+	pthread_mutex_unlock(&mutexBloqueadosList);
+	pthread_mutex_lock(&mutexReadyList);
 	list_add(colaReady,dtbADesbloquear);
+	pthread_mutex_unlock(&mutexReadyList);
 	return EXIT_SUCCESS;
 }
 
@@ -322,7 +328,9 @@ t_dtb *crearDummyDTB() {
 	dummyDTB->cantIO = 0;
 	dummyDTB->esDummy = true;
 	dummyDTB->quantumRestante = 0;
+    pthread_mutex_unlock(&mutexBloqueadosList);
 	list_add(colaBloqueados,dummyDTB);
+	pthread_mutex_unlock(&mutexBloqueadosList);
 	return dummyDTB;
 }
 
@@ -330,20 +338,23 @@ t_dtb *crearDummyDTB() {
 void desbloquearDummy(){
     pthread_mutex_lock(&mutexDummy);
     dummyBloqueado = 0;
-    //desbloquear dummy
-    pthread_mutex_lock(&mutexDummy);
-    t_dtb * dummy = list_find(colaBloqueados,(void *)obtenerDummy);
-    desbloquearDTB(dummy);
     pthread_mutex_unlock(&mutexDummy);
+    //desbloquear dummy
+    pthread_mutex_lock(&mutexBloqueadosList);
+    t_dtb * dummy = list_find(colaBloqueados,(void *)obtenerDummy);
+    pthread_mutex_unlock(&mutexBloqueadosList);
+    desbloquearDTB(dummy);
 }
 
 void bloquearDummy(){
     pthread_mutex_lock(&mutexDummy);
     dummyBloqueado = 1;
-    //bloquear dummy
-    t_dtb * dummy = list_find(colaEjecutando,(void *)obtenerDummy);
-    bloquearDTB(dummy);
     pthread_mutex_unlock(&mutexDummy);
+    //bloquear dummy
+    pthread_mutex_lock(&mutexEjecutandoList);
+    t_dtb * dummy = list_find(colaEjecutando,(void *)obtenerDummy);
+    pthread_mutex_unlock(&mutexEjecutandoList);
+    bloquearDTB(dummy);
 }
 
 

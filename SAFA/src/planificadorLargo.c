@@ -70,17 +70,17 @@ void planificadorLP() {
     	sem_wait(&mandadosPorConsola);
 
     	sem_wait(&semaforpGradoMultiprgramacion);
-        pthread_mutex_lock(&mutexNewList);
-        pthread_mutex_lock(&mutexReadyList);
+//        pthread_mutex_lock(&mutexReadyList);
 
    		//Me fijo cual es el primer elemento de la lista, no lo saco, solo tengo los datos
+        pthread_mutex_lock(&mutexNewList);
    		t_dtb *primerDTB = list_get(colaNew,0);
+        pthread_mutex_unlock(&mutexNewList);
 
    		pthread_mutex_lock(&semDummy);
   		planificadorCPdesbloquearDummy(primerDTB->idGDT,primerDTB->dirEscriptorio);
 
-        pthread_mutex_unlock(&mutexNewList);
-        pthread_mutex_unlock(&mutexReadyList);
+//        pthread_mutex_unlock(&mutexReadyList);
     }
 
 }
