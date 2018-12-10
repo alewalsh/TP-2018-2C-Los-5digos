@@ -15,6 +15,7 @@ int devolverInstruccionTPI(t_package pkg, t_infoDevolverInstruccion* datosPaquet
 	pidBuscado = datosPaquete->pid;
 	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
 	pthread_mutex_unlock(&mutexPIDBuscado);
+	int posicionBuscada = datosPaquete->posicion;
 	int cantidadPaginas = list_size(paginasProceso);
 	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid);
 	if (cantidadPaginas <= 0)
@@ -23,17 +24,17 @@ int devolverInstruccionTPI(t_package pkg, t_infoDevolverInstruccion* datosPaquet
 	}
 	else if (cantidadPaginas > 0)
 	{
-		if (cantidadLineas >= datosPaquete->posicion)
+		if (cantidadLineas >= posicionBuscada)
 		{
 			int nroPaginaCorrespondiente = datosPaquete->posicion / lineasXPagina;
 			t_pagina * paginaCorrespondiente = list_get(paginasProceso, nroPaginaCorrespondiente);
 			if (strcmp(paginaCorrespondiente->path,datosPaquete->path) == 0)
 			{
-				while (datosPaquete->posicion >= lineasXPagina)
+				while (posicionBuscada >= lineasXPagina)
 				{
-					datosPaquete->posicion -= lineasXPagina;
+					posicionBuscada -= lineasXPagina;
 				}
-				linea = obtenerLinea(direccion(paginaCorrespondiente->nroMarco,datosPaquete->posicion));
+				linea = obtenerLinea(direccion(paginaCorrespondiente->nroMarco,posicionBuscada));
 				pudeObtener = true;
 			}
 		}

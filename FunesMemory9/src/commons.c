@@ -236,6 +236,11 @@ void liberarRecursos()
 	bitarray_destroy(estadoMarcos);
 	pthread_mutex_destroy(&mutexMaster);
 	pthread_mutex_destroy(&mutexReadset);
+	pthread_mutex_destroy(&mutexExit);
+	pthread_mutex_destroy(&mutexMaxfd);
+	pthread_mutex_destroy(&mutexPaginaBuscada);
+	pthread_mutex_destroy(&mutexPIDBuscado);
+
 	log_destroy_mutex(logger);
 	freeConfig(config, FM9);
 }
