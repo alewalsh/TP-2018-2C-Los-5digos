@@ -246,20 +246,20 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 	int pid = copyIntFromBuffer(&buffer);
 	char * path = copyStringFromBuffer(&buffer);
 
-	free(buffer);
+//	free(buffer);
 	printf("Ehhh, voy a buscar %s para %d", path, pid);
 
 	//Se envia el path del archivo al filesystem
-	int size;
-	char *keyCompress = compressKey(path, &size);
+	int size = strlen(path) + 1 + sizeof(int);
+	char * bufferEnvio = malloc(size);
+	char * p = bufferEnvio;
+	copyStringToBuffer(&p, path);
 
 	//CONFIRMO EXISTENCIA DEL ARCHIVO
 	//mando un msj para saber si el archivo existe
-	if (enviar(t_socketMdj->socket, DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO, keyCompress,
-			size, logger->logger)) {
-		log_error_mutex(logger,
-				"No se pudo enviar la busqueda del escriptorio al MDJ");
-		free(keyCompress);
+	if (enviar(t_socketMdj->socket, DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO, bufferEnvio, size, logger->logger)) {
+		log_error_mutex(logger, "No se pudo enviar la busqueda del escriptorio al MDJ");
+		free(bufferEnvio);
 		return false;
 	}
 	//recibo la confirmacion
@@ -273,12 +273,12 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
 		enviarConfirmacionSafa(pid, result, 0,ARCHIVO_CARGADO);
-		free(keyCompress);
+		free(bufferEnvio);
 		return false;
 	}
 
 	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_CARGADO);
-	free(keyCompress);
+	free(bufferEnvio);
 
 	return true;
 }
@@ -686,8 +686,7 @@ void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int c
 	}
 
 
-	if (enviar(t_socketSafa->socket, msjCode, buffer,
-			size, logger->logger)) {
+	if (enviar(t_socketSafa->socket, msjCode, buffer, size, logger->logger)) {
 		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
 		free(buffer);
 	}

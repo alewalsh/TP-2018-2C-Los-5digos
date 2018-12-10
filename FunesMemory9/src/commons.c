@@ -14,11 +14,11 @@ char * intToString(int numero)
 	return string;
 }
 
-void enviarInstruccion(char * linea, int socketSolicitud)
+void enviarInstruccion(int posicionMemoria, int socketSolicitud)
 {
-	char ** split = string_split(linea,"\n");
-	//ENVIAR MSJ DE EXITO A CPU
-	int size = strlen(split[0]) + 1;
+	char * lineaCompleta = obtenerLinea(posicionMemoria);
+	char ** split = string_split(lineaCompleta,"\n");
+	int size = strlen(split[0]) + 1 + sizeof(int);
 	char * buffer = malloc(size);
 	char * p = buffer;
 	copyStringToBuffer(&p, split[0]);
@@ -28,8 +28,8 @@ void enviarInstruccion(char * linea, int socketSolicitud)
 		exit_gracefully(-1);
 	}
 	free(split);
-	free(buffer);
-	free(linea);
+//	free(buffer);
+	free(lineaCompleta);
 }
 
 int direccion(int base, int desplazamiento)
@@ -219,7 +219,7 @@ void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int transfer
 
 char * obtenerLinea(int posicionMemoria)
 {
-	char * buffer = malloc(sizeof(config->tamMaxLinea));
+	char * buffer = malloc(config->tamMaxLinea);
 	memcpy(buffer, storage+posicionMemoria, config->tamMaxLinea);
 	return buffer;
 }
@@ -415,9 +415,9 @@ bool hayXMarcosLibres(int cantidad)
 
 t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo, int paginasAReservar)
 {
-	int size = sizeof(t_segmento) + strlen(archivo) + 1;
+	int size = sizeof(t_segmento) + string_length(archivo) + 1;
 	t_segmento * segmento = malloc(size);
-	int lineasLibresContiguas = 0, i = 0, base =-1;
+	int lineasLibresContiguas = 0, i = 0, base = -1;
 	if (config->modoEjecucion == SEG){
 		while(i <= cantLineas)
 		{
@@ -433,6 +433,7 @@ t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos
 			}
 			else
 			{
+				base = -1;
 				lineasLibresContiguas = 0;
 			}
 			i++;

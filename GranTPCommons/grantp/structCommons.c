@@ -157,6 +157,8 @@ t_dtb * transformarPaqueteADTB(t_package paquete)
 	tieneTablaDirecciones = copyIntFromBuffer(&buffer);
 	if (tieneTablaDirecciones)
 		dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
+	else
+		dtb->tablaDirecciones = NULL;
 	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
 	dtb->realizOpDummy = copyIntFromBuffer(&buffer);
 	dtb->quantumRestante = copyIntFromBuffer(&buffer);

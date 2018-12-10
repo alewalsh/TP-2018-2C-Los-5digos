@@ -74,7 +74,6 @@ int devolverInstruccionSegmentacion(t_package pkg, t_infoDevolverInstruccion* da
 	}
 	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
 	bool pudeObtener = false;
-	char * linea;
 	if(cantidadSegmentos > 0)
 	{
 		for(int i = 0; i < cantidadSegmentos; i++)
@@ -82,14 +81,14 @@ int devolverInstruccionSegmentacion(t_package pkg, t_infoDevolverInstruccion* da
 			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
 			if (strcmp(segmento->archivo,datosPaquete->path) == 0 && segmento->limite >= datosPaquete->posicion)
 			{
-				linea = obtenerLinea(direccion(segmento->base,datosPaquete->posicion));
+				enviarInstruccion(direccion(segmento->base,datosPaquete->posicion), socketSolicitud);
 				pudeObtener = true;
 				break;
 			}
 		}
 		if (pudeObtener)
 		{
-			enviarInstruccion(linea, socketSolicitud);
+			log_trace_mutex(logger, "Ya obtuve la linea pedida por el proceso %d", datosPaquete->pid);
 		}
 		else
 		{
@@ -113,7 +112,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
 		{
 			log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
-			exit_gracefully(-1);
+			// exit_gracefully(-1);
 		}
 	}
 	if (!existeProceso(datosPaquete->pid))

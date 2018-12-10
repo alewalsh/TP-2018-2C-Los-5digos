@@ -339,9 +339,10 @@ t_package crearPaqueteSegunAccion(int accion, t_cpu_operacion * operacion, t_dtb
 	{
 		case ABRIR:
 			paquete.code = CPU_DAM_ABRIR_ARCHIVO;
-			paquete.size = (strlen(operacion->argumentos.ABRIR.path) + 1 * sizeof(char)) + sizeof(int);
+			paquete.size = (strlen(operacion->argumentos.ABRIR.path) + 1 * sizeof(char)) + 2*sizeof(int);
 			buffer = realloc(buffer, paquete.size);
 			p = buffer;
+			copyIntToBuffer(&p, (*dtb)->idGDT);
 			copyStringToBuffer(&p, operacion->argumentos.ABRIR.path);
 			break;
 		case FLUSH:
@@ -399,7 +400,7 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 	t_package paquete = crearPaqueteSegunAccion(accion, operacion, dtb);
 	if (accion == ABRIR)
 	{
-		if ((*dtb)->tablaDirecciones != NULL && strstr((*dtb)->tablaDirecciones, operacion->argumentos.ABRIR.path) != NULL)
+		if ((*dtb)->tablaDirecciones && strstr((*dtb)->tablaDirecciones, operacion->argumentos.ABRIR.path) != NULL)
 		{
 			log_info_mutex(loggerCPU, "El archivo %s ya está abierto por el proceso %d.", operacion->argumentos.ABRIR.path, (*dtb)->idGDT);
 			return EXIT_SUCCESS;

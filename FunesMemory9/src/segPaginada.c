@@ -14,7 +14,6 @@ int devolverInstruccionSegPag(t_package pkg, t_infoDevolverInstruccion* datosPaq
 	{
 		return FM9_CPU_PROCESO_INEXISTENTE;
 	}
-	char * linea;
 	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
 	bool pudeGuardar = false;
 	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid);
@@ -40,7 +39,7 @@ int devolverInstruccionSegPag(t_package pkg, t_infoDevolverInstruccion* datosPaq
 					}
 					if (strcmp(pagina->path,datosPaquete->path) == 0)
 					{
-						linea = obtenerLinea(direccion(pagina->nroMarco, lineaBuscada));
+						enviarInstruccion(direccion(pagina->nroMarco, lineaBuscada), socketSolicitud);
 						pudeGuardar = true;
 						break;
 					}
@@ -52,7 +51,7 @@ int devolverInstruccionSegPag(t_package pkg, t_infoDevolverInstruccion* datosPaq
 		}
 		if (pudeGuardar)
 		{
-			enviarInstruccion(linea, socketSolicitud);
+			log_trace_mutex(logger, "Ya obtuve la linea pedida por el proceso %d", datosPaquete->pid);
 		}
 		else
 		{
