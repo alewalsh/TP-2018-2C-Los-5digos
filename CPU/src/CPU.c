@@ -166,6 +166,7 @@ int realizarEjecucion(t_dtb * dtb)
 		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
 		// lo pase a la cola de Exit.
 		t_cpu_operacion operacion = obtenerInstruccionMemoria(dtb->dirEscriptorio, dtb->idGDT, dtb->programCounter);
+		log_info_mutex(loggerCPU, "Se va a ejecutar la operacion %d del proceso %d.",dtb->programCounter, dtb->idGDT);
 
 		int quantumRestante = (quantum - periodoEjecucion)-1;
 		dtb->quantumRestante = quantumRestante;
@@ -259,7 +260,6 @@ int finalizoEjecucionDTB(t_dtb * dtb, int code)
 			log_info_mutex(loggerCPU, "Se ha desalojado al proceso %d por fin de quantum.", dtb->idGDT);
 		if (code == CPU_SAFA_BLOQUEAR_DTB)
 			log_info_mutex(loggerCPU, "Se ha desalojado al proceso %d por realizar una operación de E/S.", dtb->idGDT);
-
 	}
 	return EXIT_SUCCESS;
 }
