@@ -345,6 +345,7 @@ void logPosicionesLibres(t_bitarray * bitarray, int modo)
 		{
 			log_info(logger->logger, "La %s %d está ocupada", modoEjecucion, i);
 		}
+		i++;
 	}
 }
 

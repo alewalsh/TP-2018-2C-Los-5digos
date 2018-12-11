@@ -106,7 +106,8 @@ int devolverInstruccionSegmentacion(t_package pkg, t_infoDevolverInstruccion* da
 // Lógica de segmentacion pura
 int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud)
 {
-	if(tengoMemoriaDisponible(datosPaquete->cantidadLineasARecibir) == 1){
+	if(tengoMemoriaDisponible(datosPaquete->cantidadLineasARecibir) == 1)
+	{
 		log_error_mutex(logger, "No hay memoria disponible para cargar el Escriptorio.");
 		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
 		logPosicionesLibres(estadoLineas,SEG);

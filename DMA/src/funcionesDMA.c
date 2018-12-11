@@ -274,13 +274,13 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 		result = EXIT_FAILURE;
 		enviarConfirmacionSafa(pid, result, 0,ARCHIVO_CARGADO);
 		free(bufferEnvio);
-		return false;
+		return EXIT_FAILURE;
 	}
 
 	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_CARGADO);
 	free(bufferEnvio);
 
-	return true;
+	return EXIT_SUCCESS;
 }
 
 /*

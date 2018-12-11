@@ -127,7 +127,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 			break;
         case CPU_FM9_ASIGNAR:
         	if(guardarLineaSegunEsquemaMemoria(pkg,socketFD)){
-				log_error_mutex(logger,"Error al guardar la data recibida en memoria");
+				log_error_mutex(logger,"Error al guardar los datos recibidos en memoria");
 			}
 			break;
         case CPU_FM9_CERRAR_ARCHIVO:
@@ -142,7 +142,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 			break;
         case CPU_FM9_DAME_INSTRUCCION:
 			if(devolverInstruccionSegunEsquemaMemoria(pkg,socketFD)){
-				log_error_mutex(logger,"Error al finalizar el GDT en memoria");
+				log_error_mutex(logger,"Error al devolver una instruccion al GDT");
 			}
 			break;
 
@@ -198,21 +198,21 @@ void logicaDevolverInstruccion(t_package pkg, int socketSolicitud, int code)
 			resultado = devolverInstruccionSegPag(pkg, datosPaquete, socketSolicitud);
 			break;
 		default:
-			log_warning_mutex(logger, "No se especifico el esquema para cerrar un archivo.");
+			log_warning_mutex(logger, "No se especifico el esquema para devolver una instruccion.");
 	}
 	if (resultado != 0)
 	{
 		int errorCode = FM9_CPU_ERROR;
-		log_error_mutex(logger,"Error al cerrar el archivo indicado.");
+		log_error_mutex(logger,"Error al devolver una instruccion.");
 		if (enviar(socketSolicitud,errorCode,pkg.data,pkg.size,logger->logger))
 		{
-			log_error_mutex(logger, "Error al avisar al CPU del error al cerrar un archivo.");
+			log_error_mutex(logger, "Error al avisar al CPU del error al devolver una instruccion.");
 			exit_gracefully(-1);
 		}
 	}
 	else
 	{
-		log_info_mutex(logger, "Se cerró correctamente el archivo indicado.");
+		log_info_mutex(logger, "Se retornó correctamente la instruccion al GDT.");
 	}
 }
 
@@ -254,21 +254,21 @@ void logicaFinGDT(t_package pkg, int socketSolicitud, int code)
 			resultado = finGDTSegPag(pkg, idGDT, socketSolicitud);
 			break;
 		default:
-			log_warning_mutex(logger, "No se especifico el esquema para cerrar un archivo.");
+			log_warning_mutex(logger, "No se especifico el esquema para finalizar un GDT.");
 	}
 	if (resultado != 0)
 	{
 		int errorCode = FM9_CPU_ERROR;
-		log_error_mutex(logger,"Error al cerrar el archivo indicado.");
+		log_error_mutex(logger,"Error al finalizar el proceso indicado.");
 		if (enviar(socketSolicitud,errorCode,pkg.data,pkg.size,logger->logger))
 		{
-			log_error_mutex(logger, "Error al avisar al CPU del error al cerrar un archivo.");
+			log_error_mutex(logger, "Error al avisar al CPU del error al finalizar el proceso.");
 			exit_gracefully(-1);
 		}
 	}
 	else
 	{
-		log_info_mutex(logger, "Se cerró correctamente el archivo indicado.");
+		log_info_mutex(logger, "Se finalizó correctamente el proceso indicado.");
 	}
 }
 

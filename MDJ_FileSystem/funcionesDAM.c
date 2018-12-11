@@ -516,26 +516,39 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 	}
 	else
 	{
-		offset = trasnfer_size;
+		// EL - SIZE OF INT ES POR COMO SE UTILIZA EL COPY STRING TO BUFFER
+		offset = trasnfer_size - sizeof(int);
 	}
 
 	char * bufferEnvio;
 	char * p;
 
-	while(cuantosPaquetes > 0){
-		char*retornoOffset = string_substring_until(datosEnvio, offset);
+	while(cuantosPaquetes > 0)
+	{
+		// TODO: Analizar el caso donde hay más cantidad de paquetes, ese offset + transfer_size me genera desconfianza - Ale
 
-		bufferEnvio = malloc(strlen(retornoOffset));
-		p = bufferEnvio;
+		if (cuantosPaquetes == 1)
+		{
+//			offset = string_length(datosEnvio) + 1;
+			bufferEnvio = malloc(offset + sizeof(int));
+			p = bufferEnvio;
+			copyStringToBuffer(&p,datosEnvio);
 
-		offset = offset + trasnfer_size;
-
-		copyStringToBuffer(&p,retornoOffset);
-
-		if(enviar(socketDAM, DAM_MDJ_OK, bufferEnvio, trasnfer_size, loggerAtencionDAM->logger)){
+		}
+		else
+		// if (cuantosPaquetes > 0)
+		{
+//			offset = trasnfer_size - sizeof(int);
+			char*retornoOffset = string_substring_until(datosEnvio, offset);
+			bufferEnvio = malloc(offset + sizeof(int));
+			p = bufferEnvio;
+			copyStringToBuffer(&p,retornoOffset);
+		}
+		if(enviar(socketDAM, DAM_MDJ_OK, bufferEnvio, offset + sizeof(int), loggerAtencionDAM->logger)){
 			log_error_mutex(loggerAtencionDAM, "Error al enviar validacion de archivo al DAM.");
 			free(bufferEnvio);
 		}
+		offset = offset + trasnfer_size - sizeof(int);
 
 		cuantosPaquetes--;
 		free(bufferEnvio);

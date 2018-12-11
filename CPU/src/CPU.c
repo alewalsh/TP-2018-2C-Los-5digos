@@ -196,6 +196,8 @@ int realizarEjecucion(t_dtb * dtb)
 		dtb->programCounter++;
 	}
 	pthread_mutex_unlock(&mutexQuantum);
+	// TODO: Recibir la cantidad de lineas real del DTB, ahora voy a forzar que no entre para evitar problemas.
+	dtb->cantidadLineas = dtb->programCounter + 1;
 	if (dtb->programCounter == dtb->cantidadLineas)
 	{
 		if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_DTB))
@@ -298,14 +300,12 @@ int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb)
 			if(manejarRecursosSAFA(operacion->argumentos.WAIT.recurso, (*dtb)->idGDT, WAIT))
 			{
 				log_error_mutex(loggerCPU, "No se pudo realizar el WAIT del recurso %s.", operacion->argumentos.WAIT.recurso);
-				break;
 			}
 			break;
 		case SIGNAL:
 			if(manejarRecursosSAFA(operacion->argumentos.SIGNAL.recurso, (*dtb)->idGDT, SIGNAL))
 			{
 				log_error_mutex(loggerCPU, "No se pudo realizar el SIGNAL del recurso %s.", operacion->argumentos.SIGNAL.recurso);
-				break;
 			}
 			break;
 		case ABRIR: case FLUSH: case CREAR: case BORRAR:
@@ -313,7 +313,6 @@ int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb)
 			if(respuesta == EXIT_FAILURE)
 			{
 				log_error_mutex(loggerCPU, "No se pudo enviar al DAM la operacion indicada.");
-				break;
 			}
 			return respuesta;
 			break;
@@ -322,7 +321,6 @@ int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb)
 			if(respuesta == EXIT_FAILURE)
 			{
 				log_error_mutex(loggerCPU, "No se pudo enviar al FM9 la operacion indicada.");
-				break;
 			}
 			return respuesta;
 		default:
