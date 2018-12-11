@@ -158,15 +158,14 @@ int realizarEjecucion(t_dtb * dtb)
 	// Por cada unidad de tiempo de quantum, se ejecutara una linea del Escriptorio indicado en el DTB
 	pthread_mutex_lock(&mutexQuantum);
 	// RETARDO DE EJECUCION:
-	usleep(config->retardo * 1000);
 	int periodoEjecucion = 0;
 	while(periodoEjecucion < quantum)
 	{
+		usleep(config->retardo * 1000);
 		// Comunicarse con el FM9 en caso de ser necesario.
 		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
 		// lo pase a la cola de Exit.
 		t_cpu_operacion operacion = obtenerInstruccionMemoria(dtb->dirEscriptorio, dtb->idGDT, dtb->programCounter);
-//		ANTES ERA ASI: t_cpu_operacion * operacion = list_get(listaInstrucciones, dtb->programCounter);
 
 		int quantumRestante = (quantum - periodoEjecucion)-1;
 		dtb->quantumRestante = quantumRestante;
@@ -205,7 +204,7 @@ int realizarEjecucion(t_dtb * dtb)
 	}
 	if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB))
 	{
-		log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
+		log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB por quantum.");
 	}
 	free(dtb);
 //	list_destroy_and_destroy_elements(listaInstrucciones, (void *) liberarOperacion);
@@ -242,11 +241,14 @@ int finalizoEjecucionDTB(t_dtb * dtb, int code)
 		log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
 		return EXIT_FAILURE;
 	}
-	if (finEjecucionFM9(dtb->idGDT))
+	if (code == CPU_SAFA_FIN_EJECUCION_DTB)
 	{
-		log_error_mutex(loggerCPU, "Hubo un error en el envio de la finalizacion del proceso al FM9.");
-		return EXIT_FAILURE;
+		if (finEjecucionFM9(dtb->idGDT))
+		{
+			log_error_mutex(loggerCPU, "Hubo un error en el envio de la finalizacion del proceso al FM9.");
+			return EXIT_FAILURE;
 
+		}
 	}
 	return EXIT_SUCCESS;
 }
