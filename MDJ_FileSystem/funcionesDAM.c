@@ -91,6 +91,8 @@ void manejarDAM(t_package pkg)
 
 				free(bufferCrear);
 				free(pathArchivoNuevo);
+				free(NcantidadDeNs);
+				free(pkg.data);
 
 				break;
 			}
@@ -125,6 +127,7 @@ void manejarDAM(t_package pkg)
 					enviar(socketDAM, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger);
 				}
 				free(pathArchivoALeer);
+				free(pkg.data);
 				break;
 			}
 		case DAM_MDJ_HACER_FLUSH: //guardar datos ++ [Path, Offset, Size, Buffer]
@@ -168,12 +171,17 @@ void manejarDAM(t_package pkg)
 
 					log_info_mutex(loggerAtencionDAM, "Datos guardados de: %s\n Antiguos: %s\n Nuevos: %s\n", pathArchivoAModificar, datosArchivo, stringModificado);
 
+					free(principio);
+					free(final);
+					free(stringModificado);
+					free(datosArchivo);
 				} else {
 					log_error_mutex(loggerAtencionDAM, "Error no se pudo leer de: %s", pathArchivoAModificar);
 					enviar(socketDAM, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger);
 				}
 				free(pathArchivoAModificar);
 				free(bufferGuardar);
+				free(pkg.data);
 				break;
 			}
 		case DAM_MDJ_BORRAR_ARCHIVO: //borrar archivo ++ [Path]
@@ -199,6 +207,7 @@ void manejarDAM(t_package pkg)
 				}
 
 				free(pathArchivoAEliminar);
+				free(pkg.data);
 			}
 			break;
 		case 6:

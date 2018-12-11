@@ -18,7 +18,7 @@ int main(int argc, char ** argv) {
 void inicializarMDJ(char * pathConfig){
 
 	loggerMDJ = log_create_mutex("MDJ.log", "MDJ", true, LOG_LEVEL_INFO);
-	loggerAtencionDAM = log_create_mutex("FS.log", "FS", true, LOG_LEVEL_ERROR);
+	loggerAtencionDAM = log_create_mutex("FS.log", "FS", true, LOG_LEVEL_INFO);
 	pthread_mutex_init(&semaforoBitarray, NULL);
 
 	if (pathConfig != NULL){
@@ -56,10 +56,6 @@ void crearFifa(){
 	crearRutaDirectorio(pathMetadata);
 	free(pathMetadata);
 
-	//al pedo?
-	char *pathInicial = malloc(10240);
-	getcwd(pathInicial,10240);
-
 	char *pathArchivoMetadata = string_new();
 	string_append(&pathArchivoMetadata,configuracion->puntoMontaje);
 	string_append(&pathArchivoMetadata,"Metadata/Metadata.bin");
@@ -79,11 +75,10 @@ void crearFifa(){
 			log_error_mutex(loggerMDJ, "Error al escribir archivo metadata.bin.");
 		}else{
 			log_info_mutex(loggerMDJ, "Se carga archivo metadata con informacion = %s", buffer);
-
-			fclose(metadata);
-			free(pathArchivoMetadata);
 		}
+		fclose(metadata);
 	}
+	free(pathArchivoMetadata);
 
 	//creo bitmap
 	int tamBitarray = configuracion->cant_bloq/8;
@@ -93,6 +88,8 @@ void crearFifa(){
 
 	char* data=malloc(tamBitarray);
 	bitarray = bitarray_create_with_mode(data,tamBitarray,MSB_FIRST); // if create falla error.
+	//segun valgrind pierdo 32 bytes pero si hago el free rompe.
+//	free(data);
 
 	int bit;
 	bit = 0;
@@ -121,6 +118,7 @@ void crearFifa(){
 
 		FILE *bitmap;
 		bitmap = fopen(pathArchivoBitmap, "rb");
+		free(pathArchivoBitmap);
 
 		if(bitmap == NULL){
 			log_error_mutex(loggerMDJ, "No se puede abrir bitmap que supuestamente ya existe.");
@@ -140,6 +138,8 @@ void crearFifa(){
 
 				posicion ++;
 			}
+			free(bitarrayCompleto);
+			fclose(bitmap);
 		}
 	}else{
 		log_info_mutex(loggerMDJ, "No se detecto un bitmap previo. Se procede a crearlo vacio.");
@@ -191,6 +191,7 @@ void inicializarConexion(){
 	}
 	char *bufferTS = paqueteTS.data;
 	trasnfer_size = copyIntFromBuffer(&bufferTS);
+	free(paqueteTS.data);
 
 	//inicio hilo de escucha a peticiones del DAM.
     pthread_create(&threadDAM, &tattr, (void *) esperarInstruccionDAM, NULL);
@@ -232,11 +233,15 @@ void crearRutaDirectorio(char *ruta){
 			if(a != 0){
 				log_error_mutex(loggerAtencionDAM, "Error  al crear path: %s", ruta);
 			}
+			free(carpetas[i]);
 			i++;
 		}else{
+			free(carpetas[i]);
 			i++;
 		}
 	}
+	free(carpetas);
+	free(pathCompleto);
 	log_info_mutex(loggerAtencionDAM, "Se creo la siguiente ruta: = %s", ruta);
 
 }
