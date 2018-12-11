@@ -67,6 +67,7 @@ int cerrarArchivoSegmentacion(t_package pkg, t_infoCerrarArchivo* datosPaquete, 
 
 int devolverInstruccionSegmentacion(t_package pkg, t_infoDevolverInstruccion* datosPaquete, int socketSolicitud)
 {
+	int posicionBuscada = datosPaquete->posicion;
 	t_gdt * gdt = dictionary_get(tablaProcesos,intToString(datosPaquete->pid));
 	if (gdt == NULL)
 	{
@@ -79,9 +80,9 @@ int devolverInstruccionSegmentacion(t_package pkg, t_infoDevolverInstruccion* da
 		for(int i = 0; i < cantidadSegmentos; i++)
 		{
 			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
-			if (strcmp(segmento->archivo,datosPaquete->path) == 0 && segmento->limite >= datosPaquete->posicion)
+			if (strcmp(segmento->archivo,datosPaquete->path) == 0 && segmento->limite >= posicionBuscada)
 			{
-				enviarInstruccion(direccion(segmento->base,datosPaquete->posicion), socketSolicitud);
+				enviarInstruccion(direccion(segmento->base,posicionBuscada), socketSolicitud);
 				pudeObtener = true;
 				break;
 			}
