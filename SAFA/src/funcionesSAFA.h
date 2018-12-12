@@ -104,6 +104,7 @@ int finEjecucionPorQuantum(t_dtb * dtb);
 int confirmacionDMA(int pid, int result);
 int abortarDTBNuevo(t_dtb * dtb);
 void actualizarIODtb(t_dtb * dtb, int cantIo, int cantLineasProceso);
+void actualizarTablaDirecciones(int pid, char * path);
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA MANEJO DEL DUMMY
 //------------------------------------------------------------------------------------------------------------------
@@ -120,6 +121,7 @@ void planificadorCPdesbloquearDummy();
 //------------------------------------------------------------------------------------------------------------------
 int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar);
 t_dtb * buscarDTBPorPIDenCola(t_list * cola, int pid);
+int buscarPosicionPorPIDenCola(t_list * cola, int pid);
 t_cpus *crearCpu();
 int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq);
 int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq);

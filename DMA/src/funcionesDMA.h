@@ -78,6 +78,8 @@ bool borrarArchivo(t_package paquete, int socketEnUso);
 int contarCantidadLineas(char * string);
 int calcularCantidadPaquetes(int sizeOfFile);
 void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int cantLineasArchivo, int code);
+void enviarConfirmSafaScriptInit(int pid, int result, int cantidadIODelProceso, int cantLineasArchivo);
+void enviarConfirmSafaAbrirArchivo(int pid, int result, char * path);
 int confirmarExistenciaFile();
 int esOperacionDeIO(t_cpu_operacion operacion);
 #endif /* FUNCIONESDMA_H_ */

@@ -56,18 +56,18 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 	}else if(sizeOfFile == 0){
 		//El archivo existe pero no tiene nada -> Se envia error al safa
 		result = EXIT_FAILURE;
-		enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_INICIALIZADO);
+		enviarConfirmSafaScriptInit(pid, result, 0, 0);
 		free(bufferEnvio);
 		return false;
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
-		enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_INICIALIZADO);
+		enviarConfirmSafaScriptInit(pid, result, 0, 0);
 		free(bufferEnvio);
 		return false;
 	}
 
-	enviarConfirmacionSafa(pid, result, cantIODelProceso, cantLineasDelArchivo, ARCHIVO_INICIALIZADO);
+	enviarConfirmSafaScriptInit(pid, result, cantIODelProceso, cantLineasDelArchivo);
 
 	free(bufferEnvio);
 	free(path);
@@ -241,7 +241,7 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 	printf("Ehhh, voy a buscar %s para %d", path, pid);
 
 	//Se envia el path del archivo al filesystem
-	int size = strlen(path) + 1 + sizeof(int);
+	int size = ((strlen(path) + 1)*sizeof(char)) + sizeof(int);
 	char * bufferEnvio = malloc(size);
 	char * p = bufferEnvio;
 	copyStringToBuffer(&p, path);
@@ -263,12 +263,12 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
-		enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_CARGADO);
+		enviarConfirmSafaAbrirArchivo(pid, result, path);
 		free(bufferEnvio);
 		return EXIT_FAILURE;
 	}
 
-	enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_CARGADO);
+	enviarConfirmSafaAbrirArchivo(pid, result, path);
 	free(bufferEnvio);
 
 	return EXIT_SUCCESS;
@@ -304,7 +304,7 @@ bool hacerFlush(t_package paquete, int socketEnUso) {
 	//Se reciben los paquetes del mdj y se envian al fm9
 	int result = enviarPkgDeFm9AMdj(path);
 	enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_GUARDADO);
-	return true;
+	return result;
 }
 
 int enviarPkgDeFm9AMdj(char * path) {
@@ -654,9 +654,6 @@ void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int c
 	copyIntToBuffer(&p, cantLineasArchivo);
 
 	switch(code){
-	case ARCHIVO_INICIALIZADO:
-		msjCode = DAM_SAFA_CONFIRMACION_SCRIPT_INICIALIZADO;
-		break;
 	case ARCHIVO_CREADO:
 		msjCode = DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO;
 		break;
@@ -665,14 +662,54 @@ void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int c
 		msjCode = DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO;
 		break;
 
-	case ARCHIVO_CARGADO:
-		msjCode = DAM_SAFA_CONFIRMACION_PID_CARGADO;
-		break;
-
 	case ARCHIVO_GUARDADO:
 		msjCode = DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS;
 		break;
 	}
+
+	if (enviar(t_socketSafa->socket, msjCode, buffer, size, logger->logger)) {
+		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
+		free(buffer);
+	}
+
+	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
+	free(buffer);
+}
+
+void enviarConfirmSafaScriptInit(int pid, int result, int cantidadIODelProceso, int cantLineasArchivo){
+
+	int msjCode;
+	int size = sizeof(int) * 4;
+	char *buffer = (char *) malloc(size);
+	char *p = buffer;
+	copyIntToBuffer(&p, pid);
+	copyIntToBuffer(&p, result);
+	copyIntToBuffer(&p,cantidadIODelProceso);
+	copyIntToBuffer(&p, cantLineasArchivo);
+
+	msjCode = DAM_SAFA_CONFIRMACION_SCRIPT_INICIALIZADO;
+
+
+	if (enviar(t_socketSafa->socket, msjCode, buffer, size, logger->logger)) {
+		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
+		free(buffer);
+	}
+
+	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
+	free(buffer);
+}
+
+void enviarConfirmSafaAbrirArchivo(int pid, int result, char * path){
+
+	int msjCode;
+	int size = sizeof(int) * 3 + (strlen(path)+1)*sizeof(char);
+	char *buffer = (char *) malloc(size);
+	char *p = buffer;
+	copyIntToBuffer(&p, pid);
+	copyIntToBuffer(&p, result);
+	copyStringToBuffer(&p, path);
+
+	msjCode = DAM_SAFA_CONFIRMACION_PID_CARGADO;
 
 
 	if (enviar(t_socketSafa->socket, msjCode, buffer, size, logger->logger)) {
