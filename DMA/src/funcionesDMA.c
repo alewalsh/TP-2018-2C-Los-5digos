@@ -122,7 +122,6 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 	//realizo un split con cada /n y cuento la cantidad de lineas que contiene el mensaje
 	int cantLineas = 0;
 
-	//char** arrayLineas = str_split(bufferConcatenado, '\n', &cantLineas);
 	char ** arrayLineas = string_split(bufferConcatenado,"\n");
 	int j = 0;
 	while(arrayLineas[j])
