@@ -297,12 +297,13 @@ int desbloquearDTBsegunAlgoritmo(int pid){
 	return EXIT_SUCCESS;
 }
 
-void actualizarIODtb(t_dtb * dtb, int cantIo){
+void actualizarIODtb(t_dtb * dtb, int cantIo, int cantLineasProceso){
 
 	pthread_mutex_lock(&mutexNewList);
 	int index = buscarDTBEnCola(colaNew,dtb);
 	t_dtb * dtbAModificar = list_get(colaNew,index);
 	dtbAModificar->cantIO = cantIo;
+	dtbAModificar->cantidadLineas = cantLineasProceso;
 	list_add_in_index(colaNew,index,dtbAModificar);
 	pthread_mutex_unlock(&mutexNewList);
 }

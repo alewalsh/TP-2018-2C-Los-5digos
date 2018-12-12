@@ -197,12 +197,13 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	int pid = copyIntFromBuffer(&buffer);
 			int result = copyIntFromBuffer(&buffer);
 			int cantIOProcess = copyIntFromBuffer(&buffer);
+			int cantLineasProceso = copyIntFromBuffer(&buffer);
 
 			pthread_mutex_lock(&mutexNewList);
 			t_dtb * dtb = buscarDTBPorPIDenCola(colaNew, pid);
 			pthread_mutex_unlock(&mutexNewList);
 			if(result == EXIT_SUCCESS){
-				actualizarIODtb(dtb, cantIOProcess);
+				actualizarIODtb(dtb, cantIOProcess,cantLineasProceso);
 				pasarDTBdeNEWaREADY(dtb); //Se cargó en memoria correctamente
 				log_info_mutex(logger, "Se cargó correctamente en memoria el proceso: %d", pid);
 			}else{

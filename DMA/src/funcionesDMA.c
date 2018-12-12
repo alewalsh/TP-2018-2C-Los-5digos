@@ -47,7 +47,8 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 
 	//Declaro aca el cantIO pq si no, no funciona el enviar
 	cantIODelProceso = 0;
-
+	//Declaro aca la cantidad de lineas que va a tener el archivo
+	cantLineasDelArchivo = 0;
 	if(sizeOfFile >0){
 		//Se reciben los paquetes del mdj y se envian al fm9
 		result = enviarPkgDeMdjAFm9(pid, path, sizeOfFile );
@@ -55,18 +56,18 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 	}else if(sizeOfFile == 0){
 		//El archivo existe pero no tiene nada -> Se envia error al safa
 		result = EXIT_FAILURE;
-		enviarConfirmacionSafa(pid, result, 0, ARCHIVO_INICIALIZADO);
+		enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_INICIALIZADO);
 		free(bufferEnvio);
 		return false;
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
-		enviarConfirmacionSafa(pid, result, 0, ARCHIVO_INICIALIZADO);
+		enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_INICIALIZADO);
 		free(bufferEnvio);
 		return false;
 	}
 
-	enviarConfirmacionSafa(pid, result, cantIODelProceso,ARCHIVO_INICIALIZADO);
+	enviarConfirmacionSafa(pid, result, cantIODelProceso, cantLineasDelArchivo, ARCHIVO_INICIALIZADO);
 
 	free(bufferEnvio);
 	free(path);
@@ -137,6 +138,8 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 		cantLineas++;
 		j++;
 	}
+
+	cantLineasDelArchivo = cantLineas;
 	free(bufferConcatenado);
 
 	//Se envia un msj al fm9 con los siguientes parametros
@@ -261,12 +264,12 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
-		enviarConfirmacionSafa(pid, result, 0,ARCHIVO_CARGADO);
+		enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_CARGADO);
 		free(bufferEnvio);
 		return EXIT_FAILURE;
 	}
 
-	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_CARGADO);
+	enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_CARGADO);
 	free(bufferEnvio);
 
 	return EXIT_SUCCESS;
@@ -301,7 +304,7 @@ bool hacerFlush(t_package paquete, int socketEnUso) {
 
 	//Se reciben los paquetes del mdj y se envian al fm9
 	int result = enviarPkgDeFm9AMdj(path);
-	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_GUARDADO);
+	enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_GUARDADO);
 	return true;
 }
 
@@ -447,14 +450,14 @@ int enviarPkgDeFm9AMdj(char * path) {
 	if (enviar(t_socketMdj->socket, DAM_MDJ_CREAR_ARCHIVO, bufferEnvio, size, logger->logger)) {
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
 		free(bufferEnvio);
-		enviarConfirmacionSafa(pid, EXIT_FAILURE, 0, ARCHIVO_CREADO);
+		enviarConfirmacionSafa(pid, EXIT_FAILURE, 0, 0, ARCHIVO_CREADO);
 		return false;
 	}
 
 	t_package response;
 	if(recibir(t_socketMdj->socket, &response, logger->logger)){
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
-		enviarConfirmacionSafa(pid,EXIT_FAILURE,0,ARCHIVO_CREADO);
+		enviarConfirmacionSafa(pid,EXIT_FAILURE,0, 0, ARCHIVO_CREADO);
 		return false;
 	}
 
@@ -466,7 +469,7 @@ int enviarPkgDeFm9AMdj(char * path) {
 	}
 
 	//SE ENVIA CONFIRMACION A SAFA
-	enviarConfirmacionSafa(pid, result,0, ARCHIVO_CREADO);
+	enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_CREADO);
 	free(bufferEnvio);
 	return true;
 }
@@ -492,7 +495,7 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 		log_error_mutex(logger,
 				"Error al enviar el path al MDJ del archivo a borrar");
 		free(buffer);
-		enviarConfirmacionSafa(pid, EXIT_FAILURE, 0, ARCHIVO_BORRADO);
+		enviarConfirmacionSafa(pid, EXIT_FAILURE, 0, 0, ARCHIVO_BORRADO);
 		return false;
 	}
 
@@ -500,7 +503,7 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 	t_package response;
 	if(recibir(t_socketMdj->socket, &response, logger->logger)){
 		log_error_mutex(logger, "Error al crear el archivo: %s", path);
-		enviarConfirmacionSafa(pid,EXIT_FAILURE, 0, ARCHIVO_CREADO);
+		enviarConfirmacionSafa(pid,EXIT_FAILURE, 0, 0, ARCHIVO_CREADO);
 		return false;
 	}
 
@@ -512,7 +515,7 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 	}
 
 	//SE ENVIA LA CONFIRMACION A SAFA
-	enviarConfirmacionSafa(pid, result, 0, ARCHIVO_BORRADO);
+	enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_BORRADO);
 	return true;
 }
 
@@ -643,15 +646,16 @@ void conectarYRecibirHandshake(int puertoEscucha) {
 //------------------------------------------------------------------------------------------------------------------
 
 
-void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int code){
+void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int cantLineasArchivo, int code){
 
 	int msjCode;
-	int size = sizeof(int) * 3;
+	int size = sizeof(int) * 4;
 	char *buffer = (char *) malloc(size);
 	char *p = buffer;
 	copyIntToBuffer(&p, pid);
 	copyIntToBuffer(&p, result);
 	copyIntToBuffer(&p,cantidadIODelProceso);
+	copyIntToBuffer(&p, cantLineasArchivo);
 
 	switch(code){
 	case ARCHIVO_INICIALIZADO:
