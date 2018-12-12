@@ -324,8 +324,9 @@ void actualizarIODtb(t_dtb * dtb, int cantIo, int cantLineasProceso){
 
 void actualizarTablaDirecciones(int pid, char * path){
 	pthread_mutex_lock(&mutexBloqueadosList);
+	// TODO: OJO QUE ESTÁ DEVOLVIENDO EL DUMMY Y NO EL GDT BUSCADO
 	int index = buscarPosicionPorPIDenCola(colaBloqueados,pid);
-	if(index>0){
+	if(index >= 0){
 		t_dtb * dtbAModificar = list_get(colaBloqueados,index);
 		list_add(dtbAModificar->tablaDirecciones,path);
 		list_add_in_index(colaBloqueados,index,dtbAModificar);
@@ -382,6 +383,8 @@ void bloquearDummy(){
     //bloquear dummy
     pthread_mutex_lock(&mutexEjecutandoList);
     t_dtb * dummy = list_find(colaEjecutando,(void *)obtenerDummy);
+    dummy->idGDT = 0;
+    dummy->dirEscriptorio = "\0";
     pthread_mutex_unlock(&mutexEjecutandoList);
     bloquearDTB(dummy);
 }

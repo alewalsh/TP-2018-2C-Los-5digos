@@ -348,7 +348,6 @@ int enviarPkgDeFm9AMdj(char * path) {
 
 
 		char * bufferLineaConcatenada = string_new();
-		t_package pkgTransferSize;
 		//Ahora se reciben los paquetes y se envia a FILESYSTEM
 		for (int i = 0; i < cantidadPaquetes; i++) {
 			t_package pkgTransferSize;
