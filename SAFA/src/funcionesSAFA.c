@@ -273,10 +273,10 @@ t_dtb * buscarDTBPorPIDenCola(t_list * cola, int pid){
 	return dtb;
 }
 
-t_dtb * buscarPosicionPorPIDenCola(t_list * cola, int pid){
+int buscarPosicionPorPIDenCola(t_list * cola, int pid){
 	t_dtb * dtb;
 	int listSize = list_size(cola);
-	if(listSize<= 0) return NULL;
+	if(listSize<= 0) return -1;
 
 	for(int i = 0; i<listSize;i++){
 		dtb = list_get(cola,i);

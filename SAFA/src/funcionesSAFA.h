@@ -121,6 +121,7 @@ void planificadorCPdesbloquearDummy();
 //------------------------------------------------------------------------------------------------------------------
 int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar);
 t_dtb * buscarDTBPorPIDenCola(t_list * cola, int pid);
+int buscarPosicionPorPIDenCola(t_list * cola, int pid);
 t_cpus *crearCpu();
 int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq);
 int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq);
