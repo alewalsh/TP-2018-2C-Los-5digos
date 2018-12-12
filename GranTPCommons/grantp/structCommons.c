@@ -155,10 +155,17 @@ t_dtb * transformarPaqueteADTB(t_package paquete)
 	dtb->programCounter = copyIntFromBuffer(&buffer);
 	dtb->flagInicializado = copyIntFromBuffer(&buffer);
 	tieneTablaDirecciones = copyIntFromBuffer(&buffer);
+	dtb->tablaDirecciones = list_create();
 	if (tieneTablaDirecciones)
-		dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
-	else
-		dtb->tablaDirecciones = NULL;
+	{
+		int cantidadDirecciones = copyIntFromBuffer(&buffer);
+		int i = 0;
+		while(i < cantidadDirecciones)
+		{
+			char * path = copyStringFromBuffer(&buffer);
+			list_add(dtb->tablaDirecciones,path);
+		}
+	}
 	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
 	dtb->realizOpDummy = copyIntFromBuffer(&buffer);
 	dtb->quantumRestante = copyIntFromBuffer(&buffer);
@@ -172,15 +179,21 @@ t_package transformarDTBAPaquete(t_dtb * dtb)
 	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
 	t_package paquete;
     int stringsLength = strlen(dtb->dirEscriptorio) + 1;
+    int tamanioTablaDirecciones = 0;
 	bool tieneTablaDirecciones = false;
 	int size = 0;
-	if (dtb->tablaDirecciones != NULL)
+	if (dtb->tablaDirecciones != NULL && !list_is_empty(dtb->tablaDirecciones))
 	{
-		stringsLength += strlen(dtb->tablaDirecciones) + 1;
+		int i = 0;
+		while(i < dtb->tablaDirecciones->elements_count)
+		{
+			char * path = list_get(dtb->tablaDirecciones, i);
+			tamanioTablaDirecciones += (string_length(path) + 1)* sizeof(char) + sizeof(int);
+		}
+		tamanioTablaDirecciones += sizeof(int);
 		tieneTablaDirecciones = true;
-		size += sizeof(int);
 	}
-	size = sizeof(int)*10 + (stringsLength) * sizeof(char);
+	size = sizeof(int)*10 + (stringsLength) * sizeof(char) + tamanioTablaDirecciones;
 	paquete.size = size;
 	char *buffer = (char *) malloc(paquete.size);
 	char * p = buffer;
@@ -190,7 +203,15 @@ t_package transformarDTBAPaquete(t_dtb * dtb)
 	copyIntToBuffer(&p,dtb->flagInicializado);
 	copyIntToBuffer(&p,tieneTablaDirecciones);
 	if (tieneTablaDirecciones)
-		copyStringToBuffer(&p,dtb->tablaDirecciones);
+	{
+		copyIntToBuffer(&p,dtb->tablaDirecciones->elements_count);
+		int j = 0;
+		while(j < dtb->tablaDirecciones->elements_count)
+		{
+			char * path = list_get(dtb->tablaDirecciones, j);
+			copyStringToBuffer(&p,path);
+		}
+	}
 	copyIntToBuffer(&p,dtb->cantidadLineas);
 	copyIntToBuffer(&p,dtb->realizOpDummy);
 	copyIntToBuffer(&p, dtb->quantumRestante);

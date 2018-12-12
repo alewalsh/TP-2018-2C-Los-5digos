@@ -409,16 +409,25 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 	t_package paquete = crearPaqueteSegunAccion(accion, operacion, dtb);
 	if (accion == ABRIR)
 	{
-		if ((*dtb)->tablaDirecciones && strstr((*dtb)->tablaDirecciones, operacion->argumentos.ABRIR.path) != NULL)
+		// TODO: Chequear la conversion de DTB a Package y viceversa para replicar correctamente la tabla de direcciones.
+		pthread_mutex_lock(&mutexPath);
+		pathBuscado = operacion->argumentos.ABRIR.path;
+		if (!list_is_empty((*dtb)->tablaDirecciones) && list_any_satisfy((*dtb)->tablaDirecciones, (void *) encontrarPath))
 		{
+			pthread_mutex_unlock(&mutexPath);
 			log_info_mutex(loggerCPU, "El archivo %s ya está abierto por el proceso %d.", operacion->argumentos.ABRIR.path, (*dtb)->idGDT);
 			return EXIT_SUCCESS;
 		}
+		pthread_mutex_unlock(&mutexPath);
 	}
+	int respuesta = 0;
+	// Esta validacion es para que sólo se bloquee el GDT cuando la accion implica una llamada al DAM.
 	if (modulo == DAM)
 	{
 		socket = t_socketDAM->socket;
+		respuesta = ejecucionDAM(dtb);
 	}
+	// Esta validacion es para esperar una respuesta del FM9 y verificar que no haya errores ni accesos inválidos.
 	if (modulo == FM9)
 	{
 		socket = t_socketFM9->socket;
@@ -436,17 +445,22 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 		return EXIT_FAILURE;
 	}
 
-	// Esta validacion es para que sólo se bloquee el GDT cuando la accion implica una llamada al DAM.
 	if (modulo == DAM)
 	{
-		return ejecucionDAM(dtb);
+		return respuesta;
 	}
-	// Esta validacion es para esperar una respuesta del FM9 y verificar que no haya errores ni accesos inválidos.
 	if (modulo == FM9)
 	{
 		return ejecucionFM9(dtb, socket);
 	}
 	return EXIT_SUCCESS;
+}
+
+bool encontrarPath(char * direccion)
+{
+	if (strcmp(direccion, pathBuscado) == 0)
+		return true;
+	return false;
 }
 
 int ejecucionDAM(t_dtb ** dtb)
@@ -617,6 +631,7 @@ void exit_gracefully(int error)
 	liberarMemoriaTSocket(t_socketSAFA);
 	liberarMemoriaTSocket(t_socketFM9);
 	pthread_mutex_destroy(&mutexQuantum);
+	pthread_mutex_destroy(&mutexPath);
 	log_destroy_mutex(loggerCPU);
 	freeConfig(config, CPU);
 	exit(error);
@@ -633,4 +648,5 @@ void liberarMemoriaTSocket(t_socket * TSocket)
 
 void initMutexs(){
 	pthread_mutex_init(&mutexQuantum, NULL);
+	pthread_mutex_init(&mutexPath, NULL);
 }

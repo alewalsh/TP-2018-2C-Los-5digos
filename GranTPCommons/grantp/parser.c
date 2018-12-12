@@ -92,7 +92,6 @@ t_cpu_operacion parse(char* line, bool ultimaLinea){
 	char* clave = split[1];
 
 	ret._raw = split;
-	int i = 3;
 	if(!ultimaLinea)
 	{
 		if (!string_starts_with(keyword,"#"))

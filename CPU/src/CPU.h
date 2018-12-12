@@ -31,7 +31,7 @@ configCPU * config;
  */
 t_log_mutex * loggerCPU;
 int quantum;
-
+char * pathBuscado;
 /*
  * Sockets
  */
@@ -64,6 +64,7 @@ enum accionEjecutada
  * Semaforos
  */
 pthread_mutex_t mutexQuantum;
+pthread_mutex_t mutexPath;
 
 /*
  * Funciones
@@ -126,4 +127,5 @@ int ejecucionFM9(t_dtb ** dtb, int socket);
 int finEjecucionFM9(int idGDT);
 
 t_cpu_operacion obtenerInstruccionMemoria(char * direccionEscriptorio, int idGDT, int posicion);
+bool encontrarPath(char * direccion);
 #endif /* CPU_H_ */
