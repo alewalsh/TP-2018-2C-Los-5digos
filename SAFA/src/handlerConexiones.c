@@ -214,6 +214,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	break;
         }
 
+        //LA PETICION "ABRIR ARCHIVO" SE FINALIZO
         case DAM_SAFA_CONFIRMACION_PID_CARGADO:{
         	char * buffer = pkg.data;
 			int pid = copyIntFromBuffer(&buffer);
@@ -233,7 +234,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 
 			break;
         }
-		//LA PETICION "ABRIR" SE FINALIZO
+
         //LA PETICION "FLUSH" SE FINALIZÓ
         //LA PETICION "CREAR ARCHIVO" SE FINALIZÓ
         //LA PETICION "BORRAR ARCHIVO" SE FINALIZÓ
