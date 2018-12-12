@@ -104,6 +104,7 @@ int finEjecucionPorQuantum(t_dtb * dtb);
 int confirmacionDMA(int pid, int result);
 int abortarDTBNuevo(t_dtb * dtb);
 void actualizarIODtb(t_dtb * dtb, int cantIo, int cantLineasProceso);
+void actualizarTablaDirecciones(int pid, char * path);
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA MANEJO DEL DUMMY
 //------------------------------------------------------------------------------------------------------------------

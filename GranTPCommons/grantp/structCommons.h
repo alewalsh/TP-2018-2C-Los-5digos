@@ -26,7 +26,7 @@ typedef struct {
     int programCounter;
     int flagInicializado;
     int realizOpDummy;
-    char *tablaDirecciones;
+    t_list * tablaDirecciones;
     int cantidadLineas;
     int quantumRestante;
     int cantIO;

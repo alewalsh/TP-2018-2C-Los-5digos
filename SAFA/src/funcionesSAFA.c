@@ -126,7 +126,7 @@ t_dtb *crearNuevoDTB(char *dirScript) {
 //	newDTB->dirEscriptorio = dirScript;
 	newDTB->programCounter = 0;
 	newDTB->flagInicializado = 1;
-	newDTB->tablaDirecciones = NULL;
+	newDTB->tablaDirecciones = list_create();
 	newDTB->cantidadLineas = 0;
 	newDTB->realizOpDummy = 0;
 	newDTB->quantumRestante = 0;
@@ -273,6 +273,20 @@ t_dtb * buscarDTBPorPIDenCola(t_list * cola, int pid){
 	return dtb;
 }
 
+t_dtb * buscarPosicionPorPIDenCola(t_list * cola, int pid){
+	t_dtb * dtb;
+	int listSize = list_size(cola);
+	if(listSize<= 0) return NULL;
+
+	for(int i = 0; i<listSize;i++){
+		dtb = list_get(cola,i);
+		if(dtb->idGDT == pid){
+			return i;
+			break;
+		}
+	}
+	return -1;
+}
 
 int desbloquearDTBsegunAlgoritmo(int pid){
 	//desbloqueo el proceso dependiendo del algoritmo indicado
@@ -306,6 +320,20 @@ void actualizarIODtb(t_dtb * dtb, int cantIo, int cantLineasProceso){
 	dtbAModificar->cantidadLineas = cantLineasProceso;
 	list_add_in_index(colaNew,index,dtbAModificar);
 	pthread_mutex_unlock(&mutexNewList);
+}
+
+void actualizarTablaDirecciones(int pid, char * path){
+	pthread_mutex_lock(&mutexBloqueadosList);
+	int index = buscarPosicionPorPIDenCola(colaBloqueados,pid);
+	if(index>0){
+		t_dtb * dtbAModificar = list_get(colaBloqueados,index);
+		list_add(dtbAModificar->tablaDirecciones,path);
+		list_add_in_index(colaBloqueados,index,dtbAModificar);
+		log_info_mutex(logger, "Se actualizó la tabla de direcciones del proceso: %d", pid);
+	}else{
+		log_error_mutex(logger,"NO se encontró el proceso en la cola de bloqueados");
+	}
+	pthread_mutex_unlock(&mutexBloqueadosList);
 }
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA MANEJO DEL DUMMY

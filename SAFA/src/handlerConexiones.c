@@ -214,12 +214,30 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	break;
         }
 
+        case DAM_SAFA_CONFIRMACION_PID_CARGADO:{
+        	char * buffer = pkg.data;
+			int pid = copyIntFromBuffer(&buffer);
+			int result = copyIntFromBuffer(&buffer);
+			char * path = copyStringFromBuffer(&buffer);
+
+			if(result == EXIT_SUCCESS){ //SE CARGÓ CORRECTAMENTE
+				//actualizar tabla de direcciones
+				actualizarTablaDirecciones(pid, path);
+			}
+
+			if(confirmacionDMA(pid, result)){
+				//Error
+				log_error_mutex(logger, "No se pudo cargar el proceso pid: %d en memoria", pid);
+			}
+			log_info_mutex(logger,"Se cargó en memoria y se desbloqueó el proceso pid: %d", pid);
+
+			break;
+        }
 		//LA PETICION "ABRIR" SE FINALIZO
         //LA PETICION "FLUSH" SE FINALIZÓ
         //LA PETICION "CREAR ARCHIVO" SE FINALIZÓ
         //LA PETICION "BORRAR ARCHIVO" SE FINALIZÓ
-		case (DAM_SAFA_CONFIRMACION_PID_CARGADO||
-		DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS||
+		case (DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS||
 		DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO||
 		DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO):{
 			int pid = copyIntFromBuffer(&pkg.data);
