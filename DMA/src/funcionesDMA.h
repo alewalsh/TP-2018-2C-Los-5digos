@@ -50,6 +50,7 @@ enum codConfirmSafaId{
 };
 
 int cantIODelProceso;
+int cantLineasDelArchivo;
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA EL MANEJO DEL SELECT
 //------------------------------------------------------------------------------------------------------------------
@@ -76,7 +77,7 @@ bool crearArchivo(t_package paquete, int socketEnUso);
 bool borrarArchivo(t_package paquete, int socketEnUso);
 int contarCantidadLineas(char * string);
 int calcularCantidadPaquetes(int sizeOfFile);
-void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int code);
+void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int cantLineasArchivo, int code);
 int confirmarExistenciaFile();
 int esOperacionDeIO(t_cpu_operacion operacion);
 #endif /* FUNCIONESDMA_H_ */
