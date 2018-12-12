@@ -354,8 +354,7 @@ int enviarPkgDeFm9AMdj(char * path) {
 		for (int i = 0; i < cantidadPaquetes; i++) {
 			t_package pkgTransferSize;
 
-			if (recibir(t_socketFm9->socket, &pkgTransferSize,
-					logger->logger)) {
+			if (recibir(t_socketFm9->socket, &pkgTransferSize, logger->logger)) {
 				log_error_mutex(logger, "Error al recibir el paquete %d", i);
 				return EXIT_FAILURE;
 			} else {
@@ -373,9 +372,7 @@ int enviarPkgDeFm9AMdj(char * path) {
 		free(bufferLineaConcatenada);
 	}
 
-	log_info_mutex(logger,
-					"Se enviaron todos los datos  del proceso %s,al FileSystem.",
-					path);
+	log_info_mutex(logger, "Se enviaron todos los datos  del proceso %s,al FileSystem.", path);
 
 	//ENVIO A MDJ
 	//ENVIAR DATOS A MDJ: le envio EL PATH, EL INICIO Y EL SIZE A GUARDAR PARA QUE CALCULE LA CANTIDAD DE PAQUETES A ENVIAR

@@ -180,7 +180,6 @@ int realizarEjecucion(t_dtb * dtb)
 				{
 					log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
 				}
-
 				break;
 			case CONCENTRAR_EJECUTADO:
 				continue;
@@ -197,7 +196,7 @@ int realizarEjecucion(t_dtb * dtb)
 	}
 	pthread_mutex_unlock(&mutexQuantum);
 	// TODO: Recibir la cantidad de lineas real del DTB, ahora voy a forzar que no entre para evitar problemas.
-	dtb->cantidadLineas = dtb->programCounter + 1;
+	//dtb->cantidadLineas = dtb->programCounter + 1;
 	if (dtb->programCounter == dtb->cantidadLineas)
 	{
 		if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_DTB))
@@ -252,7 +251,6 @@ int finalizoEjecucionDTB(t_dtb * dtb, int code)
 		{
 			log_error_mutex(loggerCPU, "Hubo un error en el envio de la finalizacion del proceso al FM9.");
 			return EXIT_FAILURE;
-
 		}
 		log_info_mutex(loggerCPU, "Se ha finalizado la ejecucion del proceso %d.", dtb->idGDT);
 	}
