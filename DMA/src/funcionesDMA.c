@@ -101,8 +101,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 	}
 	free(pkg);
 
-	char * bufferConcatenado = malloc(configDMA->transferSize * cantPkg);
-	char * ptr = bufferConcatenado;
+	char * bufferConcatenado = string_new();
 	//Recibo x cantPkg del mdj y se concatenan en un bufferConcatenado
 	for (int i = 0; i < cantPkg; i++) {
 		t_package pkgTransferSize;
@@ -113,11 +112,10 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 			//Concatenar buffer
 			char * buffer = pkgTransferSize.data;
 			char * stringRecibido = copyStringFromBuffer(&buffer);
-			copyStringToBuffer(&ptr, stringRecibido);
+			string_append(&bufferConcatenado,stringRecibido);
+			free(stringRecibido);
 		}
 	}
-	// ESTO DEBE HACERSE PORQUE EL STRING MANDA PRIMERO EL TAMAÑO, Y AL SUCEDER ESO, ROMPE EL STRING_SPLIT PORQUE NO ESPERA UN INT AL PRINCIPIO
-	bufferConcatenado += sizeof(int);
 
 	//una vez recibido tudo el archivo y de haberlo concatenado en un char *
 	//realizo un split con cada /n y cuento la cantidad de lineas que contiene el mensaje
@@ -139,11 +137,6 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 		cantLineas++;
 		j++;
 	}
-	// SE LE RESTA UNO DE MANERA FORZADA PORQUE, SI NO, CUENTA LA LINEA VACIA DEL FINAL Y OCUPARIA MEMORIA DE MANERA INCORRECTA
-	cantLineas -= 1;
-
-	// LO VUELVO A LA POSICION NORMAL PARA QUE REALICE EL FREE CORRECTAMENTE
-	bufferConcatenado -= sizeof(int);
 	free(bufferConcatenado);
 
 	//Se envia un msj al fm9 con los siguientes parametros
@@ -175,7 +168,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 			int cantPaquetes = calcularCantidadPaquetes(tamanioLinea);
 
 			//por cada paquete...
-			for (int l = 0; j < cantPaquetes; l++) {
+			for (int l = 0; l < cantPaquetes; l++) {
 				char * sub; //substring a enviar
 				int inicio = configDMA->transferSize * k, //posicion inicial del substring
 				fin = (configDMA->transferSize * (k + 1))-1; //posicion final del substring
@@ -195,16 +188,13 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 				copyStringToBuffer(&p, sub); //BUFFER
 
 				//enviar
-				if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG,
-						bufferAEnviar, size, logger->logger)) {
-					log_error_mutex(logger,
-							"Error al enviar info del escriptorio a FM9");
+				if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG, bufferAEnviar, size, logger->logger)) {
+					log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
 					free(bufferAEnviar);
 					return EXIT_FAILURE;
 				}
 
 				free(bufferAEnviar);
-				free(buffer);
 			}
 		} else {
 			//Si está dentro del tamaño permitido se envía la linea
@@ -223,7 +213,6 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 				return EXIT_FAILURE;
 			}
 			free(bufferAEnviar);
-			free(buffer);
 		}
 		//free(arrayLineas[k]);
 	}

@@ -519,45 +519,55 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 
 	// Lo cambie porque aca tiene que iniciar con el transfer size, si no, el primer paquete va vacío - Ale 5/12/2018 - 23:11
 	int offset = 0;
-	if (cuantosPaquetes == 1)
-	{
-		offset = string_length(datosEnvio) + 1;
-	}
-	else
+	int viejoOffset = 0;
+	if (cuantosPaquetes > 1)
 	{
 		// EL - SIZE OF INT ES POR COMO SE UTILIZA EL COPY STRING TO BUFFER
-		offset = trasnfer_size - sizeof(int);
+		offset = trasnfer_size - sizeof(int) - 1;
 	}
-
+	// EL - 1 VA POR EL \0
+	int tamanioLinea = trasnfer_size - sizeof(int) - 1;
 	char * bufferEnvio;
 	char * p;
 
 	while(cuantosPaquetes > 0)
 	{
 		// TODO: Analizar el caso donde hay más cantidad de paquetes, ese offset + transfer_size me genera desconfianza - Ale
-
 		if (cuantosPaquetes == 1)
 		{
-//			offset = string_length(datosEnvio) + 1;
-			bufferEnvio = malloc(offset + sizeof(int));
+			char * datosRestantes = string_substring_from(datosEnvio, viejoOffset);
+			int longitudDatos = string_length(datosRestantes) + 1;
+			int size = longitudDatos + sizeof(int);
+			if (size > trasnfer_size)
+				log_error_mutex(loggerAtencionDAM, "Ojo, el size es mayor al transfer size, esto no deberia suceder");
+			bufferEnvio = malloc(size);
 			p = bufferEnvio;
-			copyStringToBuffer(&p,datosEnvio);
-
+			copyStringToBuffer(&p,datosRestantes);
+			if(enviar(socketDAM, DAM_MDJ_OK, bufferEnvio, size, loggerAtencionDAM->logger))
+			{
+				log_error_mutex(loggerAtencionDAM, "Error al enviar validacion de archivo al DAM.");
+				free(bufferEnvio);
+			}
+			free(datosRestantes);
 		}
 		else
 		// if (cuantosPaquetes > 0)
 		{
-//			offset = trasnfer_size - sizeof(int);
-			char*retornoOffset = string_substring_until(datosEnvio, offset);
-			bufferEnvio = malloc(offset + sizeof(int));
+			char * retornoOffset = string_substring_until(datosEnvio+viejoOffset, tamanioLinea);
+			int longitudDatos = string_length(retornoOffset) + 1;
+			int size = longitudDatos + sizeof(int);
+			bufferEnvio = malloc(size);
 			p = bufferEnvio;
 			copyStringToBuffer(&p,retornoOffset);
+			if(enviar(socketDAM, DAM_MDJ_OK, bufferEnvio, trasnfer_size, loggerAtencionDAM->logger))
+			{
+				log_error_mutex(loggerAtencionDAM, "Error al enviar validacion de archivo al DAM.");
+				free(bufferEnvio);
+			}
+			free(retornoOffset);
 		}
-		if(enviar(socketDAM, DAM_MDJ_OK, bufferEnvio, offset + sizeof(int), loggerAtencionDAM->logger)){
-			log_error_mutex(loggerAtencionDAM, "Error al enviar validacion de archivo al DAM.");
-			free(bufferEnvio);
-		}
-		offset = offset + trasnfer_size - sizeof(int);
+		viejoOffset = offset;
+		offset = offset + tamanioLinea;
 
 		cuantosPaquetes--;
 		free(bufferEnvio);
