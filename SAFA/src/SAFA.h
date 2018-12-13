@@ -88,9 +88,10 @@ t_list* listaMetricasLP;
 //	VARIABLES SAFA
 // ------------------------------------------------------------------------------
 
-int inotifyFd;
-int inotifyWd;
-char inotifyBuf[200];
+#define EVENT_SIZE  ( sizeof (struct inotify_event) + 24 )
+#define BUF_LEN     ( 1024 * EVENT_SIZE )
+char * rutaConfig;
+char * rutaConfigSinCofig;
 
 // ------------------------------------------------------------------------------
 //	METODOS

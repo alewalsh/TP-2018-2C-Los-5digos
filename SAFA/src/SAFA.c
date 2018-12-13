@@ -19,7 +19,7 @@ int main(int argc, char ** argv) {
 	//Creo las Variables locales
     pthread_t threadConsola;
     pthread_t threadConexiones;
-//    pthread_t threadCambioConfig;
+    pthread_t threadCambioConfig;
     pthread_t threadCortoPlazo;
     pthread_t threadLargoPlazo;
 
@@ -33,22 +33,22 @@ int main(int argc, char ** argv) {
     	return EXIT_FAILURE;
 	}
 
-    printf("Recursos incializados");
+    printf("Recursos incializados \n");
 
-    //Empiezo inotif para despues ver si hubo cambios sobre el archivo de configuracion
-	inotifyFd = inotify_init();
-	inotifyWd = inotify_add_watch(inotifyFd,argv[1],IN_CLOSE_WRITE);
+    rutaConfig = argv[1];
 
-	printf("Se crearan los hilos de safa");
+    rutaConfigSinCofig = string_substring_until(rutaConfig, strlen(rutaConfig) - strlen("/config.cfg"));
+
+	printf("Se crearan los hilos de safa \n");
 
 	//Inicializo la consola del Planificador y los threads correspondientes
     pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
-//    pthread_create(&threadCambioConfig, &tattr, (void *) cambiosConfig, NULL);
+    pthread_create(&threadCambioConfig, &tattr, (void *) cambiosConfig, NULL);
     pthread_create(&threadCortoPlazo, &tattr, (void *) manejoCortoPlazo, NULL);
     pthread_create(&threadLargoPlazo, &tattr, (void *) manejoLargoPlazo, NULL);
     pthread_create(&threadConsola, &tattr, (void *) mainConsola, NULL);
 
-    printf("Hilos creados");
+    printf("Hilos creados \n");
     while(!getExit()){
     }
 
@@ -124,6 +124,7 @@ void liberarRecursos(){
 
     log_destroy_mutex(logger);
     freeConfig(conf, SAFA);
+    free(rutaConfigSinCofig);
 }
 
 
@@ -166,11 +167,80 @@ void initList() {
 }
 
 void cambiosConfig(){
-	//TODO: Por ahora, si hay cambios me avisa. Tengo que ver como pausar la ejecucion
-	// y mandar el resto de los avisos, tmb ver que cambios hubo en el doc
-	read(inotifyFd,inotifyBuf,200);
-	log_info_mutex(logger,"Archivo leido es: %s", ((struct inotify_event*)inotifyBuf)->name);
+       char buffer[BUF_LEN];
+
+       // Al inicializar inotify este nos devuelve un descriptor de archivo
+       int file_descriptor = inotify_init();
+       if (file_descriptor < 0) {
+               perror("inotify_init");
+       }
+
+       // Creamos un monitor sobre un path indicando que eventos queremos escuchar
+       int watch_descriptor = inotify_add_watch(file_descriptor, rutaConfigSinCofig , IN_CLOSE_WRITE );
+
+       // El file descriptor creado por inotify, es el que recibe la información sobre los eventos ocurridos
+       // para leer esta información el descriptor se lee como si fuera un archivo comun y corriente pero
+       // la diferencia esta en que lo que leemos no es el contenido de un archivo sino la información
+       // referente a los eventos ocurridos
+       int length = read(file_descriptor, buffer, BUF_LEN);
+       if (length < 0) {
+               perror("read");
+       }
+
+       int offset = 0;
+
+       // Luego del read buffer es un array de n posiciones donde cada posición contiene
+       // un eventos ( inotify_event ) junto con el nombre de este.
+       while (offset < length) {
+
+               // El buffer es de tipo array de char, o array de bytes. Esto es porque como los
+               // nombres pueden tener nombres mas cortos que 24 caracteres el tamaño va a ser menor
+               // a sizeof( struct inotify_event ) + 24.
+               struct inotify_event *event = (struct inotify_event *) &buffer[offset];
+                       // El campo "len" nos indica la longitud del tamaño del nombre
+               if (event->len) {
+                       // Dentro de "mask" tenemos el evento que ocurrio y sobre donde ocurrio
+                       // sea un archivo o un directorio
+                       if (event->mask & IN_CLOSE_WRITE ) {
+                               if (event->mask & IN_ISDIR) {
+                                       printf("opcion 1 -- %s\n", event->name);
+                               } else {
+                                       //para filtarar solo los cambios en el config y no otros archivos.clea
+//                                     if(strcmp(event->name, "config.cfg") ==0){
+                                               int ALGORITMOviejo = conf->algoritmo;
+                                               int QUANTUMviejo = conf->quantum;
+                                               int MULTIPROGRAMACIONviejo = conf->grado_mp;
+                                               int RETARDOviejo = conf->retardo;
+
+                                               freeConfig(conf, SAFA);
+                                               conf = (configSAFA *) cargarConfiguracion(rutaConfig, SAFA, logger->logger);
+
+                                               if(ALGORITMOviejo != conf->algoritmo){
+                                                       printf("Se modifico el algortimo de %d a %d \n", ALGORITMOviejo, conf->algoritmo);
+                                               }
+                                               if(QUANTUMviejo != conf->quantum){
+                                                       printf("Se modifico el quentum de %d a %d \n", QUANTUMviejo, conf->quantum);
+                                                       //todo enviar a todas las cpus.
+                                               }
+                                               if(MULTIPROGRAMACIONviejo != conf->grado_mp){
+                                                       printf("Se modifico el grado de MP de %d a %d \n", MULTIPROGRAMACIONviejo, conf->grado_mp);
+                                                       //modoficar el semaforo semaforpGradoMultiprgramacion
+                                               }
+                                               if(RETARDOviejo != conf->retardo){
+                                                       printf("Se modifico el retardo de %d a %d \n", RETARDOviejo, conf->retardo);
+                                                       //todo ver para que se usa.
+                                               }
+//                                     }
+                               }
+                       }
+               }
+               offset += sizeof (struct inotify_event) + event->len;
+       }
+               inotify_rm_watch(file_descriptor, watch_descriptor);
+       close(file_descriptor);
+       cambiosConfig();
 }
+
 
 
 
