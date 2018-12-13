@@ -38,14 +38,10 @@ pthread_mutex_t mutexExitList;
 pthread_mutex_t mutexReadyEspList;
 pthread_mutex_t mutexReadset;
 pthread_mutex_t mutexMaxfd;
-//pthread_mutex_t mutexTime;
 pthread_mutex_t mutexgdtCounter;
 pthread_mutex_t mutexDummy;
-
 pthread_mutex_t mutexExit;
-
 pthread_mutex_t mutexStop;
-//pthread_mutex_t mutexReadyExecute;
 pthread_mutex_t mutexConsole;
 
 sem_t mandadosPorConsola;
@@ -56,10 +52,7 @@ sem_t mandadosPorConsola;
 configSAFA *conf;
 t_log_mutex *logger;
 
-int shouldExit;
 int maxfd;
-//int coordinator = 0;
-//int tiempo = 0;
 int console = 1;         //VER SI LAS TENGO QUE USAR
 int scheduler = 0;       //VER SI LAS TENGO QUE USAR
 int gdtCounter = 0;
@@ -71,18 +64,6 @@ t_list* colaEjecutando;     // Lista DTBs en ejec
 t_list* colaExit;		// Lista Terminados.
 t_list* colaReadyEspecial;
 t_list* listaMetricasLP;
-
-
-////informa que se corrio un EJECUTAR y hay dtbs en NEW
-//sem_t sem_DTBenNEW;
-
-////informa que debe ejecutar
-//sem_t sem_shouldExecute;
-//
-////informa si se esta ejecutando(tener en cuenta ya que la corridas son atomicas)
-//sem_t sem_shouldScheduler;
-//
-//sem_t sem_preemptive;
 
 // ------------------------------------------------------------------------------
 //	VARIABLES SAFA

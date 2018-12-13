@@ -49,8 +49,8 @@ int main(int argc, char ** argv) {
     pthread_create(&threadConsola, &tattr, (void *) mainConsola, NULL);
 
     printf("Hilos creados \n");
-    while(!getExit()){
-    }
+
+    pthread_join(threadConsola,NULL);
 
     liberarRecursos();
 	return EXIT_SUCCESS;
@@ -77,23 +77,16 @@ void inicializarRecursos(char * pathConfig){
     log_info_mutex(logger, "Algoritmo de Planificacion leido de configuracion: %d", conf->algoritmo);
 
     pthread_attr_init(&tattr);
-    pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
+    //pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
 
     initList();
     initMutexs();
-//    initSems();
     FD_ZERO(&master);
     FD_ZERO(&readset);
-
-    shouldExit = 0;
-
 }
 
 
 void liberarRecursos(){
-	//TODO: Ver que elemento es el que va a estar dentro de la lista, entiendo va a ser un DTB
-//    list_destroy_and_destroy_elements(statusList, freeEsi);
-//    list_destroy_and_destroy_elements(blockedKeys, freeBlockedKey);
 
     pthread_mutex_destroy(&mutexNewList);
     pthread_mutex_destroy(&mutexReadyList);
@@ -103,24 +96,16 @@ void liberarRecursos(){
 
     pthread_mutex_destroy(&mutexMaster);
     pthread_mutex_destroy(&mutexReadset);
-
-//    pthread_mutex_destroy(&mutexTime);
     pthread_mutex_destroy(&mutexExit);
     pthread_mutex_destroy(&mutexStop);
-//    pthread_mutex_destroy(&mutexReadyExecute);
     pthread_mutex_destroy(&mutexConsole);
     pthread_mutex_destroy(&mutexgdtCounter);
     pthread_mutex_destroy(&mutexDummy);
-//
-//    sem_destroy(&sem_shouldScheduler);
-//    sem_destroy(&sem_newEsi);
-//    sem_destroy(&sem_shouldExecute);
-//    sem_destroy(&sem_preemptive);
+
     sem_destroy(&semaforpGradoMultiprgramacion);
     sem_destroy(&mandadosPorConsola);
     pthread_mutex_destroy(&semDummy);
     pthread_mutex_destroy(&semCargadoEnMemoria);
-
 
     log_destroy_mutex(logger);
     freeConfig(conf, SAFA);
@@ -133,6 +118,7 @@ void initMutexs(){
 	//Se inicializan todos los semaforos MUTEX a ser utilizados
 	pthread_mutex_init(&mutexMaster, NULL);
 	pthread_mutex_init(&mutexReadset, NULL);
+	pthread_mutex_init(&mutexMaxfd, NULL);
 
 	//Mutex para las listas
 	pthread_mutex_init(&mutexNewList, NULL);
@@ -140,11 +126,10 @@ void initMutexs(){
 	pthread_mutex_init(&mutexBloqueadosList, NULL);
 	pthread_mutex_init(&mutexEjecutandoList, NULL);
 	pthread_mutex_init(&mutexExitList, NULL);
+	pthread_mutex_init(&mutexReadyEspList, NULL);
 
-	//	pthread_mutex_init(&mutexTime, NULL);
 	pthread_mutex_init(&mutexExit, NULL);
 	pthread_mutex_init(&mutexStop, NULL);
-//	pthread_mutex_init(&mutexReadyExecute, NULL);
 	pthread_mutex_init(&mutexConsole, NULL);
 	pthread_mutex_init(&mutexgdtCounter, NULL);
 	pthread_mutex_init(&mutexDummy, NULL);
@@ -240,19 +225,6 @@ void cambiosConfig(){
        close(file_descriptor);
        cambiosConfig();
 }
-
-
-
-
-////Se inicializan todos los semaforos a ser utilizados
-//void initSems() {
-//
-////    sem_init(&sem_shouldScheduler, 0, 1);
-////    sem_init(&sem_newEsi, 0, 0);
-////    sem_init(&sem_shouldExecute, 0, 0);
-////    sem_init(&sem_preemptive, 0, 0);
-//}
-
 
 void manejoLargoPlazo() {
 	planificadorLP();

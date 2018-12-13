@@ -540,7 +540,7 @@ void consoleHelp() {
 void consoleExit() {
     printf("Comando EXIT seleccionado.\n");
     printf("Se procedera a cerrar el programa.\n");
-    setExit();
+    pthread_exit(NULL);
 }
 
 int getIdFunction(char *function) {
@@ -565,17 +565,3 @@ void freeCommand(char *command, char *args) {
         free(args);
 }
 
-
-// ----------------------------------------------------------------------------------------------------------------------
-//  FUNCIONES QUE USA EL THREAD
-// ----------------------------------------------------------------------------------------------------------------------
-
-int getExit() {
-    return shouldExit;
-}
-
-void setExit() {
-    pthread_mutex_lock(&mutexExit);
-    shouldExit = 1;
-    pthread_mutex_unlock(&mutexExit);
-}
