@@ -260,7 +260,6 @@ int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){
 }
 t_dtb * buscarDTBPorPIDenCola(t_list * cola, int pid){
 	t_dtb * dtb;
-//	int index = -1;
 	int listSize = list_size(cola);
 	if(listSize<= 0) return NULL;
 
@@ -316,10 +315,15 @@ void actualizarIODtb(t_dtb * dtb, int cantIo, int cantLineasProceso){
 
 	pthread_mutex_lock(&mutexNewList);
 	int index = buscarDTBEnCola(colaNew,dtb);
-	t_dtb * dtbAModificar = list_get(colaNew,index);
-	dtbAModificar->cantIO = cantIo;
-	dtbAModificar->cantidadLineas = cantLineasProceso;
-	list_add_in_index(colaNew,index,dtbAModificar);
+	if(index<0){
+		log_error_mutex(logger, "No se encontró el dtb en la cola de new para actualizar cantidad de IO y lineas");
+	}else{
+		t_dtb * dtbAModificar = list_get(colaNew,index);
+		dtbAModificar->cantIO = cantIo;
+		dtbAModificar->cantidadLineas = cantLineasProceso;
+		list_add_in_index(colaNew,index,dtbAModificar);
+	}
+
 	pthread_mutex_unlock(&mutexNewList);
 }
 
