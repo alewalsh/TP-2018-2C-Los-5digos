@@ -28,7 +28,6 @@ void enviarInstruccion(int posicionMemoria, int socketSolicitud)
 		exit_gracefully(-1);
 	}
 	free(split);
-//	free(buffer);
 	free(lineaCompleta);
 }
 

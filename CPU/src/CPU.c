@@ -211,14 +211,14 @@ int realizarEjecucion(t_dtb * dtb)
 	pthread_mutex_unlock(&mutexQuantum);
 	// TODO: Recibir la cantidad de lineas real del DTB, ahora voy a forzar que no entre para evitar problemas.
 	//dtb->cantidadLineas = dtb->programCounter + 1;
-	if (dtb->programCounter == dtb->cantidadLineas)
+	if ((dtb->programCounter + 1) == dtb->cantidadLineas)
 	{
 		if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_DTB))
 		{
 			log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
 		}
 	}
-	if (periodoEjecucion == quantum)
+	else if (periodoEjecucion == quantum)
 	{
 		if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB))
 		{

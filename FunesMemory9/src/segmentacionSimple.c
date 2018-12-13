@@ -51,6 +51,10 @@ int cerrarArchivoSegmentacion(t_package pkg, t_infoCerrarArchivo* datosPaquete, 
 			if (strcmp(segmento->archivo,datosPaquete->path) == 0)
 			{
 				liberarLineas(segmento->base,segmento->limite);
+				char * nroSegmentoString = intToString(segmento->nroSegmento);
+				dictionary_remove(gdt->tablaSegmentos,nroSegmentoString);
+				free(nroSegmentoString);
+				dictionary_put(tablaProcesos, pidString, gdt);
 				break;
 			}
 		}
@@ -60,8 +64,8 @@ int cerrarArchivoSegmentacion(t_package pkg, t_infoCerrarArchivo* datosPaquete, 
 			log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
 			exit_gracefully(-1);
 		}
-		dictionary_clean_and_destroy_elements(gdt->tablaSegmentos,(void *)liberarSegmento);
 	}
+	free(pidString);
 	return EXIT_SUCCESS;
 }
 
@@ -176,6 +180,12 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 			tamanioPaqueteReal += tamanioPaquete;
 		}
 		lineaLeida = nroLinea;
+		if (nroLinea == (limite + 1))
+		{
+			bufferGuardado[tamanioPaqueteReal] = '\n';
+			log_trace_mutex(logger, "Se guardó la linea '%s' en la posicion de memoria: %d°",bufferGuardado, direccion(segmento->base,i));
+			guardarLinea(direccion(segmento->base,i), bufferGuardado);
+		}
 	}
 	free(bufferGuardado);
 	//ENVIAR MSJ DE EXITO A DAM
@@ -218,7 +228,7 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 			int j = 0;
 			if (strcmp(segmento->archivo, data->path) == 0)
 			{
-				while(j < segmento->limite)
+				while(j <= segmento->limite)
 				{
 					char * linea = obtenerLinea(direccion(segmento->base, j));
 					if (accion == AccionDUMP)
