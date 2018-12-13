@@ -76,7 +76,8 @@ void inicializarBitmap(t_bitarray **bitArray)
 void liberarLineas(int base, int limite)
 {
 	int i = base;
-	while(i <= limite)
+	int ultimaLinea = base + limite;
+	while(i <= ultimaLinea)
 	{
 		bitarray_clean_bit(estadoLineas, i);
 		i++;

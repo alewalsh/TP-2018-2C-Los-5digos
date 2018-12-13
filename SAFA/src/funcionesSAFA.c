@@ -325,7 +325,7 @@ void actualizarIODtb(t_dtb * dtb, int cantIo, int cantLineasProceso){
 	if(index<0){
 		log_error_mutex(logger, "No se encontró el dtb en la cola de new para actualizar cantidad de IO y lineas");
 	}else{
-		t_dtb * dtbAModificar = list_get(colaNew,index);
+		t_dtb * dtbAModificar = list_remove(colaNew,index);
 		dtbAModificar->cantIO = cantIo;
 		dtbAModificar->cantidadLineas = cantLineasProceso;
 		list_add_in_index(colaNew,index,dtbAModificar);
