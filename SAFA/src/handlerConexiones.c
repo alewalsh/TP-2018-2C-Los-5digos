@@ -143,18 +143,24 @@ void manejarSolicitud(t_package pkg, int socketFD) {
            * -----------------CONFIRMACIONES DEL CPU-----------------
            */
         case CPU_SAFA_BLOQUEAR_DTB:{
+        	//TODO AGREGAR LIBERACION DE CPU
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	if(bloquearDTB(dtb))
         	{
         		log_error_mutex(logger, "Hubo un error al bloquear el DTB");
+        	}else{
+        		log_info_mutex(logger, "FINALIZO EL PROCESO ID: %d",dtb->idGDT);
         	}
         	break;
         }
         case CPU_SAFA_ABORTAR_DTB:{
+        	//TODO AGREGAR LIBERACION DE CPU
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	if(abortarDTB(dtb))
         	{
         		log_error_mutex(logger, "Hubo un error al abortar el DTB.");
+        	}else{
+        		log_info_mutex(logger, "FINALIZO EL PROCESO ID: %d",dtb->idGDT);
         	}
         	break;
         }
@@ -168,10 +174,12 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 		}
         case CPU_SAFA_BLOQUEAR_DUMMMY:
         	//Se bloquea el dummy
+        	//TODO AGREGAR LIBERACION DE CPU
         	bloquearDummy();
         	pthread_mutex_unlock(&semDummy);
         	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:{
+        	//TODO AGREGAR LIBERACION DE CPU
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	if(abortarDTB(dtb))
 			{
@@ -180,6 +188,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	break;
         }
         case CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB:{
+        	//TODO AGREGAR LIBERACION DE CPU
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	if(finEjecucionPorQuantum(dtb)){
         		log_error_mutex(logger, "Hubo un error al llevar el DTB a la cola de READY por finalizacion de quantum.");

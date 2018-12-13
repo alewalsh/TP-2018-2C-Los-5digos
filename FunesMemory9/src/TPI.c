@@ -9,8 +9,6 @@
 
 int devolverInstruccionTPI(t_package pkg, t_infoDevolverInstruccion* datosPaquete, int socketSolicitud)
 {
-	bool pudeObtener = false;
-	char * linea;
 	pthread_mutex_lock(&mutexPIDBuscado);
 	pidBuscado = datosPaquete->pid;
 	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
@@ -34,17 +32,8 @@ int devolverInstruccionTPI(t_package pkg, t_infoDevolverInstruccion* datosPaquet
 				{
 					posicionBuscada -= lineasXPagina;
 				}
-				linea = obtenerLinea(direccion(paginaCorrespondiente->nroMarco,posicionBuscada));
-				pudeObtener = true;
+				enviarInstruccion(direccion(paginaCorrespondiente->nroMarco,posicionBuscada), socketSolicitud);
 			}
-		}
-		else
-		{
-			return FM9_CPU_ACCESO_INVALIDO;
-		}
-		if (pudeObtener)
-		{
-			enviarInstruccion(linea, socketSolicitud);
 		}
 		else
 		{

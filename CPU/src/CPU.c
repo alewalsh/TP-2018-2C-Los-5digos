@@ -150,6 +150,7 @@ int comenzarEjecucion(t_package paquete)
 	return EXIT_SUCCESS;
 }
 
+// TODO: Avisar al SAFA de la actualizaion del Program Counter que no se está teniendo en cuenta!
 int realizarEjecucion(t_dtb * dtb)
 {
 	// Si es 1, levanto un hilo y comienzo la ejecución de sentencias
@@ -170,7 +171,8 @@ int realizarEjecucion(t_dtb * dtb)
 
 		int quantumRestante = (quantum - periodoEjecucion)-1;
 		dtb->quantumRestante = quantumRestante;
-
+		if (operacion.keyword != CONCENTRAR)
+			dtb->programCounter++;
 		int respuesta = ejecutarOperacion(&operacion, &dtb);
 		switch(respuesta)
 		{
@@ -182,6 +184,7 @@ int realizarEjecucion(t_dtb * dtb)
 				}
 				break;
 			case CONCENTRAR_EJECUTADO:
+				periodoEjecucion++;
 				continue;
 				break;
 			default:
@@ -192,7 +195,6 @@ int realizarEjecucion(t_dtb * dtb)
 			break;
 		}
 		periodoEjecucion++;
-		dtb->programCounter++;
 	}
 	pthread_mutex_unlock(&mutexQuantum);
 	// TODO: Recibir la cantidad de lineas real del DTB, ahora voy a forzar que no entre para evitar problemas.

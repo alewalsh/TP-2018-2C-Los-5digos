@@ -14,6 +14,7 @@ extern int contLineasUsadas;
 int paginaBuscada;
 extern pthread_mutex_t mutexPaginaBuscada;
 
+int devolverInstruccionSegPag(t_package pkg, t_infoDevolverInstruccion* datosPaquete, int socketSolicitud);
 int finGDTSegPag(t_package pkg, int idGDT, int socketSolicitud);
 int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud);
 //int reservarSegmentoSegmentacionPaginada(t_gdt * gdt, int pid);

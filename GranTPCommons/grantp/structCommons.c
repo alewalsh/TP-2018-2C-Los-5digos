@@ -164,6 +164,7 @@ t_dtb * transformarPaqueteADTB(t_package paquete)
 		{
 			char * path = copyStringFromBuffer(&buffer);
 			list_add(dtb->tablaDirecciones,path);
+			i++;
 		}
 	}
 	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
@@ -189,6 +190,7 @@ t_package transformarDTBAPaquete(t_dtb * dtb)
 		{
 			char * path = list_get(dtb->tablaDirecciones, i);
 			tamanioTablaDirecciones += (string_length(path) + 1)* sizeof(char) + sizeof(int);
+			i++;
 		}
 		tamanioTablaDirecciones += sizeof(int);
 		tieneTablaDirecciones = true;
@@ -210,6 +212,7 @@ t_package transformarDTBAPaquete(t_dtb * dtb)
 		{
 			char * path = list_get(dtb->tablaDirecciones, j);
 			copyStringToBuffer(&p,path);
+			j++;
 		}
 	}
 	copyIntToBuffer(&p,dtb->cantidadLineas);
