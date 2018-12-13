@@ -43,8 +43,15 @@ pthread_mutex_t mutexDummy;
 pthread_mutex_t mutexExit;
 pthread_mutex_t mutexStop;
 pthread_mutex_t mutexConsole;
+pthread_mutex_t mutexPlanificando;
+pthread_mutex_t semDummy;
+pthread_mutex_t semCargadoEnMemoria;
 
+sem_t desbloquearDTBDummy;
+sem_t enviarDtbACPU;
 sem_t mandadosPorConsola;
+sem_t semaforpGradoMultiprgramacion;
+
 
 // ------------------------------------------------------------------------------
 //	VARIABLES GLOBALES
@@ -79,6 +86,10 @@ char * rutaConfigSinCofig;
 // ------------------------------------------------------------------------------
 void inicializarRecursos(char * pathConfig);
 void liberarRecursos();
+void destruirListas();
+void destruir_dtb(t_dtb * dtb);
+void liberarDirecciones(char * direccion);
+void destruirMetricaLP(t_metricaLP * metrica);
 void initMutexs();
 void initList();
 void cambiosConfig();
