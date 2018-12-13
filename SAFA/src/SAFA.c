@@ -73,6 +73,7 @@ void inicializarRecursos(char * pathConfig){
         exit(1);
     }
 
+    log_info_mutex(logger, "Puerto de Escucha: %d", conf->puerto);
     log_info_mutex(logger, "Algoritmo de Planificacion leido de configuracion: %d", conf->algoritmo);
 
     pthread_attr_init(&tattr);

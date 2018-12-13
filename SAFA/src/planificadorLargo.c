@@ -22,12 +22,12 @@ int consolaMetricaDTB(char* dtbSolicitado){
 	int idSolicitado = atoi(dtbSolicitado);
 	t_metricaLP *metricaDelDTB = list_get(listaMetricasLP, idSolicitado);
 	tiempo = metricaDelDTB->tiempoEnNEW;
-    log_info_mutex(logger, "Tiempo traido antes de actualizar: %d", tiempo);
 
-    sumarQuantumEjecutadoMetricaNEW();
-	t_metricaLP *metricaDelDTB2 = list_get(listaMetricasLP, idSolicitado);
-	int tiempo2 = metricaDelDTB2->tiempoEnNEW;
-    log_info_mutex(logger, "Tiempo traido desp de actualizar: %d", tiempo2);
+//	log_info_mutex(logger, "Tiempo traido antes de actualizar: %d", tiempo);
+//    sumarQuantumEjecutadoMetricaNEW();
+//	t_metricaLP *metricaDelDTB2 = list_get(listaMetricasLP, idSolicitado);
+//	int tiempo2 = metricaDelDTB2->tiempoEnNEW;
+//    log_info_mutex(logger, "Tiempo traido desp de actualizar: %d", tiempo2);
 
     return tiempo;
 }
@@ -55,7 +55,6 @@ void sumarQuantumEjecutadoMetricaNEW(){
     	t_metricaLP *dtbEnMetrica = list_get(listaMetricasLP, idDTBenNEW);
     	dtbEnMetrica->tiempoEnNEW = dtbEnMetrica->tiempoEnNEW + conf->quantum;
     }
-
 }
 
 void planificadorLP() {
