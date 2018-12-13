@@ -60,7 +60,7 @@ void aceptarConexionesDelCpu() {
 			} else {
 				//gestionar datos de un cliente
 				if (recibir(i, &pkg, logger->logger)) {
-					log_error_mutex(logger, "No se pudo recibir el mensaje del CPU");
+					log_error_mutex(logger, "No se pudo recibir el mensaje del socket: %d",i);
 					//handlerDisconnect(i);
 				} else {
 					manejarSolicitudDelCPU(pkg, i);
@@ -154,6 +154,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         case SOCKET_DISCONECT:
             close(socketFD);
             deleteSocketFromMaster(socketFD);
+            exit_gracefully(socketFD);
             break;
         default:
             log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));

@@ -378,9 +378,10 @@ t_package crearPaqueteSegunAccion(int accion, t_cpu_operacion * operacion, t_dtb
 			break;
 		case CREAR:
 			paquete.code = CPU_DAM_CREAR;
-			paquete.size = (strlen(operacion->argumentos.CREAR.path)  + 1 * sizeof(char)) + 2*sizeof(int);
+			paquete.size = (strlen(operacion->argumentos.CREAR.path)  + 1 * sizeof(char)) + 3*sizeof(int);
 			buffer = realloc(buffer, paquete.size);
 			p = buffer;
+			copyIntToBuffer(&p,(*dtb)->idGDT);
 			copyStringToBuffer(&p, operacion->argumentos.CREAR.path);
 			copyIntToBuffer(&p, operacion->argumentos.CREAR.linea);
 			break;

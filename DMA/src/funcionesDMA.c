@@ -25,7 +25,7 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 	char * path = copyStringFromBuffer(&buffer);
 
 //	free(buffer);
-	printf("Ehhh, voy a buscar %s para %d", path, pid);
+	log_info_mutex(logger,"Ehhh, voy a buscar %s para %d", path, pid);
 
 	//Se envia el path del archivo al filesystem
 	int size = sizeof(int) + ((strlen(path) + 1) * sizeof(char));
@@ -434,10 +434,10 @@ int enviarPkgDeFm9AMdj(char * path) {
 	char * path = copyStringFromBuffer(&buffer); //PATH del archivo a crear
 	int cantLineas = copyIntFromBuffer(&buffer); //Cantidad de lineas del archivo a crear
 
-	int size = sizeof(int)*3 + ((strlen(path)+1) * sizeof(char));
+	int size = sizeof(int)*2 + ((strlen(path)+1) * sizeof(char));
 	char *bufferEnvio = (char *) malloc(size);
 	char * ptr = bufferEnvio;
-	copyIntToBuffer(&ptr, pid);
+
 	copyStringToBuffer(&ptr, path);
 	copyIntToBuffer(&ptr, cantLineas);
 
