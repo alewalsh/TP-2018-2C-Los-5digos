@@ -58,6 +58,7 @@ void manejarDAM(t_package pkg)
 			{
 
 				char *bufferCrear = pkg.data;
+
 				char * pathArchivoNuevoSinPM = copyStringFromBuffer(&bufferCrear);
 				int cantidad_Ns = copyIntFromBuffer(&bufferCrear);
 
@@ -89,10 +90,10 @@ void manejarDAM(t_package pkg)
 					}
 				}
 
-				free(bufferCrear);
+//				free(bufferCrear);
 				free(pathArchivoNuevo);
 				free(NcantidadDeNs);
-				free(pkg.data);
+//				free(pkg.data);
 
 				break;
 			}
@@ -115,7 +116,7 @@ void manejarDAM(t_package pkg)
 				if (statusObtener) {
 					//obtengo datos
 					char *datosArchivo = obtenerDatos(pathArchivoALeer,offset,size);
-					log_info_mutex(loggerAtencionDAM, "Datos obtenidos de: %s son: %s", pathArchivoALeer, datosArchivo);
+					log_info_mutex(loggerAtencionDAM, "Datos obtenidos de: %s son:\n%s", pathArchivoALeer, datosArchivo);
 
 					//envio datosArchivos en paquetes de tamanio del transferSize.
 					enviarStringDAMporTRansferSize(datosArchivo);
@@ -282,7 +283,7 @@ int escribirStringEnArchivo(char *pathArchivo, char *stringAEscribir) {
 	if(cantidadTotalBloques <= cuantosBitsLibres()){
 
 		//crea path (de ser necesario)
-		crearPathArchivo(pathArchivo);
+//		crearPathArchivo(pathArchivo);
 
 		//busca bloques disponibles
 		int bloques[cantidadTotalBloques];
@@ -602,6 +603,8 @@ void crearPathArchivo(char* pathConArchivo){
 	int i = 0;
 	while(substrings[i+1] != NULL){
 		string_append(&pathSinArchivo, substrings[i]);
+		string_append(&pathSinArchivo, "/");
+		i++;
 	}
 
 	crearRutaDirectorio(pathSinArchivo);
