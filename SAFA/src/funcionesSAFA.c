@@ -140,7 +140,6 @@ int agregarDTBaNEW(t_dtb *dtb) {
     int i = colaNew->elements_count;
     if (list_add(colaNew, dtb) != i) {
         log_info_mutex(logger, "no se pudo agregar el elemento a la lista");
-        pthread_mutex_unlock(&mutexNewList);
         return EXIT_FAILURE;
     }
     pthread_mutex_unlock(&mutexNewList);
@@ -201,6 +200,7 @@ int desbloquearDTB(t_dtb * dtb){
 	pthread_mutex_lock(&mutexReadyList);
 	list_add(colaReady,dtbADesbloquear);
 	pthread_mutex_unlock(&mutexReadyList);
+	sem_post(&enviarDtbACPU); //Se hace un signal del semaforo para ejecutar un proceso
 	return EXIT_SUCCESS;
 }
 

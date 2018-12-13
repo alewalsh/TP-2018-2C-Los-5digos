@@ -48,6 +48,7 @@ extern pthread_mutex_t mutexEjecutandoList;
 extern pthread_mutex_t mutexExitList;
 extern pthread_mutex_t mutexDummy;
 extern pthread_mutex_t mutexReadyEspList;
+extern sem_t enviarDtbACPU;
 
 //extern int tiempo;
 extern int maxfd;

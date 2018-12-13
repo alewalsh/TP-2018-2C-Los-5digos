@@ -138,6 +138,9 @@ void initMutexs(){
 	pthread_mutex_init(&semDummy, NULL);
 	sem_init(&semaforpGradoMultiprgramacion, 0 ,conf->grado_mp);
 	sem_init(&mandadosPorConsola, 0, 0);
+
+	sem_init(&desbloquearDTBDummy,0,0);
+	sem_init(&enviarDtbACPU,0,0);
 }
 
 

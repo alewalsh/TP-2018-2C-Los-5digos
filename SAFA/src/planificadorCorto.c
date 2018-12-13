@@ -12,66 +12,77 @@ void planificadorCP() {
 	log_info_mutex(logger, "Hilo planificador Corto Plazo iniciado");
 	dummyDTB = (t_dtb *) crearDummyDTB();
 
+	pthread_t threadDummy;
+	pthread_t threadDispatcher;
+
 	pthread_mutex_init(&mutexPlanificando, NULL);
 
-    while(1){
+	pthread_create(&threadDummy, NULL, (void *) manejarDummy, NULL);
+	pthread_create(&threadDispatcher, NULL, (void *) manejarDispatcher, NULL);
 
-    	/**
-    	 * FUNCIONALIDAD 1:
-    	 * Si hay un proceso en new y tiene el flag de inicializacion en 1:
-    	 *      -> Debo desbloquear el dtbdummy y agregarlo al a lista de ready
-    	 */
+	pthread_join(threadDummy,NULL);
+	pthread_join(threadDispatcher,NULL);
 
-    	pthread_mutex_lock(&mutexNewList);
-        pthread_mutex_lock(&mutexDummy);
-    	if(list_size(colaNew) > 0 && dummyBloqueado == 1)
-    	{
-        	pthread_mutex_unlock(&mutexNewList);
-            pthread_mutex_unlock(&mutexDummy);
-    		int index = buscarDtbParaInicializar();
-    		if(index >= 0){
-    			//Se desbloquea el dummy y se agrega a la lista de ready
-    			desbloquearDummy();
-    		}
-    	}
-    	else
-    	{
-        	pthread_mutex_unlock(&mutexNewList);
-            pthread_mutex_unlock(&mutexDummy);
-    	}
-    	/* FUNCIONALIDAD 2:
-    	 * Si hay procesos en la cola de ready y hay cpus libres
-    	 * 		->Se manda a ejecutar s/ el algoritmo
-    	 */
-    	if(list_size(colaReady) > 0 || list_size(colaReadyEspecial) >0)
-    	{
-    		int socketCPU = buscarCPULibre();
-    			if(socketCPU > 0){
-				switch (conf->algoritmo) {
-					case RR:
-						log_info_mutex(logger, "PCP mediante Round Robin");
-						pthread_mutex_lock(&mutexPlanificando);
-						ejecutarRR(socketCPU);
-						pthread_mutex_unlock(&mutexPlanificando);
-						break;
-					case VRR:
-						log_info_mutex(logger, "PCP mediante Virtual Round Robin");
-						pthread_mutex_lock(&mutexPlanificando);
-			            ejecutarVRR(socketCPU);
-			            pthread_mutex_unlock(&mutexPlanificando);
-						break;
-					default:
-						log_info_mutex(logger, "PCP mediante Propio");
-						pthread_mutex_lock(&mutexPlanificando);
-						ejecutarIOBF(socketCPU);
-						pthread_mutex_unlock(&mutexPlanificando);
-						break;
-				}
-			}
-
-    	}
-    }
 }
+
+/**
+ * FUNCIONALIDAD 1:
+ * Si hay un proceso en new y tiene el flag de inicializacion en 1:
+ *      -> Debo desbloquear el dtbdummy y agregarlo al a lista de ready
+ */
+void manejarDummy() {
+	while (1) {
+		sem_wait(&desbloquearDTBDummy);
+
+		int index = buscarDtbParaInicializar();
+		if (index >= 0) {
+			//Se desbloquea el dummy y se agrega a la lista de ready
+			pthread_mutex_lock(&mutexDummy);
+			desbloquearDummy();
+			pthread_mutex_unlock(&mutexDummy);
+		}
+	}
+
+}
+
+/* FUNCIONALIDAD 2:
+ * Si hay procesos en la cola de ready y hay cpus libres
+ * 		->Se manda a ejecutar s/ el algoritmo
+ */
+void manejarDispatcher() {
+	while (1) {
+		sem_wait(&enviarDtbACPU);
+		//sem_wait(&haycpulibre);
+		int socketCPU = buscarCPULibre();
+		if (socketCPU > 0) {
+			switch (conf->algoritmo) {
+			case RR:
+				log_info_mutex(logger, "PCP mediante Round Robin");
+				pthread_mutex_lock(&mutexPlanificando);
+				ejecutarRR(socketCPU);
+				pthread_mutex_unlock(&mutexPlanificando);
+				break;
+			case VRR:
+				log_info_mutex(logger, "PCP mediante Virtual Round Robin");
+				pthread_mutex_lock(&mutexPlanificando);
+				ejecutarVRR(socketCPU);
+				pthread_mutex_unlock(&mutexPlanificando);
+				break;
+			default:
+				log_info_mutex(logger, "PCP mediante Propio");
+				pthread_mutex_lock(&mutexPlanificando);
+				ejecutarIOBF(socketCPU);
+				pthread_mutex_unlock(&mutexPlanificando);
+				break;
+			}
+		}
+
+	}
+}
+
+
+
+
 
 int buscarDtbParaInicializar()
 {
@@ -104,6 +115,7 @@ void planificadorCPdesbloquearDummy(int idGDT, char * dirScript)
 	list_add(colaBloqueados, dummy);
 	pthread_mutex_unlock(&mutexBloqueadosList);
 	//Recibo la solicitud y desbloqueo el dummy.
+	sem_post(&desbloquearDTBDummy);
 	dummyBloqueado = 1;
 }
 
@@ -229,13 +241,11 @@ int pasarDTBdeEXECaREADY(t_dtb * dtbABloq){
 		pthread_mutex_lock(&mutexReadyList);
 		list_add(colaReady, dtbEjecutandoABloquear);
 		pthread_mutex_unlock(&mutexReadyList);
-	}
-	else
-	{
-		return EXIT_FAILURE;
-	}
 
-	return EXIT_SUCCESS;
+		sem_post(&enviarDtbACPU);
+		return EXIT_SUCCESS;
+	}
+	return EXIT_FAILURE;
 }
 
 int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq){
@@ -260,8 +270,6 @@ int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq){
 }
 
 int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq){
-
-
 
     pthread_mutex_lock(&mutexEjecutandoList);
     int index = buscarDTBEnCola(colaEjecutando,dtbABloq);
@@ -319,6 +327,8 @@ void pasarDTBdeBLOQaREADYESP(t_dtb * dtbAReadyEsp){
 		pthread_mutex_lock(&mutexReadyEspList);
 		list_add(colaReadyEspecial, dtbBloqAReadyEsp);
 		pthread_mutex_unlock(&mutexReadyEspList);
+
+		sem_post(&enviarDtbACPU);
 	}
 
 }
@@ -336,6 +346,8 @@ void pasarDTBdeBLOQaREADY(t_dtb * dtbAReady){
 		pthread_mutex_lock(&mutexReadyList);
 		list_add(colaReady, dtbBloqAReady);
 		pthread_mutex_unlock(&mutexReadyList);
+
+		sem_post(&enviarDtbACPU);
 	}
 
 }
@@ -353,6 +365,8 @@ void pasarDTBdeNEWaREADY(t_dtb * dtbAReady){
 		pthread_mutex_lock(&mutexReadyList);
 		list_add(colaReady, dtbNewAReady);
 		pthread_mutex_unlock(&mutexReadyList);
+
+		sem_post(&enviarDtbACPU);
 	}
 }
 
@@ -404,12 +418,10 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 		if(result == EXIT_FAILURE){
 			log_error_mutex(logger, "Error al finalizar el DTB..");
 	   }
-//		free(paquete);
+		log_error_mutex(logger, "SE FINALIZÓ EL PROCESO ID: %d", dtbAEnviar->idGDT);
 	}
 	log_info_mutex(logger, "Se envió el DTB a ejecutar a la CPU: %d",socketCpu);
 
-
-//    free(paquete);
 }
 
 int buscarCPULibre(){
