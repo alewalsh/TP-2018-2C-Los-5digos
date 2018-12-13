@@ -167,34 +167,46 @@ int realizarEjecucion(t_dtb * dtb)
 		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
 		// lo pase a la cola de Exit.
 		t_cpu_operacion operacion = obtenerInstruccionMemoria(dtb->dirEscriptorio, dtb->idGDT, dtb->programCounter);
-		log_info_mutex(loggerCPU, "Se va a ejecutar la operacion %d del proceso %d.",dtb->programCounter, dtb->idGDT);
+		if (operacion.valido)
+		{
+			log_info_mutex(loggerCPU, "Se va a ejecutar la operacion %d del proceso %d.",dtb->programCounter, dtb->idGDT);
 
-		int quantumRestante = (quantum - periodoEjecucion)-1;
-		dtb->quantumRestante = quantumRestante;
-		if (operacion.keyword != CONCENTRAR)
-			dtb->programCounter++;
-		int respuesta = ejecutarOperacion(&operacion, &dtb);
-		switch(respuesta)
-		{
-			case EXIT_FAILURE:
-				log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
-				if (finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
-				{
-					log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
-				}
+			int quantumRestante = (quantum - periodoEjecucion)-1;
+			dtb->quantumRestante = quantumRestante;
+			if (operacion.keyword != CONCENTRAR)
+				dtb->programCounter++;
+			int respuesta = ejecutarOperacion(&operacion, &dtb);
+			switch(respuesta)
+			{
+				case EXIT_FAILURE:
+					log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
+					if (finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
+					{
+						log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
+					}
+					break;
+				case CONCENTRAR_EJECUTADO:
+					periodoEjecucion++;
+					continue;
+					break;
+				default:
+					break;
+			}
+			if (respuesta == DTB_DESALOJADO)
+			{
 				break;
-			case CONCENTRAR_EJECUTADO:
-				periodoEjecucion++;
-				continue;
-				break;
-			default:
-				break;
+			}
+			periodoEjecucion++;
 		}
-		if (respuesta == DTB_DESALOJADO)
+		else
 		{
+			log_info_mutex(loggerCPU, "Se aborta el proceso %d porque la operacion %d es inválida.", dtb->idGDT, dtb->programCounter);
+			if(finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
+			{
+				log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
+			}
 			break;
 		}
-		periodoEjecucion++;
 	}
 	pthread_mutex_unlock(&mutexQuantum);
 	// TODO: Recibir la cantidad de lineas real del DTB, ahora voy a forzar que no entre para evitar problemas.

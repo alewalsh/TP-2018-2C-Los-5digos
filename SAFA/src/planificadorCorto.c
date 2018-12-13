@@ -238,7 +238,7 @@ int pasarDTBdeEXECaREADY(t_dtb * dtbABloq){
 		pthread_mutex_lock(&mutexEjecutandoList);
 		t_dtb * dtbEjecutandoABloquear = (t_dtb *) list_remove(colaEjecutando,index);
 		pthread_mutex_unlock(&mutexEjecutandoList);
-
+		dtbEjecutandoABloquear->programCounter = dtbABloq->programCounter;
 		pthread_mutex_lock(&mutexReadyList);
 		list_add(colaReady, dtbEjecutandoABloquear);
 		pthread_mutex_unlock(&mutexReadyList);
@@ -259,7 +259,7 @@ int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq){
 		pthread_mutex_lock(&mutexEjecutandoList);
 		t_dtb * dtbEjecutandoABloquear = (t_dtb *) list_remove(colaEjecutando,index);
 		pthread_mutex_unlock(&mutexEjecutandoList);
-
+		dtbEjecutandoABloquear->programCounter = dtbABloq->programCounter;
 		pthread_mutex_lock(&mutexBloqueadosList);
 	    list_add(colaBloqueados, dtbEjecutandoABloquear);
 	    pthread_mutex_unlock(&mutexBloqueadosList);
