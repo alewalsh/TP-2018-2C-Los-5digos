@@ -26,8 +26,8 @@ void planificadorCP() {
         pthread_mutex_lock(&mutexDummy);
     	if(list_size(colaNew) > 0 && dummyBloqueado == 1)
     	{
-        	pthread_mutex_unlock(&mutexNewList);
             pthread_mutex_unlock(&mutexDummy);
+    		pthread_mutex_unlock(&mutexNewList);
     		int index = buscarDtbParaInicializar();
     		if(index >= 0){
     			//Se desbloquea el dummy y se agrega a la lista de ready
@@ -36,8 +36,8 @@ void planificadorCP() {
     	}
     	else
     	{
-        	pthread_mutex_unlock(&mutexNewList);
             pthread_mutex_unlock(&mutexDummy);
+        	pthread_mutex_unlock(&mutexNewList);
     	}
     	/* FUNCIONALIDAD 2:
     	 * Si hay procesos en la cola de ready y hay cpus libres

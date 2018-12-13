@@ -101,7 +101,7 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             ret = dam;
             break;
         case MDJ:
-            if (checkAmountOfParams(configFile, 3, logger)) {
+            if (checkAmountOfParams(configFile, 7, logger)) {
                 ret = NULL;
                 break;
             }

@@ -119,7 +119,7 @@ t_dtb *crearNuevoDTB(char *dirScript) {
 
 	sumarGDTCounter();
 	int aux = obtenerGDTCounter();
-	int size = 8*sizeof(int) + strlen(dirScript) + 1;
+	int size = 8*sizeof(int) + sizeof(t_list) + strlen(dirScript) + 1;
     t_dtb *newDTB = malloc(size);
 	newDTB->idGDT = aux;
 	memcpy(newDTB->dirEscriptorio, dirScript, strlen(dirScript) + 1);
@@ -363,7 +363,7 @@ t_dtb *crearDummyDTB() {
 	dummyDTB->cantIO = 0;
 	dummyDTB->esDummy = true;
 	dummyDTB->quantumRestante = 0;
-    pthread_mutex_unlock(&mutexBloqueadosList);
+    pthread_mutex_lock(&mutexBloqueadosList);
 	list_add(colaBloqueados,dummyDTB);
 	pthread_mutex_unlock(&mutexBloqueadosList);
 	return dummyDTB;
