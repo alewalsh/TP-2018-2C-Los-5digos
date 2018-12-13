@@ -64,6 +64,7 @@ void mainConsola() {
     while (seguirEjecutando) {
 
     	rawline = readline("\n➜  ~ ");
+    	string_trim_left(&rawline);
 
     	if (rawline) {
 
@@ -71,6 +72,7 @@ void mainConsola() {
             add_history(rawline);
 
             if (strlen(rawline)) {
+            	string_trim_right(&rawline);
 
                 //Parseo el comando
                 parseCommand(rawline, &comando, &args);
@@ -81,10 +83,13 @@ void mainConsola() {
                 //lo ejecuto
                 executeCommand(id, args);
             }
-        }
 
-        freeCommand(comando, args);
-        free(rawline);
+        }
+    	if(strlen(rawline)){
+    		freeCommand(comando, args);
+			free(rawline);
+    	}
+
     }
 }
 
