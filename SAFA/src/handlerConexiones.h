@@ -30,6 +30,6 @@ void manejarConexiones();
 void manejarSolicitud(t_package pkg, int socketFD);
 void initCpuList();
 t_recurso* crearRecurso(char * recurso, int pid);
-void hacerWaitDeRecurso(char * recursoSolicitado, int pid);
+void hacerWaitDeRecurso(char * recursoSolicitado, int pid, int socketCPU);
 void hacerSignalDeRecurso(char * recursoSolicitado);
 #endif /* HANDLERCONEXIONES_H_ */

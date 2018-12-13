@@ -62,6 +62,7 @@ void manejarConexiones(){
                 cpu->libre= 0;
                 cpu->socket= nuevoFd;
                 list_add(listaCpus, cpu);
+                sem_post(&semaforoCpu);
 
             	int size = sizeof(int);
                 char *buffer = (char *) malloc(size);
@@ -123,7 +124,7 @@ void manejarConexiones(){
                      //gestionar datos de un cliente
                     if (recibir(i, &pkg, logger->logger)) {
                         log_error_mutex(logger, "No se pudo recibir el mensaje");
-                        //handlerDisconnect(i);
+//                        handlerDisconnect(i);
                     } else {
                         manejarSolicitud(pkg, i);
                     }
@@ -143,20 +144,21 @@ void manejarSolicitud(t_package pkg, int socketFD) {
            * -----------------CONFIRMACIONES DEL CPU-----------------
            */
         case CPU_SAFA_BLOQUEAR_DTB:{
-        	//TODO AGREGAR LIBERACION DE CPU
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	if(bloquearDTB(dtb))
         	{
         		log_error_mutex(logger, "Hubo un error al bloquear el DTB");
         	}else{
         		log_info_mutex(logger, "FINALIZO EL PROCESO ID: %d",dtb->idGDT);
+        		//Se libera una cpu y se hace signal del semaforo
+        		sem_post(&semaforoCpu);
+				liberarCpu(socketFD);
         	}
         	break;
         }
         case CPU_SAFA_ABORTAR_DTB:{
-        	//TODO AGREGAR LIBERACION DE CPU
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
-        	if(abortarDTB(dtb))
+        	if(abortarDTB(dtb, socketFD))
         	{
         		log_error_mutex(logger, "Hubo un error al abortar el DTB.");
         	}else{
@@ -174,16 +176,22 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 		}
         case CPU_SAFA_BLOQUEAR_DUMMMY:
         	//Se bloquea el dummy
-        	//TODO AGREGAR LIBERACION DE CPU
         	bloquearDummy();
         	pthread_mutex_unlock(&semDummy);
+        	//Se libera una cpu y se hace signal del semaforo
+        	sem_post(&semaforoCpu);
+			liberarCpu(socketFD);
         	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:{
-        	//TODO AGREGAR LIBERACION DE CPU
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
-        	if(abortarDTB(dtb))
+        	if(abortarDTB(dtb, socketFD))
 			{
 				log_error_mutex(logger, "Hubo un error al abortar el DTB.");
+			}else{
+				log_info_mutex(logger, "FINALIZO LA EJECUCION DEL PROCESO ID: %d",dtb->idGDT);
+				//Se libera una cpu y se hace signal del semaforo
+				sem_post(&semaforoCpu);
+				liberarCpu(socketFD);
 			}
         	break;
         }
@@ -192,7 +200,14 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	if(finEjecucionPorQuantum(dtb)){
         		log_error_mutex(logger, "Hubo un error al llevar el DTB a la cola de READY por finalizacion de quantum.");
-        	}
+        	}else{
+				log_info_mutex(logger, "FINALIZO EL QUANTUM DEL PROCESO ID: %d",dtb->idGDT);
+				//Se libera una cpu y se hace signal del semaforo para la cpu
+				sem_post(&semaforoCpu);
+				//Tambien se hace un signal del semaforo para avisar que hay un proceso en ready
+				sem_post(&hayProcesosEnReady);
+				liberarCpu(socketFD);
+			}
         	break;
         }
 
@@ -270,7 +285,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         case CPU_SAFA_WAIT_RECURSO:{
         	char * recurso = copyStringFromBuffer(&pkg.data);
 			int pid = copyIntFromBuffer(&pkg.data);
-			hacerWaitDeRecurso(recurso,pid);
+			hacerWaitDeRecurso(recurso,pid,socketFD);
 			break;
         }
 
@@ -316,7 +331,7 @@ void hacerSignalDeRecurso(char * recursoSolicitado){
 	}
 }
 
-void hacerWaitDeRecurso(char * recursoSolicitado, int pid){
+void hacerWaitDeRecurso(char * recursoSolicitado, int pid, int socketCPU){
 
 	int posicion = -1;
 
@@ -341,6 +356,10 @@ void hacerWaitDeRecurso(char * recursoSolicitado, int pid){
 				t_dtb * dtb = buscarDTBPorPIDenCola(colaEjecutando,pid);
 				pthread_mutex_unlock(&mutexEjecutandoList);
 				pasarDTBdeEXECaBLOQUED(dtb);
+
+				//Se libera una cpu y se hace signal del semaforo
+				sem_post(&semaforoCpu);
+				liberarCpu(socketCPU);
 			}
 			list_add_in_index(listaRecursoAsignados, posicion, recursoUsado);
 		}

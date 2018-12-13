@@ -39,6 +39,8 @@ void manejarDummy() {
 			//Se desbloquea el dummy y se agrega a la lista de ready
 //			pthread_mutex_lock(&mutexDummy);
 			desbloquearDummy();
+			//Se hace un signal para avisar que hay procesos en ready para ejecutar
+			sem_post(&hayProcesosEnReady);
 //			pthread_mutex_unlock(&mutexDummy);
 		}
 	}
@@ -51,8 +53,8 @@ void manejarDummy() {
  */
 void manejarDispatcher() {
 	while (1) {
-		sem_wait(&enviarDtbACPU);
-		//sem_wait(&haycpulibre);
+		sem_wait(&hayProcesosEnReady);
+		sem_wait(&semaforoCpu);
 		int socketCPU = buscarCPULibre();
 		if (socketCPU > 0) {
 			switch (conf->algoritmo) {
@@ -243,7 +245,6 @@ int pasarDTBdeEXECaREADY(t_dtb * dtbABloq){
 		list_add(colaReady, dtbEjecutandoABloquear);
 		pthread_mutex_unlock(&mutexReadyList);
 
-		sem_post(&enviarDtbACPU);
 		return EXIT_SUCCESS;
 	}
 	return EXIT_FAILURE;
@@ -260,6 +261,7 @@ int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq){
 		t_dtb * dtbEjecutandoABloquear = (t_dtb *) list_remove(colaEjecutando,index);
 		pthread_mutex_unlock(&mutexEjecutandoList);
 		dtbEjecutandoABloquear->programCounter = dtbABloq->programCounter;
+		dtbEjecutandoABloquear->quantumRestante = dtbABloq->quantumRestante;
 		pthread_mutex_lock(&mutexBloqueadosList);
 	    list_add(colaBloqueados, dtbEjecutandoABloquear);
 	    pthread_mutex_unlock(&mutexBloqueadosList);
@@ -329,7 +331,7 @@ void pasarDTBdeBLOQaREADYESP(t_dtb * dtbAReadyEsp){
 		list_add(colaReadyEspecial, dtbBloqAReadyEsp);
 		pthread_mutex_unlock(&mutexReadyEspList);
 
-		sem_post(&enviarDtbACPU);
+		sem_post(&hayProcesosEnReady);
 	}
 
 }
@@ -348,7 +350,7 @@ void pasarDTBdeBLOQaREADY(t_dtb * dtbAReady){
 		list_add(colaReady, dtbBloqAReady);
 		pthread_mutex_unlock(&mutexReadyList);
 
-		sem_post(&enviarDtbACPU);
+		sem_post(&hayProcesosEnReady);
 	}
 
 }
@@ -367,7 +369,7 @@ void pasarDTBdeNEWaREADY(t_dtb * dtbAReady){
 		list_add(colaReady, dtbNewAReady);
 		pthread_mutex_unlock(&mutexReadyList);
 
-		sem_post(&enviarDtbACPU);
+		sem_post(&hayProcesosEnReady);
 	}
 }
 
@@ -418,19 +420,23 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 		int result = pasarDTBdeEXECaFINALIZADO(dtbAEnviar);
 		if(result == EXIT_FAILURE){
 			log_error_mutex(logger, "Error al finalizar el DTB..");
+	   }else{
+		   log_error_mutex(logger, "SE FINALIZÓ EL PROCESO ID: %d POR INCONVENIENTES DE ENVIOS", dtbAEnviar->idGDT);
+		   //si estaba ejecutando -> Se hace signal del semaforo y se libera la cpu
+			sem_post(&semaforoCpu);
+			liberarCpu(socketCpu);
 	   }
-		log_error_mutex(logger, "SE FINALIZÓ EL PROCESO ID: %d", dtbAEnviar->idGDT);
 	}
 	log_info_mutex(logger, "Se envió el DTB a ejecutar a la CPU: %d",socketCpu);
-
+	free(paquete.data);
 }
 
 int buscarCPULibre(){
-	int socketLibre;
 	for(int i = 0; i<list_size(listaCpus);i++){
 		t_cpus * cpu = list_get(listaCpus,i);
 		if(cpu->libre== 0){
-			return socketLibre = cpu->socket;
+			cpu->libre = 1;
+			return cpu->socket;
 		}
 	}
 	return -1;

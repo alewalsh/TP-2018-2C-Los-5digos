@@ -122,7 +122,8 @@ t_dtb *crearNuevoDTB(char *dirScript) {
 	int size = 8*sizeof(int) + sizeof(t_list) + strlen(dirScript) + 1;
     t_dtb *newDTB = malloc(size);
 	newDTB->idGDT = aux;
-	memcpy(newDTB->dirEscriptorio, dirScript, strlen(dirScript) + 1);
+	newDTB->dirEscriptorio = malloc((strlen(dirScript) + 1));
+	memcpy(newDTB->dirEscriptorio, dirScript, (strlen(dirScript) + 1));
 //	newDTB->dirEscriptorio = dirScript;
 	newDTB->programCounter = 0;
 	newDTB->flagInicializado = 1;
@@ -201,11 +202,11 @@ int desbloquearDTB(t_dtb * dtb){
 	pthread_mutex_lock(&mutexReadyList);
 	list_add(colaReady,dtbADesbloquear);
 	pthread_mutex_unlock(&mutexReadyList);
-	sem_post(&enviarDtbACPU); //Se hace un signal del semaforo para ejecutar un proceso
+
 	return EXIT_SUCCESS;
 }
 
-int abortarDTB(t_dtb * dtb){
+int abortarDTB(t_dtb * dtb, int socketCPU){
 	//logica para abortar dtb
 
 	//primero busco en la cola de ejecutando
@@ -214,6 +215,11 @@ int abortarDTB(t_dtb * dtb){
 	//si no estaba ejecutando lo busco en la lista de bloqueados
 	if(result == EXIT_FAILURE){
 		result = pasarDTBdeBLOQUEADOaFINALIZADO(dtb);
+	}else{
+		log_error_mutex(logger, "SE ABORTÓ EL PROCESO ID: %d", dtb->idGDT);
+		//si estaba ejecutando -> Se hace signal del semaforo y se libera la cpu
+		sem_post(&semaforoCpu);
+		liberarCpu(socketCPU);
 	}
 	return result;
 }
@@ -342,6 +348,16 @@ void actualizarTablaDirecciones(int pid, char * path){
 	}
 	pthread_mutex_unlock(&mutexBloqueadosList);
 }
+
+void liberarCpu(int socketCpu){
+	for(int i = 0; i<list_size(listaCpus);i++){
+		t_cpus * cpu = list_get(listaCpus,i);
+		if(cpu->socket == socketCpu){
+			cpu->libre = 0;
+		}
+	}
+}
+
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA MANEJO DEL DUMMY
 //------------------------------------------------------------------------------------------------------------------

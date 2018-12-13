@@ -33,7 +33,7 @@ int main(int argc, char ** argv) {
     	return EXIT_FAILURE;
 	}
 
-    printf("Recursos incializados \n");
+    log_info_mutex(logger,"Recursos incializados \n");
 
     rutaConfig = argv[1];
 
@@ -114,7 +114,8 @@ void liberarRecursos(){
     sem_destroy(&semaforpGradoMultiprgramacion);
     sem_destroy(&mandadosPorConsola);
     sem_destroy(&desbloquearDTBDummy);
-    sem_destroy(&enviarDtbACPU);
+    sem_destroy(&hayProcesosEnReady);
+    sem_destroy(&semaforoCpu);
 
     log_destroy_mutex(logger);
     freeConfig(conf, SAFA);
@@ -169,9 +170,10 @@ void initMutexs(){
 	pthread_mutex_init(&semDummy, NULL);
 	sem_init(&semaforpGradoMultiprgramacion, 0 ,conf->grado_mp);
 	sem_init(&mandadosPorConsola, 0, 0);
+	sem_init(&semaforoCpu,0,0);
 
 	sem_init(&desbloquearDTBDummy,0,0);
-	sem_init(&enviarDtbACPU,0,0);
+	sem_init(&hayProcesosEnReady,0,0);
 }
 
 

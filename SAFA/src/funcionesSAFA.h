@@ -45,7 +45,9 @@ extern pthread_mutex_t mutexEjecutandoList;
 extern pthread_mutex_t mutexExitList;
 extern pthread_mutex_t mutexDummy;
 extern pthread_mutex_t mutexReadyEspList;
-extern sem_t enviarDtbACPU;
+
+extern sem_t hayProcesosEnReady;
+extern sem_t semaforoCpu;
 
 extern int maxfd;
 extern int console;
@@ -77,6 +79,7 @@ int isSetted(int socket);
 //======================================================================================================================================
 
 void setPlay();
+void liberarCpu(int socketCpu);
 void setPause();
 int getConsoleStatus();
 void playExecute();
@@ -96,12 +99,13 @@ t_dtb * transformarPaqueteADTB(t_package paquete);
 t_package transformarDTBAPaquete(t_dtb * dtb);
 int bloquearDTB(t_dtb * dtb);
 int desbloquearDTB(t_dtb * dtb);
-int abortarDTB(t_dtb * dtb);
+int abortarDTB(t_dtb * dtb, int socketCPU);
 int finEjecucionPorQuantum(t_dtb * dtb);
 int confirmacionDMA(int pid, int result);
 int abortarDTBNuevo(t_dtb * dtb);
 void actualizarIODtb(t_dtb * dtb, int cantIo, int cantLineasProceso);
 void actualizarTablaDirecciones(int pid, char * path);
+void liberarCpu(int socketCpu);
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA MANEJO DEL DUMMY
 //------------------------------------------------------------------------------------------------------------------

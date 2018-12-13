@@ -50,9 +50,10 @@ pthread_mutex_t semDummy;
 pthread_mutex_t semCargadoEnMemoria;
 
 sem_t desbloquearDTBDummy;
-sem_t enviarDtbACPU;
+sem_t hayProcesosEnReady;
 sem_t mandadosPorConsola;
 sem_t semaforpGradoMultiprgramacion;
+sem_t semaforoCpu;
 
 
 // ------------------------------------------------------------------------------
