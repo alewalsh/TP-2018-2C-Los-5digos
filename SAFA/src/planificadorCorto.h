@@ -23,9 +23,9 @@ extern t_list* colaReadyEspecial; // Lista Ready Especial
 
 int dummyBloqueado;
 
-pthread_mutex_t mutexPlanificando;
-sem_t desbloquearDTBDummy;
-sem_t enviarDtbACPU;
+extern pthread_mutex_t mutexPlanificando;
+extern sem_t desbloquearDTBDummy;
+extern sem_t enviarDtbACPU;
 void manejarDummy();
 void manejarDispatcher();
 void planificadorCP();

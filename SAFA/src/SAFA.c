@@ -50,9 +50,14 @@ int main(int argc, char ** argv) {
 
     printf("Hilos creados \n");
 
+    /*pthread_join(threadConexiones,NULL);
+    pthread_join(threadCambioConfig,NULL);
+    pthread_join(threadCortoPlazo,NULL);
+    pthread_join(threadLargoPlazo,NULL);*/
     pthread_join(threadConsola,NULL);
 
     liberarRecursos();
+    destruirListas();
 	return EXIT_SUCCESS;
 }
 
@@ -93,26 +98,52 @@ void liberarRecursos(){
     pthread_mutex_destroy(&mutexBloqueadosList);
     pthread_mutex_destroy(&mutexEjecutandoList);
     pthread_mutex_destroy(&mutexExitList);
-
+    pthread_mutex_destroy(&mutexReadyEspList);
     pthread_mutex_destroy(&mutexMaster);
     pthread_mutex_destroy(&mutexReadset);
+    pthread_mutex_destroy(&mutexMaxfd);
     pthread_mutex_destroy(&mutexExit);
     pthread_mutex_destroy(&mutexStop);
     pthread_mutex_destroy(&mutexConsole);
     pthread_mutex_destroy(&mutexgdtCounter);
     pthread_mutex_destroy(&mutexDummy);
+    pthread_mutex_destroy(&semDummy);
+    pthread_mutex_destroy(&semCargadoEnMemoria);
+    pthread_mutex_destroy(&mutexPlanificando);
 
     sem_destroy(&semaforpGradoMultiprgramacion);
     sem_destroy(&mandadosPorConsola);
-    pthread_mutex_destroy(&semDummy);
-    pthread_mutex_destroy(&semCargadoEnMemoria);
+    sem_destroy(&desbloquearDTBDummy);
+    sem_destroy(&enviarDtbACPU);
 
     log_destroy_mutex(logger);
     freeConfig(conf, SAFA);
     free(rutaConfigSinCofig);
 }
 
+void destruirListas(){
+	list_destroy_and_destroy_elements(colaNew,(void*)destruir_dtb);
+	list_destroy_and_destroy_elements(colaReady,(void*)destruir_dtb);
+	list_destroy_and_destroy_elements(colaReadyEspecial,(void*)destruir_dtb);
+	list_destroy_and_destroy_elements(colaBloqueados,(void*)destruir_dtb);
+	list_destroy_and_destroy_elements(colaEjecutando,(void*)destruir_dtb);
+	list_destroy_and_destroy_elements(colaExit,(void*)destruir_dtb);
+	list_destroy_and_destroy_elements(listaMetricasLP,(void *) destruirMetricaLP);
+}
 
+void destruir_dtb(t_dtb * dtb){
+	free(dtb->dirEscriptorio);
+	list_destroy_and_destroy_elements(dtb->tablaDirecciones,(void *)liberarDirecciones);
+	free(dtb);
+}
+
+void liberarDirecciones(char * direccion){
+	free(direccion);
+}
+
+void destruirMetricaLP(t_metricaLP * metrica){
+	free(metrica);
+}
 void initMutexs(){
 
 	//Se inicializan todos los semaforos MUTEX a ser utilizados

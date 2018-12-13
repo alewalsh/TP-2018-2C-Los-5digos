@@ -21,13 +21,11 @@
 
 //DTB DUMMY
 t_dtb * dummyDTB;
-pthread_mutex_t semCargadoEnMemoria;
-sem_t semaforpGradoMultiprgramacion;
+extern pthread_mutex_t semCargadoEnMemoria;
+extern sem_t semaforpGradoMultiprgramacion;
 //Semaforo para el dummy
-pthread_mutex_t semDummy;
+extern pthread_mutex_t semDummy;
 
-//extern t_list *statusList;
-//extern pthread_mutex_t mutexStatusList;
 extern t_list* colaNew;			// Lista New.
 extern t_list* colaReady;			// Lista Ready.
 extern t_list* colaBloqueados;		// Lista Bloqueados.
@@ -37,7 +35,6 @@ extern t_list* colaExit;		// Lista Terminados.
 extern pthread_mutex_t mutexMaster;
 extern pthread_mutex_t mutexReadset;
 extern pthread_mutex_t mutexMaxfd;
-//extern pthread_mutex_t mutexTime;
 extern pthread_mutex_t mutexStop;
 extern pthread_mutex_t mutexConsole;
 extern pthread_mutex_t mutexgdtCounter;
@@ -50,7 +47,6 @@ extern pthread_mutex_t mutexDummy;
 extern pthread_mutex_t mutexReadyEspList;
 extern sem_t enviarDtbACPU;
 
-//extern int tiempo;
 extern int maxfd;
 extern int console;
 extern int scheduler;
