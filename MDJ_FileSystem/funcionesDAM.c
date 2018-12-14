@@ -76,9 +76,10 @@ void manejarDAM(t_package pkg)
 				int i;
 				i=0;
 				while(i < cantidad_Ns){
-					string_append(&NcantidadDeNs, "\n");
+					string_append(&NcantidadDeNs, " \n");
 					i++;
 				}
+				string_append(&NcantidadDeNs, "\n");
 
 				if(escribirStringEnArchivo(pathArchivoNuevo, NcantidadDeNs)){
 					if(enviar(socketDAM, DAM_MDJ_OK, NULL,0, loggerAtencionDAM->logger)){

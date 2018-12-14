@@ -121,17 +121,19 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 	//una vez recibido tudo el archivo y de haberlo concatenado en un char *
 	//realizo un split con cada /n y cuento la cantidad de lineas que contiene el mensaje
 	int cantLineas = 0;
-
 	char ** arrayLineas = string_split(bufferConcatenado,"\n");
 	int j = 0;
 	while(arrayLineas[j])
 	{
 		//ALGORITMO PROPIO
 		char * line = arrayLineas[j];
-		t_cpu_operacion operacionDeLaLinea = parse(line, false);
-		bool flag = esOperacionDeIO(operacionDeLaLinea);
-		if(flag){
-			cantIODelProceso ++;
+		if (strcmp(line," ") != 0)
+		{
+			t_cpu_operacion operacionDeLaLinea = parse(line, false);
+			bool flag = esOperacionDeIO(operacionDeLaLinea);
+			if(flag){
+				cantIODelProceso ++;
+			}
 		}
 
 		cantLineas++;

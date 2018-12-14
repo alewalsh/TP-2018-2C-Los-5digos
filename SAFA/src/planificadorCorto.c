@@ -55,6 +55,7 @@ void manejarDispatcher() {
 	while (1) {
 		sem_wait(&hayProcesosEnReady);
 		sem_wait(&semaforoCpu);
+		usleep(conf->retardo * 1000);
 		int socketCPU = buscarCPULibre();
 		if (socketCPU > 0) {
 			switch (conf->algoritmo) {

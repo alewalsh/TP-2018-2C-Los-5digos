@@ -21,6 +21,8 @@ extern t_list* colaEjecutando;     // Lista DTBs en ejec
 extern t_list* colaExit;		// Lista Terminados.
 extern t_list* colaReadyEspecial; // Lista Ready Especial
 
+extern configSAFA * conf;
+
 int dummyBloqueado;
 
 extern pthread_mutex_t mutexPlanificando;

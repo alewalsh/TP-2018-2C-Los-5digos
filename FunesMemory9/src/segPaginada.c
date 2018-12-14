@@ -147,7 +147,8 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 //	{
 //		t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(segmento->nroSegmento));
 		int lineaActual = segmento->base;
-		while (lineaActual < (segmento->base+segmento->limite))
+		int finalSegmento = segmento->base + segmento->limite;
+		while (lineaActual < finalSegmento)
 		{
 			t_package paquete;
 			if(recibir(socketSolicitud,&paquete,logger->logger))
@@ -187,6 +188,14 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 				offset += tamanioPaquete - 2*sizeof(int);
 			}
 			lineaLeida = nroLinea;
+			if (nroLinea == segmento->limite)
+			{
+				int posicionPagina = lineaActual / lineasXPagina;
+				t_pagina * pagina = list_get(gdt->tablaPaginas, posicionPagina);
+				int tamanioBuffer = strlen(bufferGuardado);
+				bufferGuardado[tamanioBuffer] = '\n';
+				guardarLinea(direccion(pagina->nroMarco,lineasGuardadas), bufferGuardado);
+			}
 		}
 //		i++;
 //	}

@@ -15,7 +15,8 @@ int main(int argc, char** argv) {
 	logger = log_create_mutex("FM9.log", "FM9", true, LOG_LEVEL_INFO);
 	config = cargarConfiguracion(argv[1], FM9, logger->logger);
 	inicializarContadores();
-	storage = malloc(config->tamMemoria);
+	size_t tamanioMemoria = config->tamMemoria;
+	storage = (char *)malloc(tamanioMemoria);
 	pthread_create(&threadConsolaFM9, &tattr, (void *) manejarConsolaFM9, NULL);
 	manejarConexiones();
 	free(storage);

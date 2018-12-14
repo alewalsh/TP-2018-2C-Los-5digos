@@ -191,7 +191,8 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 	char * bufferGuardado = malloc(config->tamMaxLinea);
 	int i = 0, offset = 0, lineasGuardadas = 0, paginaActual = 0;
 	int lineaLeida = 1;
-	while(i < cantLineas)
+	int cantidadLineas = datosPaquete->cantidadLineasARecibir;
+	while(i < cantidadLineas)
 	{
 		t_package paquete;
 		if(recibir(socketSolicitud,&paquete,logger->logger))
@@ -232,6 +233,13 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 			offset += tamanioPaquete - 2*sizeof(int);
 		}
 		lineaLeida = nroLinea;
+		if (nroLinea == cantidadLineas)
+		{
+			t_pagina * pagina = list_get(paginasProceso,paginaActual);
+			int tamanioBuffer = strlen(bufferGuardado);
+			bufferGuardado[tamanioBuffer] = '\n';
+			guardarLinea(direccion(pagina->nroMarco,lineasGuardadas), bufferGuardado);
+		}
 	}
 	free(bufferGuardado);
 

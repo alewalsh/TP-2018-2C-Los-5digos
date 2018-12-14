@@ -243,6 +243,7 @@ void liberarRecursos()
 
 	log_destroy_mutex(logger);
 	freeConfig(config, FM9);
+	free(storage);
 }
 
 bool existeProceso(int pid)
