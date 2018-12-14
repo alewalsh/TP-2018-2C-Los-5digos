@@ -160,7 +160,8 @@ void imprimirInfoAdministrativaTPI(int pid)
 }
 
 int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud){
-	int paginasNecesarias = cantLineas / lineasXPagina;
+
+	int paginasNecesarias = datosPaquete->cantidadLineasARecibir / lineasXPagina;
 	if(cantLineas % lineasXPagina != 0){
 		paginasNecesarias++;
 	}
@@ -175,21 +176,23 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 		}
 	}
 
-	int code = reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, cantLineas, 0);
+	int code = reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, datosPaquete->cantidadLineasARecibir, 0);
 	if (code == FM9_DAM_MEMORIA_INSUFICIENTE)
 	{
 		logPosicionesLibres(estadoMarcos,TPI);
 		return code;
 	}
+
 	pthread_mutex_lock(&mutexPIDBuscado);
 	pidBuscado = datosPaquete->pid;
 	t_list * paginasProceso = list_filter(tablaPaginasInvertida, (void *) filtrarPorPid);
 	pthread_mutex_unlock(&mutexPIDBuscado);
+
 	// ESTO PARA QUE ESTA?????
-	contLineasUsadas += cantLineas;
+	contLineasUsadas += datosPaquete->cantidadLineasARecibir;
 
 	char * bufferGuardado = malloc(config->tamMaxLinea);
-	int i = 0, offset = 0, lineasGuardadas = 0, paginaActual = 0;
+	int i = 0, offset = 0, lineasGuardadas = 0, paginaActual = 0, tamanioPaqueteReal = 0;
 	int lineaLeida = 1;
 	int cantidadLineas = datosPaquete->cantidadLineasARecibir;
 	while(i < cantidadLineas)
@@ -211,34 +214,38 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 		if (nroLinea != lineaLeida)
 		{
 			t_pagina * pagina = list_get(paginasProceso,paginaActual);
-			int tamanioBuffer = strlen(bufferGuardado);
-			bufferGuardado[tamanioBuffer] = '\n';
+			bufferGuardado[tamanioPaqueteReal] = '\n';
 			guardarLinea(direccion(pagina->nroMarco,lineasGuardadas), bufferGuardado);
+			i++;
+			offset = 0;
+			tamanioPaqueteReal= 0;
 			lineasGuardadas++;
 			if (lineasGuardadas == lineasXPagina)
 			{
 				lineasGuardadas = 0;
 				paginaActual++;
 			}
-			i++;
+
 			free(bufferGuardado);
 			bufferGuardado = malloc(config->tamMaxLinea);
-			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquete - 2*sizeof(int));
-			offset += tamanioPaquete - 2*sizeof(int);
+			memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
+			offset += tamanioPaquete;
+			tamanioPaqueteReal += tamanioPaquete;
 
 		}
 		else
 		{
-			memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquete - 2*sizeof(int));
-			offset += tamanioPaquete - 2*sizeof(int);
+			memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
+			offset += tamanioPaquete;
+			tamanioPaqueteReal += tamanioPaquete;
 		}
 		lineaLeida = nroLinea;
 		if (nroLinea == cantidadLineas)
 		{
 			t_pagina * pagina = list_get(paginasProceso,paginaActual);
-			int tamanioBuffer = strlen(bufferGuardado);
-			bufferGuardado[tamanioBuffer] = '\n';
+			bufferGuardado[tamanioPaqueteReal] = '\n';
 			guardarLinea(direccion(pagina->nroMarco,lineasGuardadas), bufferGuardado);
+			i++;
 		}
 	}
 	free(bufferGuardado);

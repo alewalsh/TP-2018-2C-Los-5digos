@@ -149,12 +149,10 @@ void realizarFlush(char * linea, int nroLinea, int transferSize, int socket)
 
 bool filtrarPorPid(t_pagina * pagina)
 {
-	pthread_mutex_lock(&mutexPIDBuscado);
 	if (pagina->pid == pidBuscado)
 	{
 		return true;
 	}
-	pthread_mutex_unlock(&mutexPIDBuscado);
 	return false;
 }
 
@@ -384,8 +382,10 @@ int obtenerLineasProceso(int pid, char * path)
 		while(i < cantPaginas)
 		{
 			t_pagina * pagina = list_get(paginasProceso,i);
-			if (strcmp(pagina->path,path)==0)
+			if (strcmp(pagina->path,path)==0){
 				cantidadLineas += pagina->lineasUtilizadas;
+			}
+			i++;
 		}
 		list_destroy_and_destroy_elements(paginasProceso, (void *)liberarPagina);
 	}
