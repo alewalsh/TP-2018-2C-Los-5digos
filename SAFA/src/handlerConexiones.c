@@ -145,6 +145,8 @@ void manejarSolicitud(t_package pkg, int socketFD) {
            */
         case CPU_SAFA_BLOQUEAR_DTB:{
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
+        	actualizarMetricas(dtb);
+
         	if(bloquearDTB(dtb))
         	{
         		log_error_mutex(logger, "Hubo un error al bloquear el DTB");
@@ -157,7 +159,10 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	break;
         }
         case CPU_SAFA_ABORTAR_DTB:{
+
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
+        	actualizarMetricas(dtb);
+
         	if(abortarDTB(dtb, socketFD))
         	{
         		log_error_mutex(logger, "Hubo un error al abortar el DTB.");
@@ -184,6 +189,8 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:{
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
+        	actualizarMetricas(dtb);
+
         	if(abortarDTB(dtb, socketFD))
 			{
 				log_error_mutex(logger, "Hubo un error al abortar el DTB.");
@@ -198,6 +205,8 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         case CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB:{
         	//TODO AGREGAR LIBERACION DE CPU
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
+        	actualizarMetricas(dtb);
+
         	if(finEjecucionPorQuantum(dtb)){
         		log_error_mutex(logger, "Hubo un error al llevar el DTB a la cola de READY por finalizacion de quantum.");
         	}else{
@@ -283,6 +292,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 			break;
         }
         case CPU_SAFA_WAIT_RECURSO:{
+        	//TODO Fijarse si hay que actualizar las metricas
         	char * recurso = copyStringFromBuffer(&pkg.data);
 			int pid = copyIntFromBuffer(&pkg.data);
 			hacerWaitDeRecurso(recurso,pid,socketFD);
@@ -382,4 +392,11 @@ t_recurso* crearRecurso(char * recurso, int pid){
 	recursoStruct->procesoDuenio = pid;
 	recursoStruct->listProcesos = listaProcesos;
 	return recursoStruct;
+}
+
+void actualizarMetricas(t_dtb * dtb){
+
+	t_dtb * dtbAnterior = buscarDTBPorPIDenCola(colaEjecutando,dtb->idGDT);
+	int instruccionesEjecutadas = dtb->programCounter - dtbAnterior->programCounter;
+	actualizarMetricasDTBNew(instruccionesEjecutadas);
 }

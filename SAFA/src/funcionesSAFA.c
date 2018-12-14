@@ -234,7 +234,6 @@ int abortarDTBNuevo(t_dtb * dtb){
 }
 
 int finEjecucionPorQuantum(t_dtb * dtb){
-	sumarQuantumEjecutadoMetricaNEW();
 	return pasarDTBdeEXECaREADY(dtb);
 }
 
