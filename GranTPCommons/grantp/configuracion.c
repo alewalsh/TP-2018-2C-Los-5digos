@@ -125,7 +125,7 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             funesMemory->ip_propia = leerIP(configFile, "IP_PROPIA", logger);
             char *modo = leerString(configFile, "MODO", logger);
             funesMemory->modoEjecucion = getModoEjecucion(modo);
-            free(modo);
+//            free(modo);
             funesMemory->tamMemoria = leerInt(configFile, "TAMANIO", logger);
             funesMemory->tamMaxLinea = leerInt(configFile, "MAX_LINEA", logger);
             funesMemory->tamPagina = leerInt(configFile, "TAM_PAGINA", logger);
@@ -134,7 +134,7 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
         default:
             ret = NULL;
     }
-    config_destroy(configFile);
+//    config_destroy(configFile);
     return ret;
 }
 

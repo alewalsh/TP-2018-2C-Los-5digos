@@ -331,7 +331,7 @@ int enviarPkgDeFm9AMdj(char * path) {
 	for (int linea = 0; linea < cantLineasARecibir; linea++) {
 		t_package package;
 		int cantidadPaquetes;
-		int nroLinea;
+//		int nroLinea;
 		//int tamanioLinea;
 
 		if (recibir(t_socketFm9->socket, &package, logger->logger))
@@ -375,7 +375,8 @@ int enviarPkgDeFm9AMdj(char * path) {
 				free(stringRecibido);
 			}
 		}
-		sizeBufferTotal += strlen(bufferLineaConcatenada) + 1;
+		string_append(&bufferLineaConcatenada,"\n");
+		sizeBufferTotal += strlen(bufferLineaConcatenada);
 		bufferTotal = realloc(bufferTotal, sizeBufferTotal);
 		char * ptr2 = bufferTotal;
 		copyStringToBuffer(&ptr2, bufferLineaConcatenada);
