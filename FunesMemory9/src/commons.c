@@ -194,39 +194,6 @@ void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int transfer
 
 			free(bufferAEnviar);
 		}
-		for(int i = 0; i < cantidadPaquetes; i++)
-		{
-			char sub[transferSize]; // substring a enviar
-			int inicio = transferSize*i, // posicion inicial del substring
-			fin = transferSize * (i+1); // posicion final del substring
-
-			// Si es el ultimo paquete a enviar el fin es el tamanio de linea
-			if(i+1 == cantidadPaquetes){
-				fin = tamanioLinea;
-			}
-
-			int count = 0;
-			while(inicio < fin){
-				sub[count] = buffer[inicio];
-				inicio++;
-				count++;
-			}
-			//sub[c] = '\0'; <-----------------------TODO VER SI HACE FALTA ESTO
-
-			char * bufferAEnviar;
-			int tamanioLineaPkg = count*sizeof(char);
-			copyIntToBuffer(&bufferAEnviar, nroLinea);
-			copyIntToBuffer(&bufferAEnviar, tamanioLineaPkg);
-			copyStringToBuffer(&bufferAEnviar,sub);
-			int size = sizeof(int)*2 + tamanioLineaPkg;
-
-			if(enviar(socket,DAM_FM9_ENVIO_PKG,bufferAEnviar,size,logger->logger))
-			{
-				log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
-				free(bufferAEnviar);
-			}
-			free(bufferAEnviar);
-		}
 	}
 	else
 	{
