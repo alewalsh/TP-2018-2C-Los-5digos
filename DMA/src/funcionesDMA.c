@@ -331,7 +331,7 @@ int enviarPkgDeFm9AMdj(char * path) {
 	for (int linea = 0; linea < cantLineasARecibir; linea++) {
 		t_package package;
 		int cantidadPaquetes;
-		int nroLinea;
+//		int nroLinea;
 		//int tamanioLinea;
 
 		if (recibir(t_socketFm9->socket, &package, logger->logger))
@@ -345,7 +345,7 @@ int enviarPkgDeFm9AMdj(char * path) {
 				//Recibo la cantidad de paquetes que voy a recibir para esta linea
 				//tamanioLinea = copyIntFromBuffer(&package.data);
 				char * bufferRecibo = package.data;
-				nroLinea = copyIntFromBuffer(&bufferRecibo); //NRO DE LINEA
+//				nroLinea = copyIntFromBuffer(&bufferRecibo); //NRO DE LINEA
 				cantidadPaquetes = copyIntFromBuffer(&bufferRecibo); //CANTIDAD DE PAQUETES EN LA LINEA
 			}
 			else
@@ -376,6 +376,9 @@ int enviarPkgDeFm9AMdj(char * path) {
 				free(stringRecibido);
 			}
 		}
+
+		string_append(bufferLineaConcatenada,"\n");
+
 		sizeBufferTotal += strlen(bufferLineaConcatenada);
 		bufferTotal = realloc(bufferTotal, sizeBufferTotal);
 		char * ptr2 = bufferTotal;
