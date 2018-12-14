@@ -146,6 +146,8 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         case CPU_SAFA_BLOQUEAR_DTB:{
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	actualizarMetricas(dtb);
+        	// SI BLOQUEO ES PORQUE FUE A DAM, SUMO 1 a LA METRICA
+        	actualizarSentenciasPasaronPorDAM(1);
 
         	if(bloquearDTB(dtb))
         	{
@@ -398,5 +400,8 @@ void actualizarMetricas(t_dtb * dtb){
 
 	t_dtb * dtbAnterior = buscarDTBPorPIDenCola(colaEjecutando,dtb->idGDT);
 	int instruccionesEjecutadas = dtb->programCounter - dtbAnterior->programCounter;
+	//Actualizo la metrica de sentencias que espera un dtb en NEW
 	actualizarMetricasDTBNew(instruccionesEjecutadas);
+	// Actualizo valor general para saber cuantas sentencias en total se ejecutaron.
+	actualizarTotalSentenciasEjecutadas(instruccionesEjecutadas);
 }

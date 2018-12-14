@@ -445,3 +445,24 @@ int obtenerFlagDummy() {
     pthread_mutex_unlock(&mutexDummy);
     return aux;
 }
+
+
+//------------------------------------------------------------------------------------------------------------------
+//		FUNCIONES PARA LAS METRICAS
+//------------------------------------------------------------------------------------------------------------------
+
+void actualizarTotalSentenciasEjecutadas(int cantidadDeSentencias){
+	//mutexTotalSentencias
+	//totalSentenciasEjecutadas
+    pthread_mutex_lock(&mutexTotalSentencias);
+    totalSentenciasEjecutadas = totalSentenciasEjecutadas + cantidadDeSentencias;
+    pthread_mutex_unlock(&mutexTotalSentencias);
+}
+
+void actualizarSentenciasPasaronPorDAM(int cantidadDeSentencias){
+    pthread_mutex_lock(&mutexSentenciasXDAM);
+    sentenciasXDAM = sentenciasXDAM + cantidadDeSentencias;
+    pthread_mutex_unlock(&mutexSentenciasXDAM);
+}
+
+

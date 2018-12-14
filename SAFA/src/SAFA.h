@@ -49,6 +49,9 @@ pthread_mutex_t mutexPlanificando;
 pthread_mutex_t semDummy;
 pthread_mutex_t semCargadoEnMemoria;
 
+pthread_mutex_t mutexTotalSentencias;
+pthread_mutex_t mutexSentenciasXDAM;
+
 sem_t desbloquearDTBDummy;
 sem_t hayProcesosEnReady;
 sem_t mandadosPorConsola;
@@ -66,6 +69,9 @@ int maxfd;
 int console = 1;         //VER SI LAS TENGO QUE USAR
 int scheduler = 0;       //VER SI LAS TENGO QUE USAR
 int gdtCounter = 0;
+
+int totalSentenciasEjecutadas = 0;
+int sentenciasXDAM = 0;
 
 t_list* colaNew;			// Lista New.
 t_list* colaReady;			// Lista Ready.

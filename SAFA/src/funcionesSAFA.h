@@ -46,6 +46,9 @@ extern pthread_mutex_t mutexExitList;
 extern pthread_mutex_t mutexDummy;
 extern pthread_mutex_t mutexReadyEspList;
 
+extern pthread_mutex_t mutexTotalSentencias;
+extern pthread_mutex_t mutexSentenciasXDAM;
+
 extern sem_t hayProcesosEnReady;
 extern sem_t semaforoCpu;
 
@@ -53,6 +56,10 @@ extern int maxfd;
 extern int console;
 extern int scheduler;
 extern int gdtCounter;
+
+extern int totalSentenciasEjecutadas;
+extern int sentenciasXDAM;
+
 extern fd_set master;
 extern fd_set readset;
 extern configSAFA *conf;
@@ -127,5 +134,11 @@ t_cpus *crearCpu();
 int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq);
 int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq);
 int desbloquearDTBsegunAlgoritmo(int pid);
+
+//------------------------------------------------------------------------------------------------------------------
+//		FUNCIONES PARA METRICAS
+//------------------------------------------------------------------------------------------------------------------
+void actualizarTotalSentenciasEjecutadas(int cantidadDeSentencias);
+void actualizarSentenciasPasaronPorDAM(int cantidadDeSentencias);
 
 #endif /* FUNCIONESSAFA_H_ */

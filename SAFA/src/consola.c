@@ -16,12 +16,13 @@ int seguirEjecutando = 1;
 void executeCommand(int comando, char *args) {
     switch (comando) {
         case EJECUTAR:
-        	//printf("(%d)", estadoSAFA);
             consolaEjecutar(args);
             break;
         case STATUS:
-            consolaStatus();
-//            printf("Comando STATUS seleccionado.\n");
+        	if (args != NULL){
+	            consolaStatusDTB(args);}
+			else {
+	            consolaStatus();}
             break;
         case FINALIZAR:
             consolaLiberar();

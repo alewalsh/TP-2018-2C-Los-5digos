@@ -33,6 +33,7 @@ t_metricaLP *nuevaMetrica(int id);
 void agregarDTBaMetricasLP(int id);
 int consolaMetricaDTB(char* dtbSolicitado);
 void actualizarMetricasDTBNew(int instruccionesEjecutadas);
+t_metricaLP * buscarMetricaPorPIDenCola(t_list * cola, int pid);
 
 void planificadorLP();
 

@@ -20,17 +20,29 @@ int consolaNuevoGDT(char* scriptIngresado){
 int consolaMetricaDTB(char* dtbSolicitado){
 	int tiempo;
 	int idSolicitado = atoi(dtbSolicitado);
-	t_metricaLP *metricaDelDTB = list_get(listaMetricasLP, idSolicitado);
-	tiempo = metricaDelDTB->tiempoEnNEW;
 
-//	log_info_mutex(logger, "Tiempo traido antes de actualizar: %d", tiempo);
-//    sumarQuantumEjecutadoMetricaNEW();
-//	t_metricaLP *metricaDelDTB2 = list_get(listaMetricasLP, idSolicitado);
-//	int tiempo2 = metricaDelDTB2->tiempoEnNEW;
-//    log_info_mutex(logger, "Tiempo traido desp de actualizar: %d", tiempo2);
+//	t_metricaLP *metricaDelDTB = list_get(listaMetricasLP, idSolicitado);
+	t_metricaLP *metricaDelDTB = buscarMetricaPorPIDenCola(listaMetricasLP, idSolicitado);
+	tiempo = metricaDelDTB->tiempoEnNEW;
 
     return tiempo;
 }
+
+t_metricaLP * buscarMetricaPorPIDenCola(t_list * cola, int pid){
+	t_metricaLP *metricaDelDTB;
+	int listSize = list_size(cola);
+	if(listSize<= 0) return NULL;
+
+	for(int i = 0; i<listSize;i++){
+		metricaDelDTB = list_get(cola,i);
+		if(metricaDelDTB->idDTB == pid){
+			return metricaDelDTB;
+			break;
+		}
+	}
+	return metricaDelDTB;
+}
+
 
 void agregarDTBaMetricasLP(int id){
 	t_metricaLP *metrica = nuevaMetrica(id);
@@ -44,6 +56,12 @@ t_metricaLP *nuevaMetrica(int id) {
 	return nuevaMetrica;
 }
 
+
+/*
+ * Se busca todos los elementos de la cola de NEW que tambien esten en la lista de metricas y se
+ * actualiza el valor correspondiente en la ultima.
+ *
+ */
 void actualizarMetricasDTBNew(int instruccionesEjecutadas){
 
 		for(int i = 0; i < list_size(colaNew);i++){
