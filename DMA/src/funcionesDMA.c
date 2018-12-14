@@ -325,8 +325,8 @@ int enviarPkgDeFm9AMdj(char * path) {
 		cantLineasARecibir = copyIntFromBuffer(&buffer);
 	}
 
-	int sizeBufferTotal = 0;
-	char * bufferTotal; //buffer que se va a cargar con tudo el archivo
+//	int sizeBufferTotal = 0;
+	char * bufferTotal = string_new(); //buffer que se va a cargar con tudo el archivo
 	//realizo una iteracion por cada linea
 	for (int linea = 0; linea < cantLineasARecibir; linea++) {
 		t_package package;
@@ -376,24 +376,28 @@ int enviarPkgDeFm9AMdj(char * path) {
 			}
 		}
 		string_append(&bufferLineaConcatenada,"\n");
-		sizeBufferTotal += strlen(bufferLineaConcatenada);
-		bufferTotal = realloc(bufferTotal, sizeBufferTotal);
-		char * ptr2 = bufferTotal;
-		copyStringToBuffer(&ptr2, bufferLineaConcatenada);
+		string_append(&bufferTotal, bufferLineaConcatenada);
 		free(bufferLineaConcatenada);
 	}
 
 	log_info_mutex(logger, "Se enviaron todos los datos  del proceso %s,al FileSystem.", path);
 
+	int tamanioBuffer = strlen(bufferTotal) + 1;
+	int cantidadPaquetes = tamanioBuffer / configDMA->transferSize;
+	if (tamanioBuffer % configDMA->transferSize != 0)
+	{
+		cantidadPaquetes++;
+	}
 	//ENVIO A MDJ
 	//ENVIAR DATOS A MDJ: le envio EL PATH, EL INICIO Y EL SIZE A GUARDAR PARA QUE CALCULE LA CANTIDAD DE PAQUETES A ENVIAR
-	int sizeOfBuffer = sizeof(int) * 3 + (strlen(path)+1)*sizeof(char);
+	int sizeOfBuffer = sizeof(int) * 4 + (strlen(path)+1)*sizeof(char);
 	char * pkgToMdj = (char *) malloc(sizeOfBuffer);
 	char * ptr = pkgToMdj;
 	int inicio = 0;
 	copyStringToBuffer(&ptr, path);
 	copyIntToBuffer(&ptr, inicio);
-	copyIntToBuffer(&ptr,strlen(bufferTotal));
+	copyIntToBuffer(&ptr,tamanioBuffer);
+	copyIntToBuffer(&ptr,cantidadPaquetes);
 	if (enviar(t_socketMdj->socket, DAM_MDJ_HACER_FLUSH, pkgToMdj, sizeOfBuffer, logger->logger))
 	{
 		log_error_mutex(logger, "Error al enviar cantidad de paquetes a MDJ");
@@ -404,7 +408,7 @@ int enviarPkgDeFm9AMdj(char * path) {
 	free(pkgToMdj);
 
 
-	int cantPaquetesAEnviar = calcularCantidadPaquetes(strlen(bufferTotal));
+	int cantPaquetesAEnviar = calcularCantidadPaquetes(strlen(bufferTotal)+1);
 	for(int i= 0; i<cantPaquetesAEnviar; i++){
 		//tomo el paquete de un tamaño del transfer size
 		char * bufferOfTransferSize = string_substring(bufferTotal,i*configDMA->transferSize,((i+1)*configDMA->transferSize-1));

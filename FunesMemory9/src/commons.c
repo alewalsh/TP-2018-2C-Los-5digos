@@ -178,11 +178,9 @@ void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int transfer
 
 			sub = string_substring(buffer,inicio,fin);
 
-			int size = sizeof(int) * 3 + (strlen(sub)+1) * sizeof(char);
+			int size = sizeof(int) + (strlen(sub)+1) * sizeof(char);
 			char * bufferAEnviar = (char *) malloc(size);
 			char * p = bufferAEnviar;
-			copyIntToBuffer(&p, nroLinea + 1); //NRO LINEA
-			copyIntToBuffer(&p, strlen(sub) * sizeof(char)); //SIZE
 			copyStringToBuffer(&p, sub); //BUFFER
 
 			//enviar
@@ -198,11 +196,9 @@ void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int transfer
 	else
 	{
 		//Si está dentro del tamaño permitido se envía la linea
-		int size = 3*sizeof(int) + tamanioLinea;
+		int size = sizeof(int) + tamanioLinea;
 		char * bufferAEnviar = malloc(size);
 		char * p = bufferAEnviar;
-		copyIntToBuffer(&p, nroLinea);
-		copyIntToBuffer(&p, tamanioLinea*sizeof(char));
 		copyStringToBuffer(&p, buffer);
 
 		if(enviar(socket,DAM_FM9_ENVIO_PKG,bufferAEnviar,size,logger->logger))

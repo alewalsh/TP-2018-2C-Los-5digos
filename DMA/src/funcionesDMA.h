@@ -37,7 +37,7 @@ extern int maxfd;
 //extern int scheduler;
 extern fd_set master;
 extern fd_set readset;
-extern configSAFA *conf;
+extern configDAM* configDMA;
 extern t_log_mutex *logger;
 extern int socketEscucha;
 

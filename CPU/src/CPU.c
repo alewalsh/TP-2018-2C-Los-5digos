@@ -166,6 +166,10 @@ int realizarEjecucion(t_dtb * dtb)
 		// Comunicarse con el FM9 en caso de ser necesario.
 		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
 		// lo pase a la cola de Exit.
+
+		// TODO: Verificar esto porque es muy forzado.
+		if (dtb->programCounter == dtb->cantidadLineas)
+			break;
 		t_cpu_operacion operacion = obtenerInstruccionMemoria(dtb->dirEscriptorio, dtb->idGDT, dtb->programCounter);
 		if (operacion.valido)
 		{
@@ -211,7 +215,7 @@ int realizarEjecucion(t_dtb * dtb)
 	pthread_mutex_unlock(&mutexQuantum);
 	// TODO: Recibir la cantidad de lineas real del DTB, ahora voy a forzar que no entre para evitar problemas.
 	//dtb->cantidadLineas = dtb->programCounter + 1;
-	if ((dtb->programCounter + 1) == dtb->cantidadLineas)
+	if (dtb->programCounter == dtb->cantidadLineas)
 	{
 		if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_DTB))
 		{
