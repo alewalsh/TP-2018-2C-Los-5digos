@@ -139,9 +139,10 @@ void manejarDAM(t_package pkg)
 				char * pathArchivoAModificarSinPM = copyStringFromBuffer(&bufferGuardarDatos);
 				int offsetGuardar = copyIntFromBuffer(&bufferGuardarDatos);
 				int sizeGuardar = copyIntFromBuffer(&bufferGuardarDatos);
+				int cantidadPaquetes = copyIntFromBuffer(&bufferGuardarDatos);
 
 				//leo por TS cada paquete y lo concateno. sizeGuardar es el peso a recivir.
-				char * bufferGuardar = rebirStringDAMporTRansferSize(sizeGuardar);
+				char * bufferGuardar = rebirStringDAMporTRansferSize(cantidadPaquetes);
 
 				log_info_mutex(loggerAtencionDAM, "Datos recibidos a ser guardados son: %s", bufferGuardar);
 
@@ -159,12 +160,12 @@ void manejarDAM(t_package pkg)
 
 					//moficio dichos datos
 					char *principio = string_substring_until(datosArchivo, offsetGuardar);
-					char *final = string_substring_from(datosArchivo, offsetGuardar);
+//					char *final = string_substring_from(datosArchivo, offsetGuardar);
 
 					char *stringModificado = string_new();
 					string_append(&stringModificado, principio);
 					string_append(&stringModificado, bufferGuardar);
-					string_append(&stringModificado, final);
+//					string_append(&stringModificado, final);
 
 					//borro archivo anterior.
 					borrarArchivo(pathArchivoAModificar);
@@ -174,7 +175,7 @@ void manejarDAM(t_package pkg)
 					log_info_mutex(loggerAtencionDAM, "Datos guardados de: %s\n Antiguos: %s\n Nuevos: %s\n", pathArchivoAModificar, datosArchivo, stringModificado);
 
 					free(principio);
-					free(final);
+//					free(final);
 					free(stringModificado);
 					free(datosArchivo);
 				} else {
@@ -580,15 +581,20 @@ char * rebirStringDAMporTRansferSize(int cantidadPaquetes){
 	t_package paquete;
 	char * stringTotal = string_new();
 
-	while(cantidadPaquetes > 0){
+	while(cantidadPaquetes > 0)
+	{
 		recibir(socketDAM,&paquete,loggerMDJ->logger);
-		if(paquete.code == DAM_MDJ_GUARDAR_DATOS){
+		if(paquete.code == DAM_MDJ_GUARDAR_DATOS)
+		{
 			char * subString = copyStringFromBuffer(&paquete.data);
 			string_append(&stringTotal, subString);
 
 			free(subString);
-			free(paquete.data);
-		}else{
+//			free(paquete.data);
+			cantidadPaquetes--;
+		}
+		else
+		{
 			log_error_mutex(loggerAtencionDAM, "Error se recibieron menos paquetes de los esperados.");
 		}
 	}
