@@ -314,11 +314,15 @@ int enviarPkgDeFm9AMdj(char * path) {
 	t_package pkgCantLineas;
 	int cantLineasARecibir;
 	//Recibo un primer mensaje para saber cuantas lineas voy a recibir del FM9
-	if (recibir(t_socketFm9->socket, &pkgCantLineas, logger->logger)) {
+	if (recibir(t_socketFm9->socket, &pkgCantLineas, logger->logger))
+	{
 		log_error_mutex(logger, "No se pudo recibir el mensaje del MDJ");
 		return EXIT_FAILURE;
-	} else {
-		cantLineasARecibir = copyIntFromBuffer(&pkgCantLineas.data);
+	}
+	else
+	{
+		char * buffer = pkgCantLineas.data;
+		cantLineasARecibir = copyIntFromBuffer(&buffer);
 	}
 
 	int sizeBufferTotal = 0;
@@ -330,34 +334,41 @@ int enviarPkgDeFm9AMdj(char * path) {
 		int nroLinea;
 		//int tamanioLinea;
 
-		if (recibir(t_socketFm9->socket, &package, logger->logger)) {
+		if (recibir(t_socketFm9->socket, &package, logger->logger))
+		{
 			log_error_mutex(logger, "No se pudo recibir el mensaje del Fm9");
-		} else {
-
-			if (package.code == FM9_DAM_FLUSH) {
+		}
+		else
+		{
+			if (package.code == FM9_DAM_FLUSH)
+			{
 				//Recibo la cantidad de paquetes que voy a recibir para esta linea
 				//tamanioLinea = copyIntFromBuffer(&package.data);
-				nroLinea = copyIntFromBuffer(&package.data); //NRO DE LINEA
-				cantidadPaquetes = copyIntFromBuffer(&package.data); //CANTIDAD DE PAQUETES EN LA LINEA
-			} else {
-				log_error_mutex(logger,
-						"Error al recibir el tamanio de linea del fm9");
+				char * bufferRecibo = package.data;
+				nroLinea = copyIntFromBuffer(&bufferRecibo); //NRO DE LINEA
+				cantidadPaquetes = copyIntFromBuffer(&bufferRecibo); //CANTIDAD DE PAQUETES EN LA LINEA
+			}
+			else
+			{
+				log_error_mutex(logger, "Error al recibir el tamanio de linea del fm9");
 				return EXIT_FAILURE;
 			}
-			log_info_mutex(logger, "Se recibiran %d paquetes",
-					cantidadPaquetes);
+			log_info_mutex(logger, "Se recibiran %d paquetes", cantidadPaquetes);
 		}
 
 
 		char * bufferLineaConcatenada = string_new();
 		//Ahora se reciben los paquetes y se envia a FILESYSTEM
-		for (int i = 0; i < cantidadPaquetes; i++) {
+		for (int i = 0; i < cantidadPaquetes; i++)
+		{
 			t_package pkgTransferSize;
-
-			if (recibir(t_socketFm9->socket, &pkgTransferSize, logger->logger)) {
+			if (recibir(t_socketFm9->socket, &pkgTransferSize, logger->logger))
+			{
 				log_error_mutex(logger, "Error al recibir el paquete %d", i);
 				return EXIT_FAILURE;
-			} else {
+			}
+			else
+			{
 				//Concatenar buffer
 				char * buffer = pkgTransferSize.data;
 				char * stringRecibido = copyStringFromBuffer(&buffer);

@@ -15,7 +15,7 @@ int devolverInstruccionTPI(t_package pkg, t_infoDevolverInstruccion* datosPaquet
 	pthread_mutex_unlock(&mutexPIDBuscado);
 	int posicionBuscada = datosPaquete->posicion;
 	int cantidadPaginas = list_size(paginasProceso);
-	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid);
+	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid, datosPaquete->path);
 	if (cantidadPaginas <= 0)
 	{
 		return FM9_CPU_PROCESO_INEXISTENTE;
@@ -260,7 +260,7 @@ int ejecutarGuardarEsquemaTPI(t_package pkg, t_infoGuardadoLinea* datosPaquete, 
 	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
 	pthread_mutex_unlock(&mutexPIDBuscado);
 	int cantidadPaginas = list_size(paginasProceso);
-	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid);
+	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid, datosPaquete->path);
 	if (cantidadPaginas <= 0)
 	{
 		return FM9_CPU_PROCESO_INEXISTENTE;

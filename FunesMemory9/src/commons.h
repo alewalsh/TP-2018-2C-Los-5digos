@@ -56,7 +56,7 @@ void crearProceso(int pid);
 int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar, int nroSegmento);
 
 void logPosicionesLibres(t_bitarray * bitarray, int modo);
-int obtenerLineasProceso(int pid);
+int obtenerLineasProceso(int pid, char * path);
 void liberarMarco(t_pagina * pagina);
 bool hayXMarcosLibres(int cantidad);
 

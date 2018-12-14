@@ -209,26 +209,30 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 	{
 		if (accion == AccionFLUSH)
 		{
-			// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO
-			int cantidadLineas = obtenerLineasProceso(data->pid);
-			char * buffer;
-			copyIntToBuffer(&buffer, cantidadLineas);
+			// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO, LE SUMO UNO PORQUE EL LIMITE CONSIDERA EL VALOR 0
+			// Y, EN CAMBIO, LOS PAQUETES NO
+			int cantidadLineas = obtenerLineasProceso(data->pid, data->path) + 1;
+			int size = sizeof(int);
+			char * buffer = malloc(size);
+			char * p = buffer;
+			copyIntToBuffer(&p, cantidadLineas);
 			if (enviar(socketSolicitud,FM9_DAM_FLUSH,buffer,sizeof(int),logger->logger))
 			{
 				log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
+				free(buffer);
 				exit_gracefully(-1);
 			}
+			free(buffer);
 		}
-
 		// LUEGO RECORRO CADA SEGMENTO Y VOY ENVIANDO DE A UNA LINEA
-		int nroLinea = 1;
+		int nroLinea = 0;
 		for(int i = 0; i < cantidadSegmentos; i++)
 		{
 			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
 			int j = 0;
 			if (strcmp(segmento->archivo, data->path) == 0)
 			{
-				while(j <= segmento->limite)
+				while(j < segmento->limite)
 				{
 					char * linea = obtenerLinea(direccion(segmento->base, j));
 					if (accion == AccionDUMP)
@@ -245,7 +249,6 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 					nroLinea++;
 				}
 			}
-			i++;
 		}
 	}
 	else
@@ -289,14 +292,15 @@ int ejecutarGuardarEsquemaSegmentacion(t_package pkg, t_infoGuardadoLinea* datos
 	}
 	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
 	bool pudeGuardar = false;
+	int posicionGuardado = datosPaquete->linea - 1;
 	if(cantidadSegmentos > 0)
 	{
 		for(int i = 0; i < cantidadSegmentos; i++)
 		{
 			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
-			if (strcmp(segmento->archivo,datosPaquete->path) == 0 && segmento->limite >= datosPaquete->linea)
+			if (strcmp(segmento->archivo,datosPaquete->path) == 0 && segmento->limite >= posicionGuardado)
 			{
-				guardarLinea(direccion(segmento->base,datosPaquete->linea), datosPaquete->datos);
+				guardarLinea(direccion(segmento->base,posicionGuardado), datosPaquete->datos);
 				pudeGuardar = true;
 				break;
 			}

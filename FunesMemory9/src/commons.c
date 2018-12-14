@@ -130,9 +130,10 @@ void realizarFlush(char * linea, int nroLinea, int transferSize, int socket)
 	if(tamanioLinea % transferSize != 0){
 		cantidadPaquetes++;
 	}
-	char * bufferInicial;
-	copyIntToBuffer(&bufferInicial,cantidadPaquetes);
 	int size = sizeof(int);
+	char * bufferInicial = malloc(size);
+	char * p = bufferInicial;
+	copyIntToBuffer(&p,cantidadPaquetes);
 	if (enviar(socket,FM9_DAM_FLUSH,bufferInicial,size,logger->logger))
 	{
 		log_error_mutex(logger, "Error al avisar al DAM del error en la carga del escriptorio");
@@ -141,7 +142,7 @@ void realizarFlush(char * linea, int nroLinea, int transferSize, int socket)
 	free(bufferInicial);
 
 	enviarLineaComoPaquetes(lineaAEnviar, tamanioLinea, transferSize, cantidadPaquetes, nroLinea, socket);
-	free(lineaAEnviar);
+//	free(lineaAEnviar);
 	free(arrayLineas);
 }
 
@@ -164,7 +165,37 @@ void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int transfer
 	if(tamanioLinea > transferSize)
 	{
 		//por cada paquete...
-		for(int i = 0; i < cantidadPaquetes; i++){
+		for (int l = 0; l < cantidadPaquetes; l++)
+		{
+			char * sub; //substring a enviar
+			int inicio = transferSize * nroLinea, //posicion inicial del substring
+			fin = (transferSize * (nroLinea + 1))-1; //posicion final del substring
+
+			//Si es el ultimo paquete a enviar el fin es el tamanio de linea
+			if (nroLinea + 1 == cantidadPaquetes) {
+				fin = tamanioLinea;
+			}
+
+			sub = string_substring(buffer,inicio,fin);
+
+			int size = sizeof(int) * 3 + (strlen(sub)+1) * sizeof(char);
+			char * bufferAEnviar = (char *) malloc(size);
+			char * p = bufferAEnviar;
+			copyIntToBuffer(&p, nroLinea + 1); //NRO LINEA
+			copyIntToBuffer(&p, strlen(sub) * sizeof(char)); //SIZE
+			copyStringToBuffer(&p, sub); //BUFFER
+
+			//enviar
+			if(enviar(socket,DAM_FM9_ENVIO_PKG,bufferAEnviar,size,logger->logger))
+			{
+				log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
+				free(bufferAEnviar);
+			}
+
+			free(bufferAEnviar);
+		}
+		for(int i = 0; i < cantidadPaquetes; i++)
+		{
 			char sub[transferSize]; // substring a enviar
 			int inicio = transferSize*i, // posicion inicial del substring
 			fin = transferSize * (i+1); // posicion final del substring
@@ -200,11 +231,12 @@ void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int transfer
 	else
 	{
 		//Si está dentro del tamaño permitido se envía la linea
-		char * bufferAEnviar;
-		copyIntToBuffer(&bufferAEnviar, nroLinea);
-		copyIntToBuffer(&bufferAEnviar, tamanioLinea*sizeof(char));
-		copyStringToBuffer(&bufferAEnviar, buffer);
-		int size = sizeof(int)*2 + tamanioLinea*sizeof(char);
+		int size = 3*sizeof(int) + tamanioLinea;
+		char * bufferAEnviar = malloc(size);
+		char * p = bufferAEnviar;
+		copyIntToBuffer(&p, nroLinea);
+		copyIntToBuffer(&p, tamanioLinea*sizeof(char));
+		copyStringToBuffer(&p, buffer);
 
 		if(enviar(socket,DAM_FM9_ENVIO_PKG,bufferAEnviar,size,logger->logger))
 		{
@@ -350,7 +382,15 @@ void logPosicionesLibres(t_bitarray * bitarray, int modo)
 	}
 }
 
-int obtenerLineasProceso(int pid)
+int obtenerLineasProcesoPath(int pid, char * path)
+{
+	int cantidadLineas = 0;
+
+
+	return cantidadLineas;
+}
+
+int obtenerLineasProceso(int pid, char * path)
 {
 	int cantidadLineas = 0;
 	if (config->modoEjecucion == SPA)
@@ -361,10 +401,13 @@ int obtenerLineasProceso(int pid)
 		{
 			// PRIMERO VERIFICO SI TENGO LA CANTIDAD DE LINEAS DISPONIBLES PARA REALIZAR EL GUARDADO
 			t_segmento * segmento = dictionary_get(proceso->tablaSegmentos, intToString(i));
-			for(int j = segmento->base; j < (segmento->base+segmento->limite); j++)
-			{
-				t_pagina * pagina = list_get(proceso->tablaPaginas, j);
-				cantidadLineas += pagina->lineasUtilizadas;
+			if (strcmp(segmento->archivo,path)==0){
+				for(int j = segmento->base; j < (segmento->base+segmento->limite); j++)
+				{
+					t_pagina * pagina = list_get(proceso->tablaPaginas, j);
+					if (strcmp(pagina->path,path)==0)
+						cantidadLineas += pagina->lineasUtilizadas;
+				}
 			}
 		}
 	}
@@ -378,20 +421,22 @@ int obtenerLineasProceso(int pid)
 		while(i < cantPaginas)
 		{
 			t_pagina * pagina = list_get(paginasProceso,i);
-			cantidadLineas += pagina->lineasUtilizadas;
+			if (strcmp(pagina->path,path)==0)
+				cantidadLineas += pagina->lineasUtilizadas;
 		}
 		list_destroy_and_destroy_elements(paginasProceso, (void *)liberarPagina);
 	}
 	if (config->modoEjecucion == SEG)
-	{
-		t_gdt * gdt = dictionary_get(tablaProcesos, intToString(pid));
-		int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
-		for (int i = 0; i < cantidadSegmentos; i++)
 		{
-			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
-			cantidadLineas += segmento->limite;
+			t_gdt * gdt = dictionary_get(tablaProcesos, intToString(pid));
+			int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
+			for (int i = 0; i < cantidadSegmentos; i++)
+			{
+				t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
+				if (strcmp(segmento->archivo,path)==0)
+					cantidadLineas += segmento->limite;
+			}
 		}
-	}
 	return cantidadLineas;
 }
 

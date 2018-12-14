@@ -16,7 +16,7 @@ int devolverInstruccionSegPag(t_package pkg, t_infoDevolverInstruccion* datosPaq
 	}
 	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
 	bool pudeGuardar = false;
-	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid);
+	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid, datosPaquete->path);
 	int lineaBuscada = datosPaquete->posicion;
 	// PRIMERO VERIFICO SI TENGO LA CANTIDAD DE LINEAS DISPONIBLES PARA REALIZAR EL GUARDADO
 	if (cantidadLineas < datosPaquete->posicion)
@@ -293,7 +293,7 @@ int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int acci
 		if (accion == AccionFLUSH)
 		{
 			// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO
-			int cantidadLineas = obtenerLineasProceso(data->pid);
+			int cantidadLineas = obtenerLineasProceso(data->pid, data->path);
 			char * buffer;
 			copyIntToBuffer(&buffer, cantidadLineas);
 			if (enviar(socketSolicitud,FM9_DAM_FLUSH,buffer,sizeof(int),logger->logger))
@@ -380,7 +380,7 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg, t_infoGuardadoLinea* datosPaquet
 	}
 	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
 	bool pudeGuardar = false;
-	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid);
+	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid, datosPaquete->path);
 	int lineaBuscada = datosPaquete->linea;
 	// PRIMERO VERIFICO SI TENGO LA CANTIDAD DE LINEAS DISPONIBLES PARA REALIZAR EL GUARDADO
 	if (cantidadLineas < datosPaquete->linea)
