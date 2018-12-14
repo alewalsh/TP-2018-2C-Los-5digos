@@ -287,7 +287,7 @@ bool hacerFlush(t_package paquete, int socketEnUso) {
 	char * path = copyStringFromBuffer(&buffer);
 
 	//Se envia el path del archivo al Fm9
-	int size = sizeof(int) * 2 + strlen(path) * sizeof(char);
+	int size = sizeof(int) * 3 + (strlen(path) + 1) * sizeof(char);
 	char *bufferToFm9 = (char*)malloc(size);
 	char * p = bufferToFm9;
 	copyIntToBuffer(&p, pid);
