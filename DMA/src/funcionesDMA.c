@@ -345,7 +345,6 @@ int enviarPkgDeFm9AMdj(char * path) {
 				//Recibo la cantidad de paquetes que voy a recibir para esta linea
 				//tamanioLinea = copyIntFromBuffer(&package.data);
 				char * bufferRecibo = package.data;
-				nroLinea = copyIntFromBuffer(&bufferRecibo); //NRO DE LINEA
 				cantidadPaquetes = copyIntFromBuffer(&bufferRecibo); //CANTIDAD DE PAQUETES EN LA LINEA
 			}
 			else
@@ -376,7 +375,7 @@ int enviarPkgDeFm9AMdj(char * path) {
 				free(stringRecibido);
 			}
 		}
-		sizeBufferTotal += strlen(bufferLineaConcatenada);
+		sizeBufferTotal += strlen(bufferLineaConcatenada) + 1;
 		bufferTotal = realloc(bufferTotal, sizeBufferTotal);
 		char * ptr2 = bufferTotal;
 		copyStringToBuffer(&ptr2, bufferLineaConcatenada);
@@ -394,10 +393,9 @@ int enviarPkgDeFm9AMdj(char * path) {
 	copyStringToBuffer(&ptr, path);
 	copyIntToBuffer(&ptr, inicio);
 	copyIntToBuffer(&ptr,strlen(bufferTotal));
-	if (enviar(t_socketMdj->socket, DAM_MDJ_HACER_FLUSH, pkgToMdj,
-			sizeOfBuffer, logger->logger)) {
-		log_error_mutex(logger,
-				"Error al enviar cantidad de paquetes a MDJ");
+	if (enviar(t_socketMdj->socket, DAM_MDJ_HACER_FLUSH, pkgToMdj, sizeOfBuffer, logger->logger))
+	{
+		log_error_mutex(logger, "Error al enviar cantidad de paquetes a MDJ");
 		free(pkgToMdj);
 		free(bufferTotal);
 		return EXIT_FAILURE;
