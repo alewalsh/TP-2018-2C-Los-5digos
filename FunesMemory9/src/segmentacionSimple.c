@@ -212,7 +212,7 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 		{
 			// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO, LE SUMO UNO PORQUE EL LIMITE CONSIDERA EL VALOR 0
 			// Y, EN CAMBIO, LOS PAQUETES NO
-			int cantidadLineas = obtenerLineasProceso(data->pid, data->path) + 1;
+			int cantidadLineas = obtenerLineasProceso(data->pid, data->path);
 			int size = sizeof(int);
 			char * buffer = malloc(size);
 			char * p = buffer;
@@ -233,7 +233,7 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 			int j = 0;
 			if (strcmp(segmento->archivo, data->path) == 0)
 			{
-				while(j <= segmento->limite)
+				while(j < segmento->limite)
 				{
 					char * linea = obtenerLinea(direccion(segmento->base, j));
 					if (accion == AccionDUMP)

@@ -206,7 +206,7 @@ void manejarDAM(t_package pkg)
 				if (statusEliminiar) {
 					log_error_mutex(loggerAtencionDAM, "Error no se pudo borrar: %s", pathArchivoAEliminar);
 				}else{
-					log_error_mutex(loggerAtencionDAM, "Archivo: %s Borrado\n", pathArchivoAEliminar);
+					log_info_mutex(loggerAtencionDAM, "Archivo: %s Borrado\n", pathArchivoAEliminar);
 				}
 
 				free(pathArchivoAEliminar);

@@ -494,10 +494,9 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 	int pid = copyIntFromBuffer(&paquete.data);
 	char * path = copyStringFromBuffer(&paquete.data);
 
-	int size = sizeof(int)*2 + ((strlen(path)+1) * sizeof(char));
+	int size = sizeof(int) + ((strlen(path)+1) * sizeof(char));
 	char *buffer = (char *) malloc(size);
 	char * p = buffer;
-	copyIntToBuffer(&p,pid);
 	copyStringToBuffer(&p,path);
 
 
