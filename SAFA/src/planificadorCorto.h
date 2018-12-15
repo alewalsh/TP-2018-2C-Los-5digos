@@ -22,6 +22,7 @@ extern t_list* colaExit;		// Lista Terminados.
 extern t_list* colaReadyEspecial; // Lista Ready Especial
 
 extern configSAFA * conf;
+extern t_log_mutex *logger;
 
 int dummyBloqueado;
 

@@ -410,9 +410,10 @@ t_package crearPaqueteSegunAccion(int accion, t_cpu_operacion * operacion, t_dtb
 			break;
 		case BORRAR:
 			paquete.code = CPU_DAM_BORRAR;
-			paquete.size = (strlen(operacion->argumentos.BORRAR.path) + 1)* sizeof(char) + sizeof(int);
+			paquete.size = (strlen(operacion->argumentos.BORRAR.path) + 1)* sizeof(char) + 2*sizeof(int);
 			buffer = realloc(buffer, paquete.size);
 			p = buffer;
+			copyIntToBuffer(&p,(*dtb)->idGDT);
 			copyStringToBuffer(&p, operacion->argumentos.BORRAR.path);
 			break;
 		case ASIGNAR:

@@ -465,7 +465,7 @@ t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos
 	if (lineasLibresContiguas == lineasEsperadas)
 	{
 		segmento->base = base;
-		segmento->limite = lineasEsperadas-1;
+		segmento->limite = lineasEsperadas;
 		int nroSegmento = tablaSegmentos->table_current_size;
 		segmento->nroSegmento = nroSegmento;
 		segmento->archivo = archivo;

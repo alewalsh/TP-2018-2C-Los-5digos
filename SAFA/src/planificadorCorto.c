@@ -57,6 +57,7 @@ void manejarDispatcher() {
 		sem_wait(&semaforoCpu);
 		usleep(conf->retardo * 1000);
 		int socketCPU = buscarCPULibre();
+//		log_info_mutex(logger, "CPU donde fue %d", socketCPU);
 		if (socketCPU > 0) {
 			switch (conf->algoritmo) {
 			case RR:
@@ -84,16 +85,12 @@ void manejarDispatcher() {
 	}
 }
 
-
-
-
-
 int buscarDtbParaInicializar()
 {
 	pthread_mutex_lock(&mutexNewList);
 	int sizeList = list_size(colaNew);
 
-	if(sizeList<=0) return -1;
+	if(sizeList <= 0) return -1;
 
 	for(int i = 0; i<sizeList;i++){
 		t_dtb * dtb = list_get(colaNew,i);
@@ -434,9 +431,11 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 
 int buscarCPULibre(){
 	for(int i = 0; i<list_size(listaCpus);i++){
-		t_cpus * cpu = list_get(listaCpus,i);
-		if(cpu->libre== 0){
+		t_cpus * cpu = list_remove(listaCpus,i);
+		if(cpu->libre== 0)
+		{
 			cpu->libre = 1;
+			list_add_in_index(listaCpus,i,cpu);
 			return cpu->socket;
 		}
 	}

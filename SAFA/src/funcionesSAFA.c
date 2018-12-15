@@ -348,11 +348,15 @@ void actualizarTablaDirecciones(int pid, char * path){
 	pthread_mutex_unlock(&mutexBloqueadosList);
 }
 
-void liberarCpu(int socketCpu){
-	for(int i = 0; i<list_size(listaCpus);i++){
-		t_cpus * cpu = list_get(listaCpus,i);
-		if(cpu->socket == socketCpu){
+void liberarCpu(int socketCpu)
+{
+	for(int i = 0; i < list_size(listaCpus);i++)
+	{
+		t_cpus * cpu = list_remove(listaCpus,i);
+		if(cpu->socket == socketCpu)
+		{
 			cpu->libre = 0;
+			list_add_in_index(listaCpus,i,cpu);
 		}
 	}
 }
