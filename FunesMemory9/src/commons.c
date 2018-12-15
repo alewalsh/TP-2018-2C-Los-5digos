@@ -292,7 +292,7 @@ int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int li
 			}
 			if (config->modoEjecucion == TPI)
 				actualizarTPI(pagina);
-			if (config->puertoFM9 == SPA)
+			if (config->modoEjecucion == SPA)
 			{
 				list_add(proceso->tablaPaginas, pagina);
 			}
@@ -363,7 +363,7 @@ int obtenerLineasProceso(int pid, char * path)
 			// PRIMERO VERIFICO SI TENGO LA CANTIDAD DE LINEAS DISPONIBLES PARA REALIZAR EL GUARDADO
 			t_segmento * segmento = dictionary_get(proceso->tablaSegmentos, intToString(i));
 			if (strcmp(segmento->archivo,path)==0){
-				for(int j = segmento->base; j < (segmento->base+segmento->limite); j++)
+				for(int j = segmento->base; j < proceso->tablaPaginas->elements_count; j++)
 				{
 					t_pagina * pagina = list_get(proceso->tablaPaginas, j);
 					if (strcmp(pagina->path,path)==0)
@@ -457,15 +457,17 @@ t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos
 	}
 	if (config->modoEjecucion == SPA)
 	{
-		if (hayXMarcosLibres(paginasAReservar))
+		if (hayXMarcosLibres(paginasAReservar)){
 			lineasLibresContiguas = lineasEsperadas;
+			base =0;
+		}
 		else
 			return NULL;
 	}
 	if (lineasLibresContiguas == lineasEsperadas)
 	{
 		segmento->base = base;
-		segmento->limite = lineasEsperadas-1;
+		segmento->limite = lineasEsperadas;
 		int nroSegmento = tablaSegmentos->table_current_size;
 		segmento->nroSegmento = nroSegmento;
 		segmento->archivo = archivo;

@@ -180,11 +180,12 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 			tamanioPaqueteReal += tamanioPaquete;
 		}
 		lineaLeida = nroLinea;
-		if (nroLinea == (limite + 1))
+		if (nroLinea == limite)
 		{
 			bufferGuardado[tamanioPaqueteReal] = '\n';
 			log_trace_mutex(logger, "Se guardó la linea '%s' en la posicion de memoria: %d°",bufferGuardado, direccion(segmento->base,i));
 			guardarLinea(direccion(segmento->base,i), bufferGuardado);
+			i++;
 		}
 	}
 	free(bufferGuardado);

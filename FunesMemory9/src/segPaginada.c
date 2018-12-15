@@ -103,7 +103,7 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 	//logica de segmentacion paginada
 	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
 
-	int paginasNecesarias = cantLineas / lineasXPagina;
+	int paginasNecesarias = datosPaquete->cantidadLineasARecibir / lineasXPagina;
 	if(cantLineas % lineasXPagina != 0){
 		paginasNecesarias++;
 	}
@@ -124,7 +124,7 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 	//EN CASO QUE SI RESERVAR DICHA PAGINA
 
 	char * pidString = intToString(datosPaquete->pid);
-	t_gdt * gdt = dictionary_remove(tablaProcesos,pidString);
+	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
 	free(pidString);
 	t_segmento * segmento = reservarSegmento(datosPaquete->cantidadLineasARecibir,gdt->tablaSegmentos,datosPaquete->path,paginasNecesarias);
 //	int code = reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, cantLineas);
@@ -133,6 +133,7 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 		logPosicionesLibres(estadoLineas,SPA);
 		return FM9_DAM_MEMORIA_INSUFICIENTE;
 	}
+	actualizarTablaDeSegmentos(datosPaquete->pid,segmento);
 	reservarPaginasParaSegmento(segmento, datosPaquete, paginasNecesarias);
 //	reservarSegmentoSegmentacionPaginada(gdt, datosPaquete->pid);
 	// ESTO PARA QUE ESTA?????
@@ -140,7 +141,7 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 
 	gdt = dictionary_get(tablaProcesos,pidString);
 	char * bufferGuardado = malloc(config->tamMaxLinea);
-	int i = 0, offset = 0, lineasGuardadas = 0;
+	int i = 0, offset = 0, lineasGuardadas = 0, tamanioPaqueteReal = 0;
 	int lineaLeida = 1;
 //	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
 //	while(i < cantidadSegmentos)
@@ -166,35 +167,38 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 			char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
 			if (nroLinea != lineaLeida)
 			{
-				int posicionPagina = lineaActual / lineasXPagina;
+				int posicionPagina = lineasGuardadas / lineasXPagina;
 				t_pagina * pagina = list_get(gdt->tablaPaginas, posicionPagina);
-				int tamanioBuffer = strlen(bufferGuardado);
-				bufferGuardado[tamanioBuffer] = '\n';
+				bufferGuardado[tamanioPaqueteReal] = '\n';
 				guardarLinea(direccion(pagina->nroMarco,lineasGuardadas), bufferGuardado);
 				lineasGuardadas++;
+				tamanioPaqueteReal = 0;
+				offset = 0;
 				if (lineasGuardadas == lineasXPagina)
 				{
 					lineasGuardadas = 0;
-					lineaActual++;
 				}
 				free(bufferGuardado);
 				bufferGuardado = malloc(config->tamMaxLinea);
-				memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquete - 2*sizeof(int));
-				offset += tamanioPaquete - 2*sizeof(int);
+				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
+				offset += tamanioPaquete;
+				tamanioPaqueteReal += tamanioPaquete;
+				lineaActual++;
 			}
 			else
 			{
-				memcpy(&bufferGuardado+offset, &contenidoLinea, tamanioPaquete - 2*sizeof(int));
-				offset += tamanioPaquete - 2*sizeof(int);
+				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
+				offset += tamanioPaquete;
+				tamanioPaqueteReal += tamanioPaquete;
 			}
 			lineaLeida = nroLinea;
-			if (nroLinea == segmento->limite)
+			if (nroLinea == segmento->limite+1)
 			{
-				int posicionPagina = lineaActual / lineasXPagina;
+				int posicionPagina = lineasGuardadas / lineasXPagina;
 				t_pagina * pagina = list_get(gdt->tablaPaginas, posicionPagina);
-				int tamanioBuffer = strlen(bufferGuardado);
-				bufferGuardado[tamanioBuffer] = '\n';
+				bufferGuardado[tamanioPaqueteReal] = '\n';
 				guardarLinea(direccion(pagina->nroMarco,lineasGuardadas), bufferGuardado);
+				lineaActual++;
 			}
 		}
 //		i++;
@@ -464,6 +468,7 @@ int cerrarArchivoSegPag(t_package pkg, t_infoCerrarArchivo* datosPaquete, int so
 		for(int i = 0; i < cantidadSegmentos; i++)
 		{
 			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
+
 			if (strcmp(segmento->archivo,datosPaquete->path) == 0)
 			{
 				for(int j = 0; j < list_size(gdt->tablaPaginas);j++)
@@ -479,8 +484,8 @@ int cerrarArchivoSegPag(t_package pkg, t_infoCerrarArchivo* datosPaquete, int so
 			log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
 			exit_gracefully(-1);
 		}
-		dictionary_clean_and_destroy_elements(gdt->tablaSegmentos,(void *)liberarSegmento);
-		list_clean_and_destroy_elements(gdt->tablaPaginas,(void *)liberarPagina);
+//		dictionary_clean_and_destroy_elements(gdt->tablaSegmentos,(void *)liberarSegmento);
+//		list_clean_and_destroy_elements(gdt->tablaPaginas,(void *)liberarPagina);
 	}
 	return EXIT_SUCCESS;
 }
