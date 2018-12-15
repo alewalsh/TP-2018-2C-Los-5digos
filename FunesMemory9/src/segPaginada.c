@@ -259,17 +259,20 @@ int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int acci
 		{
 			// PRIMERO ENVÍO LA CANTIDAD DE LINEAS DEL ARCHIVO
 			int cantidadLineas = obtenerLineasProceso(data->pid, data->path);
-			char * buffer;
-			copyIntToBuffer(&buffer, cantidadLineas);
+			char * buffer = malloc(sizeof(int));
+			char * p = buffer;
+			copyIntToBuffer(&p, cantidadLineas);
 			if (enviar(socketSolicitud,FM9_DAM_FLUSH,buffer,sizeof(int),logger->logger))
 			{
 				log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
+				free(buffer);
 				exit_gracefully(-1);
 			}
+			free(buffer);
 		}
 
 		// LUEGO RECORRO CADA SEGMENTO Y VOY ENVIANDO DE A UNA LINEA
-		int nroLinea = 1;
+		int nroLinea = 0;
 		for(int i = 0; i < cantidadSegmentos; i++)
 		{
 			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
@@ -304,7 +307,6 @@ int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int acci
 					j++;
 				}
 			}
-			i++;
 		}
 	}
 	else
