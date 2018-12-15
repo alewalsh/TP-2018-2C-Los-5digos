@@ -11,6 +11,8 @@
 #include "FunesMemory9.h"
 #include "consolaFM9.h"
 
+pthread_attr_t tattr;
+
 int main(int argc, char** argv) {
 	logger = log_create_mutex("FM9.log", "FM9", true, LOG_LEVEL_INFO);
 	config = cargarConfiguracion(argv[1], FM9, logger->logger);
@@ -18,7 +20,8 @@ int main(int argc, char** argv) {
 	size_t tamanioMemoria = config->tamMemoria;
 	storage = (char *)malloc(tamanioMemoria);
 	pthread_create(&threadConsolaFM9, &tattr, (void *) manejarConsolaFM9, NULL);
-	manejarConexiones();
+	pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
+	pthread_join(threadConsolaFM9, NULL);
 	free(storage);
 	return EXIT_SUCCESS;
 }
@@ -45,6 +48,7 @@ void inicializarSemaforos()
 	pthread_mutex_init(&mutexPIDBuscado, NULL);
 	pthread_mutex_init(&mutexPathBuscado, NULL);
 	pthread_mutex_init(&mutexReadset, NULL);
+	pthread_mutex_init(&mutexSolicitudes, NULL);
 }
 
 void manejarConexiones(){
@@ -52,7 +56,6 @@ void manejarConexiones(){
 	uint16_t handshake;
 	t_package pkg;
 
-	printf("%d",config->puertoFM9);
 	//Creo el socket y me quedo escuchando
 	if (escuchar(config->puertoFM9, &socketListen, logger->logger)) {
 		liberarRecursos();
@@ -95,13 +98,17 @@ void manejarConexiones(){
 						addNewSocketToMaster(nuevoFd);
 					}
 				} else {
+					pthread_mutex_lock(&mutexSolicitudes);
 					 //gestionar datos de un cliente
-					if (recibir(i, &pkg, logger->logger)) {
+					if (recibir(i, &pkg, logger->logger))
+					{
 						log_error_mutex(logger, "No se pudo recibir el mensaje");
 						//handlerDisconnect(i);
-					} else {
+					} else
+					{
 						manejarSolicitud(pkg, i);
 					}
+					pthread_mutex_unlock(&mutexSolicitudes);
 
 				}
 			}

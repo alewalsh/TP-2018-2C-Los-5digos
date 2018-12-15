@@ -9,7 +9,7 @@
 
 void manejarConsolaFM9()
 {
-	printf("Se esta ejecutando la consola del Funes Memory \n");
+	log_info_mutex(logger, "Se esta ejecutando la consola del Funes Memory.");
 
 	char * token;
 	char * linea;

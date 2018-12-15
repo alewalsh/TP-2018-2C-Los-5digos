@@ -245,7 +245,7 @@ void liberarRecursos()
 	pthread_mutex_destroy(&mutexSegmentoBuscado);
 	pthread_mutex_destroy(&mutexPIDBuscado);
 	pthread_mutex_destroy(&mutexPathBuscado);
-
+	pthread_mutex_destroy(&mutexSolicitudes);
 	log_destroy_mutex(logger);
 	freeConfig(config, FM9);
 	free(storage);

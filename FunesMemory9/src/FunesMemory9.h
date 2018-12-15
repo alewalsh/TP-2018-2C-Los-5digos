@@ -51,6 +51,10 @@ pthread_mutex_t mutexPaginaBuscada;
 pthread_mutex_t mutexPIDBuscado;
 pthread_mutex_t mutexSegmentoBuscado;
 pthread_mutex_t mutexPathBuscado;
+pthread_mutex_t mutexSolicitudes;
+
+pthread_t threadConsolaFM9;
+pthread_t threadConexiones;
 
 void inicializarSemaforos();
 void inicializarContadores();

@@ -20,9 +20,6 @@
 #include "TPI.h"
 #include "segPaginada.h"
 
-pthread_t threadConsolaFM9;
-pthread_attr_t tattr;
-
 extern char * storage;
 extern t_log_mutex * logger;
 extern configFM9 * config;

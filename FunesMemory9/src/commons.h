@@ -34,6 +34,7 @@ extern pthread_mutex_t mutexMaxfd;
 extern pthread_mutex_t mutexPaginaBuscada;
 extern pthread_mutex_t mutexExit;
 extern pthread_mutex_t mutexPathBuscado;
+extern pthread_mutex_t mutexSolicitudes;
 
 extern t_list * tablaPaginasInvertida;
 
