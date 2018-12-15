@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lGranTPCommons -lcommons -lpthread
+LIBS := -lGranTPCommons -lcommons -lreadline -lpthread
 
