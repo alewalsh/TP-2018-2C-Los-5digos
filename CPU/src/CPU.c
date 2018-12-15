@@ -150,10 +150,10 @@ int comenzarEjecucion(t_package paquete)
 	return EXIT_SUCCESS;
 }
 
-// TODO: Avisar al SAFA de la actualizaion del Program Counter que no se está teniendo en cuenta!
 int realizarEjecucion(t_dtb * dtb)
 {
 	bool finEjecucion = false;
+	bool segFaultDTB = false;
 	// Si es 1, levanto un hilo y comienzo la ejecución de sentencias
 	// if DTB->flagInicializado == 1
 	// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
@@ -168,14 +168,10 @@ int realizarEjecucion(t_dtb * dtb)
 		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
 		// lo pase a la cola de Exit.
 
-		// TODO: Verificar esto porque es muy forzado.
-		if (dtb->programCounter == dtb->cantidadLineas)
-			break;
+		log_info_mutex(loggerCPU, "Se va a ejecutar la operacion %d del proceso %d.",dtb->programCounter, dtb->idGDT);
 		t_cpu_operacion operacion = obtenerInstruccionMemoria(dtb->dirEscriptorio, dtb->idGDT, dtb->programCounter);
 		if (operacion.valido)
 		{
-			log_info_mutex(loggerCPU, "Se va a ejecutar la operacion %d del proceso %d.",dtb->programCounter, dtb->idGDT);
-
 			int quantumRestante = (quantum - periodoEjecucion)-1;
 			dtb->quantumRestante = quantumRestante;
 			if (operacion.keyword != CONCENTRAR)
@@ -185,6 +181,7 @@ int realizarEjecucion(t_dtb * dtb)
 			{
 				case EXIT_FAILURE:
 					log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
+					segFaultDTB = true;
 					if (finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
 					{
 						log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
@@ -206,7 +203,16 @@ int realizarEjecucion(t_dtb * dtb)
 			{
 				break;
 			}
-			periodoEjecucion++;
+
+			if (dtb->programCounter == dtb->cantidadLineas)
+			{
+				periodoEjecucion = quantum;
+				finEjecucion = true;
+			}
+			else
+			{
+				periodoEjecucion++;
+			}
 		}
 		else
 		{
@@ -219,24 +225,27 @@ int realizarEjecucion(t_dtb * dtb)
 		}
 	}
 	pthread_mutex_unlock(&mutexQuantum);
-	if (finEjecucion)
+	if (!segFaultDTB)
 	{
-		periodoEjecucion--;
-	}
-	// TODO: Recibir la cantidad de lineas real del DTB, ahora voy a forzar que no entre para evitar problemas.
-	//dtb->cantidadLineas = dtb->programCounter + 1;
-	if (dtb->programCounter == dtb->cantidadLineas)
-	{
-		if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_DTB))
+		if (finEjecucion)
 		{
-			log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
+			periodoEjecucion--;
 		}
-	}
-	else if (periodoEjecucion == quantum)
-	{
-		if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB))
+		// TODO: Recibir la cantidad de lineas real del DTB, ahora voy a forzar que no entre para evitar problemas.
+		//dtb->cantidadLineas = dtb->programCounter + 1;
+		if (dtb->programCounter == dtb->cantidadLineas)
 		{
-			log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB por quantum.");
+			if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_DTB))
+			{
+				log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
+			}
+		}
+		else if (periodoEjecucion == quantum)
+		{
+			if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB))
+			{
+				log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB por quantum.");
+			}
 		}
 	}
 	free(dtb);

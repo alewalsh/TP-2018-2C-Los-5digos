@@ -53,28 +53,8 @@ void manejarConexiones(){
             	DAMConectado++;
                 break;
             case CPU_HSK:
-            	log_trace_mutex(logger, "Se me conecto un CPU, socket: %d", nuevoFd);
-                addNewSocketToMaster(nuevoFd);
-                CPUConectado++;
-
-                //agregar socket a lista de cpus
-                t_cpus * cpu = crearCpu();
-                cpu->libre= 0;
-                cpu->socket= nuevoFd;
-                list_add(listaCpus, cpu);
-                sem_post(&semaforoCpu);
-
-            	int size = sizeof(int);
-                char *buffer = (char *) malloc(size);
-                char *p = buffer;
-                copyIntToBuffer(&p,conf->quantum);
-            	if(enviar(nuevoFd, SAFA_CPU_QUANTUM, buffer, size, logger->logger))
-            	{
-            		log_error_mutex(logger, "No se pudo enviar el quantum al CPU.");
-            		free(buffer);
-            	}
-        		free(buffer);
-
+            	manejarNuevaCPU(nuevoFd);
+            	CPUConectado++;
                 break;
             default:
                 log_warning_mutex(logger, "Se me quizo conectar alguien que no espero");
@@ -119,6 +99,10 @@ void manejarConexiones(){
                         // añadir al conjunto maestro
                         log_trace_mutex(logger, "Se acepto la nueva conexion solicitada en el SELECT");
                         addNewSocketToMaster(nuevoFd);
+                        if (handshake == CPU_HSK)
+                        {
+                        	manejarNuevaCPU(nuevoFd);
+                        }
                     }
                 } else {
                      //gestionar datos de un cliente
@@ -317,6 +301,30 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 
 void initCpuList(){
 	listaCpus = list_create();
+}
+
+void manejarNuevaCPU(int nuevoFd)
+{
+	log_trace_mutex(logger, "Se me conecto un CPU, socket: %d", nuevoFd);
+    addNewSocketToMaster(nuevoFd);
+
+    //agregar socket a lista de cpus
+    t_cpus * cpu = crearCpu();
+    cpu->libre= 0;
+    cpu->socket= nuevoFd;
+    list_add(listaCpus, cpu);
+    sem_post(&semaforoCpu);
+
+	int size = sizeof(int);
+    char *buffer = (char *) malloc(size);
+    char *p = buffer;
+    copyIntToBuffer(&p,conf->quantum);
+	if(enviar(nuevoFd, SAFA_CPU_QUANTUM, buffer, size, logger->logger))
+	{
+		log_error_mutex(logger, "No se pudo enviar el quantum al CPU.");
+		free(buffer);
+	}
+	free(buffer);
 }
 
 void hacerSignalDeRecurso(char * recursoSolicitado){
