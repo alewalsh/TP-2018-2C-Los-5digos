@@ -11,7 +11,8 @@ int devolverInstruccionTPI(t_package pkg, t_infoDevolverInstruccion* datosPaquet
 {
 	pthread_mutex_lock(&mutexPIDBuscado);
 	pidBuscado = datosPaquete->pid;
-	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+	pathBuscado = datosPaquete->path;
+	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPidYPath);
 	pthread_mutex_unlock(&mutexPIDBuscado);
 	int posicionBuscada = datosPaquete->posicion;
 	int cantidadPaginas = list_size(paginasProceso);
@@ -22,7 +23,7 @@ int devolverInstruccionTPI(t_package pkg, t_infoDevolverInstruccion* datosPaquet
 	}
 	else if (cantidadPaginas > 0)
 	{
-		if (cantidadLineas >= posicionBuscada)
+		if (cantidadLineas > posicionBuscada)
 		{
 			int nroPaginaCorrespondiente = datosPaquete->posicion / lineasXPagina;
 			t_pagina * paginaCorrespondiente = list_get(paginasProceso, nroPaginaCorrespondiente);
@@ -63,6 +64,7 @@ int finGDTTPI(t_package pkg, int idGDT, int socketSolicitud)
 	{
 		t_pagina * pagina = list_get(paginasProceso, i);
 		liberarMarco(pagina->nroMarco);
+		i++;
 	}
 	//ENVIAR MSJ DE EXITO A CPU
 	if (enviar(socketSolicitud,FM9_CPU_GDT_FINALIZADO,pkg.data,pkg.size,logger->logger))
@@ -79,7 +81,8 @@ int flushTPI(int socketSolicitud, t_datosFlush * data, int accion)
 {
 	pthread_mutex_lock(&mutexPIDBuscado);
 	pidBuscado = data->pid;
-	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+	pathBuscado = data->path;
+	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPidYPath);
 	pthread_mutex_unlock(&mutexPIDBuscado);
 	int cantidadPaginas = list_size(paginasProceso);
 	if (cantidadPaginas <= 0)
@@ -100,8 +103,9 @@ int flushTPI(int socketSolicitud, t_datosFlush * data, int accion)
 					cantidadLineas += pagina->lineasUtilizadas;
 				}
 			}
-			char * buffer;
-			copyIntToBuffer(&buffer, cantidadLineas);
+			char * buffer = malloc(sizeof(int));
+			char * p = buffer;
+			copyIntToBuffer(&p, cantidadLineas);
 			if (enviar(socketSolicitud,FM9_DAM_FLUSH,buffer,sizeof(int),logger->logger))
 			{
 				log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
@@ -159,10 +163,10 @@ void imprimirInfoAdministrativaTPI(int pid)
 	}
 }
 
-int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud){
-
+int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud)
+{
 	int paginasNecesarias = datosPaquete->cantidadLineasARecibir / lineasXPagina;
-	if(cantLineas % lineasXPagina != 0){
+	if(datosPaquete->cantidadLineasARecibir % lineasXPagina != 0){
 		paginasNecesarias++;
 	}
 	if(tengoMemoriaDisponible(paginasNecesarias) == 1){
@@ -185,7 +189,8 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 
 	pthread_mutex_lock(&mutexPIDBuscado);
 	pidBuscado = datosPaquete->pid;
-	t_list * paginasProceso = list_filter(tablaPaginasInvertida, (void *) filtrarPorPid);
+	pathBuscado = datosPaquete->path;
+	t_list * paginasProceso = list_filter(tablaPaginasInvertida, (void *) filtrarPorPidYPath);
 	pthread_mutex_unlock(&mutexPIDBuscado);
 
 	// ESTO PARA QUE ESTA?????
@@ -264,8 +269,10 @@ int ejecutarGuardarEsquemaTPI(t_package pkg, t_infoGuardadoLinea* datosPaquete, 
 	bool pudeGuardar = false;
 	pthread_mutex_lock(&mutexPIDBuscado);
 	pidBuscado = datosPaquete->pid;
-	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+	pathBuscado = datosPaquete->path;
+	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPidYPath);
 	pthread_mutex_unlock(&mutexPIDBuscado);
+	int posicionReal = datosPaquete->linea - 1;
 	int cantidadPaginas = list_size(paginasProceso);
 	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid, datosPaquete->path);
 	if (cantidadPaginas <= 0)
@@ -274,17 +281,17 @@ int ejecutarGuardarEsquemaTPI(t_package pkg, t_infoGuardadoLinea* datosPaquete, 
 	}
 	else if (cantidadPaginas > 0)
 	{
-		if (cantidadLineas >= datosPaquete->linea)
+		if (cantidadLineas > posicionReal)
 		{
-			int nroPaginaCorrespondiente = datosPaquete->linea / lineasXPagina;
+			int nroPaginaCorrespondiente = posicionReal / lineasXPagina;
 			t_pagina * paginaCorrespondiente = list_get(paginasProceso, nroPaginaCorrespondiente);
 			if (strcmp(paginaCorrespondiente->path,datosPaquete->path) == 0)
 			{
-				while (datosPaquete->linea >= lineasXPagina)
+				while (posicionReal >= lineasXPagina)
 				{
-					datosPaquete->linea -= lineasXPagina;
+					posicionReal -= lineasXPagina;
 				}
-				guardarLinea(direccion(paginaCorrespondiente->nroMarco,datosPaquete->linea), datosPaquete->datos);
+				guardarLinea(direccion(paginaCorrespondiente->nroMarco,posicionReal), datosPaquete->datos);
 				pudeGuardar = true;
 			}
 		}
@@ -317,7 +324,8 @@ int cerrarArchivoTPI(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socke
 {
 	pthread_mutex_lock(&mutexPIDBuscado);
 	pidBuscado = datosPaquete->pid;
-	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+	pathBuscado = datosPaquete->path;
+	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPidYPath);
 	pthread_mutex_unlock(&mutexPIDBuscado);
 	int cantidadPaginas = list_size(paginasProceso);
 	if (list_is_empty(paginasProceso))
@@ -332,6 +340,7 @@ int cerrarArchivoTPI(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socke
 		{
 			liberarMarco(pagina->nroMarco);
 		}
+		i++;
 	}
 	//ENVIAR MSJ DE EXITO A CPU
 	if (enviar(socketSolicitud,FM9_CPU_ARCHIVO_CERRADO,pkg.data,pkg.size,logger->logger))

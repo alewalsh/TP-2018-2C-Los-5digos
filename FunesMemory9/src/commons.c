@@ -125,6 +125,7 @@ void realizarFlush(char * linea, int nroLinea, int transferSize, int socket)
 {
 	char** arrayLineas = string_split(linea,"\n");
 	char * lineaAEnviar = arrayLineas[0];
+	string_trim_right(&lineaAEnviar);
 	int tamanioLinea = string_length(lineaAEnviar) + 1;
 	int cantidadPaquetes = tamanioLinea / transferSize;
 	if(tamanioLinea % transferSize != 0){
@@ -146,6 +147,15 @@ void realizarFlush(char * linea, int nroLinea, int transferSize, int socket)
 	free(arrayLineas);
 }
 
+
+bool filtrarPorPidYPath(t_pagina * pagina)
+{
+	if (pagina->pid == pidBuscado && strcmp(pagina->path, pathBuscado) == 0)
+	{
+		return true;
+	}
+	return false;
+}
 
 bool filtrarPorPid(t_pagina * pagina)
 {
@@ -234,6 +244,7 @@ void liberarRecursos()
 	pthread_mutex_destroy(&mutexPaginaBuscada);
 	pthread_mutex_destroy(&mutexSegmentoBuscado);
 	pthread_mutex_destroy(&mutexPIDBuscado);
+	pthread_mutex_destroy(&mutexPathBuscado);
 
 	log_destroy_mutex(logger);
 	freeConfig(config, FM9);
@@ -278,12 +289,24 @@ int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int li
 		{
 			t_pagina * pagina = malloc(sizeof(int)*5 + strlen(path) + 1);
 			pagina->pid = pid;
-			pagina->path = path;
+			pagina->path = string_new();
+			string_append(&pagina->path,path);
 			pagina->nroSegmento = nroSegmento;
-			pthread_mutex_lock(&mutexSegmentoBuscado);
-			nroSegmentoBuscado = nroSegmento;
-			pagina->nroPagina = list_size(list_filter(proceso->tablaPaginas, (void *)filtrarPorSegmento));
-			pthread_mutex_unlock(&mutexSegmentoBuscado);
+			if (config->modoEjecucion == SPA)
+			{
+				pthread_mutex_lock(&mutexSegmentoBuscado);
+				nroSegmentoBuscado = nroSegmento;
+				pagina->nroPagina = list_size(list_filter(proceso->tablaPaginas, (void *)filtrarPorSegmento));
+				pthread_mutex_unlock(&mutexSegmentoBuscado);
+			}
+			if (config->modoEjecucion == TPI)
+			{
+				pthread_mutex_lock(&mutexPIDBuscado);
+				pidBuscado = pid;
+				t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+				pthread_mutex_unlock(&mutexPIDBuscado);
+				pagina->nroPagina = paginasProceso->elements_count;
+			}
 			pagina->nroMarco = i;
 			if (lineasAOcupar >= lineasXPagina)
 			{
@@ -295,7 +318,9 @@ int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int li
 				pagina->lineasUtilizadas = lineasAOcupar;
 			}
 			if (config->modoEjecucion == TPI)
+			{
 				actualizarTPI(pagina);
+			}
 			if (config->modoEjecucion == SPA)
 			{
 				list_add(proceso->tablaPaginas, pagina);
@@ -303,10 +328,6 @@ int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int li
 
 			ocuparMarco(pagina->nroMarco);
 			paginasReservadas++;
-//			free(pagina);
-			// TODO: Sacar esto, es solo una prueba!
-//			t_pagina * paginaGuardada = list_get(proceso->tablaPaginas, proceso->tablaPaginas->elements_count - 1);
-//			log_info_mutex(logger, "Los datos del proceso son: NroPagina %d - NroMarco %d - NroSegmento %d", paginaGuardada->nroPagina, paginaGuardada->nroMarco, paginaGuardada->nroSegmento);
 		}
 		i++;
 	}
@@ -360,14 +381,6 @@ void logPosicionesLibres(t_bitarray * bitarray, int modo)
 	}
 }
 
-int obtenerLineasProcesoPath(int pid, char * path)
-{
-	int cantidadLineas = 0;
-
-
-	return cantidadLineas;
-}
-
 int obtenerLineasProceso(int pid, char * path)
 {
 	int cantidadLineas = 0;
@@ -393,7 +406,8 @@ int obtenerLineasProceso(int pid, char * path)
 	{
 		pthread_mutex_lock(&mutexPIDBuscado);
 		pidBuscado = pid;
-		t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+		pathBuscado = path;
+		t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPidYPath);
 		pthread_mutex_unlock(&mutexPIDBuscado);
 		int i = 0, cantPaginas = list_size(paginasProceso);
 		while(i < cantPaginas)
@@ -404,7 +418,6 @@ int obtenerLineasProceso(int pid, char * path)
 			}
 			i++;
 		}
-		list_destroy_and_destroy_elements(paginasProceso, (void *)liberarPagina);
 	}
 	if (config->modoEjecucion == SEG)
 		{

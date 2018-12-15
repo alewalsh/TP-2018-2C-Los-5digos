@@ -29,6 +29,7 @@ int cantPaginas;
 int lineasXPagina;
 int pidBuscado;
 int nroSegmentoBuscado;
+char * pathBuscado;
 
 t_log_mutex * logger;
 configFM9 * config;
@@ -49,6 +50,7 @@ pthread_mutex_t mutexExit;
 pthread_mutex_t mutexPaginaBuscada;
 pthread_mutex_t mutexPIDBuscado;
 pthread_mutex_t mutexSegmentoBuscado;
+pthread_mutex_t mutexPathBuscado;
 
 void inicializarSemaforos();
 void inicializarContadores();

@@ -65,6 +65,7 @@ enum accionEjecutada
  */
 pthread_mutex_t mutexQuantum;
 pthread_mutex_t mutexPath;
+pthread_mutex_t mutexSolicitudes;
 
 /*
  * Funciones

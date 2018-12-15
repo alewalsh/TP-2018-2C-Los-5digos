@@ -44,7 +44,9 @@ void recibirDTB()
         }
 		else
 		{
+			pthread_mutex_lock(&mutexSolicitudes);
 			manejarSolicitud(paquete, t_socketSAFA->socket);
+			pthread_mutex_unlock(&mutexSolicitudes);
 		}
 	}
 }
@@ -110,6 +112,7 @@ int nuevoDummy(t_dtb * dtb, t_package paquete)
 		return EXIT_FAILURE;
 	}
 	free(buffer);
+	log_info_mutex(loggerCPU, "Se envió el pedido de búsqueda de escriptorio del proceso %d al DAM.", dtb->idGDT);
 
 	// Desalojar al DTB Dummy, avisando a SAFA que lo bloquee
 	if(enviar(t_socketSAFA->socket,CPU_SAFA_BLOQUEAR_DUMMMY,paquete.data, paquete.size, loggerCPU->logger))
@@ -118,6 +121,7 @@ int nuevoDummy(t_dtb * dtb, t_package paquete)
 		return EXIT_FAILURE;
 	}
 	free(dtb);
+	log_info_mutex(loggerCPU, "Se envió el pedido de bloqueo del proceso %d al SAFA.", dtb->idGDT);
 	return EXIT_SUCCESS;
 }
 
@@ -671,6 +675,7 @@ void exit_gracefully(int error)
 	liberarMemoriaTSocket(t_socketFM9);
 	pthread_mutex_destroy(&mutexQuantum);
 	pthread_mutex_destroy(&mutexPath);
+	pthread_mutex_destroy(&mutexSolicitudes);
 	log_destroy_mutex(loggerCPU);
 	freeConfig(config, CPU);
 	exit(error);
@@ -688,4 +693,5 @@ void liberarMemoriaTSocket(t_socket * TSocket)
 void initMutexs(){
 	pthread_mutex_init(&mutexQuantum, NULL);
 	pthread_mutex_init(&mutexPath, NULL);
+	pthread_mutex_init(&mutexSolicitudes, NULL);
 }

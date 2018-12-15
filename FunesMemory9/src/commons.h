@@ -18,6 +18,7 @@ extern int cantPaginas;
 extern int pidBuscado;
 extern int lineasXPagina;
 extern int nroSegmentoBuscado;
+extern char * pathBuscado;
 extern pthread_mutex_t mutexSegmentoBuscado;
 
 extern configFM9 * config;
@@ -32,6 +33,7 @@ extern pthread_mutex_t mutexPIDBuscado;
 extern pthread_mutex_t mutexMaxfd;
 extern pthread_mutex_t mutexPaginaBuscada;
 extern pthread_mutex_t mutexExit;
+extern pthread_mutex_t mutexPathBuscado;
 
 extern t_list * tablaPaginasInvertida;
 
@@ -43,6 +45,7 @@ int tengoMemoriaDisponible(int cantACargar);
 int posicionesLibres(t_bitarray ** bitArray);
 void guardarLinea(int posicionMemoria, char * linea);
 bool filtrarPorPid(t_pagina * pagina);
+bool filtrarPorPidYPath(t_pagina * pagina);
 void realizarFlush(char * linea, int nroLinea, int transferSize, int socket);
 void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int tamanioPaquete, int cantidadPaquetes, int nroLinea, int socket);
 char * obtenerLinea(int posicionMemoria);
