@@ -517,6 +517,7 @@ void borrarArchivo(char *path){
 }
 
 void enviarStringDAMporTRansferSize(char *datosEnvio){
+	t_package pkg;
 	// Calculo cantidad de paquetes.
 	int cuantosPaquetes = strlen(datosEnvio)/trasnfer_size;
 	if(strlen(datosEnvio) % trasnfer_size != 0){
@@ -555,6 +556,9 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 				free(bufferEnvio);
 			}
 			free(datosRestantes);
+
+			//espero confirmacion de recempcion del DAM.
+
 		}
 		else
 		// if (cuantosPaquetes > 0)
@@ -571,12 +575,25 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 				free(bufferEnvio);
 			}
 			free(retornoOffset);
+			//espero confirmacion de recempcion del DAM.
+
 		}
 		viejoOffset = offset;
 		offset = offset + tamanioLinea;
 
 		cuantosPaquetes--;
 		free(bufferEnvio);
+
+		//espero confirmacion del DAM.
+		if(recibir(socketDAM,&pkg, loggerAtencionDAM->logger)){
+			log_error_mutex(loggerAtencionDAM, "No se recibio confirmacion de envio de paquete.");
+			break;
+		}else{
+			if(pkg.code != DAM_MDJ_CONFIRMACION_ENVIO_DEL_MDJ){
+				log_error_mutex(loggerAtencionDAM, "Se esperaba confirmacion de envio de paquete y llego otra cosa.");
+				break;
+			}
+		}
 	}
 }
 
@@ -599,6 +616,11 @@ char * rebirStringDAMporTRansferSize(int cantidadPaquetes){
 		else
 		{
 			log_error_mutex(loggerAtencionDAM, "Error se recibieron menos paquetes de los esperados.");
+		}
+
+		if(enviar(socketDAM, DAM_MDJ_CONFIRMACION_ENVIO_DEL_DMA, NULL, 0, loggerAtencionDAM->logger))
+		{
+			log_error_mutex(loggerAtencionDAM, "No se pudo enviar confirmacion de llegada de paquete al DAM.");
 		}
 	}
 
