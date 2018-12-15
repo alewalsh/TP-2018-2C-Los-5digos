@@ -91,15 +91,19 @@ void planificadorLP() {
 
     	sem_wait(&semaforoGradoMultiprgramacion);
 //        pthread_mutex_lock(&mutexReadyList);
-
+    	pthread_mutex_lock(&semDummy);
    		//Me fijo cual es el primer elemento de la lista, no lo saco, solo tengo los datos
         pthread_mutex_lock(&mutexNewList);
-   		t_dtb *primerDTB = list_get(colaNew,0);
+        t_dtb *primerDTB;
+        for(int i = 0; i < list_size(colaNew); i++){
+        	primerDTB = list_get(colaNew,i);
+        	if(primerDTB->realizOpDummy == 0){
+        		break;
+        	}
+        }
         pthread_mutex_unlock(&mutexNewList);
 
-   		pthread_mutex_lock(&semDummy);
   		planificadorCPdesbloquearDummy(primerDTB->idGDT,primerDTB->dirEscriptorio);
-
 //        pthread_mutex_unlock(&mutexReadyList);
     }
 
