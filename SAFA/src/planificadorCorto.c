@@ -56,6 +56,7 @@ void manejarDispatcher() {
 		sem_wait(&hayProcesosEnReady);
 		sem_wait(&semaforoCpu);
 		usleep(conf->retardo * 1000);
+
 		int socketCPU = buscarCPULibre();
 //		log_info_mutex(logger, "CPU donde fue %d", socketCPU);
 		if (socketCPU > 0) {
@@ -425,7 +426,6 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 	   }else{
 		   log_error_mutex(logger, "SE FINALIZÓ EL PROCESO ID: %d POR INCONVENIENTES DE ENVIOS", dtbAEnviar->idGDT);
 		   //si estaba ejecutando -> Se hace signal del semaforo y se libera la cpu
-			sem_post(&semaforoCpu);
 			liberarCpu(socketCpu);
 	   }
 	}
@@ -439,9 +439,10 @@ int buscarCPULibre(){
 		if(cpu->libre== 0)
 		{
 			cpu->libre = 1;
-			list_add_in_index(listaCpus,i,cpu);
+			list_add(listaCpus,cpu);
 			return cpu->socket;
 		}
+		list_add(listaCpus,cpu);
 	}
 	return -1;
 }

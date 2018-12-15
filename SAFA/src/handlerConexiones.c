@@ -53,6 +53,7 @@ void manejarConexiones(){
             	DAMConectado++;
                 break;
             case CPU_HSK:
+            	addNewSocketToMaster(nuevoFd);
             	manejarNuevaCPU(nuevoFd);
             	CPUConectado++;
                 break;
@@ -139,7 +140,6 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	}else{
         		log_info_mutex(logger, "FINALIZO EL PROCESO ID: %d",dtb->idGDT);
         		//Se libera una cpu y se hace signal del semaforo
-        		sem_post(&semaforoCpu);
 				liberarCpu(socketFD);
         	}
         	break;
@@ -170,7 +170,6 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	bloquearDummy();
         	pthread_mutex_unlock(&semDummy);
         	//Se libera una cpu y se hace signal del semaforo
-        	sem_post(&semaforoCpu);
 			liberarCpu(socketFD);
         	break;
         case CPU_SAFA_FIN_EJECUCION_DTB:{
@@ -182,9 +181,6 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 				log_error_mutex(logger, "Hubo un error al abortar el DTB.");
 			}else{
 				log_info_mutex(logger, "FINALIZO LA EJECUCION DEL PROCESO ID: %d",dtb->idGDT);
-				//Se libera una cpu y se hace signal del semaforo
-				sem_post(&semaforoCpu);
-				liberarCpu(socketFD);
 			}
         	break;
         }
@@ -197,9 +193,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         		log_error_mutex(logger, "Hubo un error al llevar el DTB a la cola de READY por finalizacion de quantum.");
         	}else{
 				log_info_mutex(logger, "FINALIZO EL QUANTUM DEL PROCESO ID: %d",dtb->idGDT);
-				//Se libera una cpu y se hace signal del semaforo para la cpu
-				sem_post(&semaforoCpu);
-				//Tambien se hace un signal del semaforo para avisar que hay un proceso en ready
+				//se hace un signal del semaforo para avisar que hay un proceso en ready
 				sem_post(&hayProcesosEnReady);
 				liberarCpu(socketFD);
 			}
@@ -306,7 +300,7 @@ void initCpuList(){
 void manejarNuevaCPU(int nuevoFd)
 {
 	log_trace_mutex(logger, "Se me conecto un CPU, socket: %d", nuevoFd);
-    addNewSocketToMaster(nuevoFd);
+//    addNewSocketToMaster(nuevoFd);
 
     //agregar socket a lista de cpus
     t_cpus * cpu = crearCpu();
@@ -378,7 +372,6 @@ void hacerWaitDeRecurso(char * recursoSolicitado, int pid, int socketCPU){
 				pasarDTBdeEXECaBLOQUED(dtb);
 
 				//Se libera una cpu y se hace signal del semaforo
-				sem_post(&semaforoCpu);
 				liberarCpu(socketCPU);
 			}
 			list_add_in_index(listaRecursoAsignados, posicion, recursoUsado);

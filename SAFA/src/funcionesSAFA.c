@@ -218,7 +218,6 @@ int abortarDTB(t_dtb * dtb, int socketCPU){
 	}else{
 		log_error_mutex(logger, "SE ABORTÓ EL PROCESO ID: %d", dtb->idGDT);
 		//si estaba ejecutando -> Se hace signal del semaforo y se libera la cpu
-		sem_post(&semaforoCpu);
 		liberarCpu(socketCPU);
 	}
 	return result;
@@ -356,9 +355,10 @@ void liberarCpu(int socketCpu)
 		if(cpu->socket == socketCpu)
 		{
 			cpu->libre = 0;
-			list_add_in_index(listaCpus,i,cpu);
 		}
+		list_add(listaCpus,cpu);
 	}
+	sem_post(&semaforoCpu);
 }
 
 //------------------------------------------------------------------------------------------------------------------
