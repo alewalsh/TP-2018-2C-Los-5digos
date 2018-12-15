@@ -490,6 +490,7 @@ void notificarCambioQuantumCPUS(int nuevoQuantum)
 			free(buffer);
 		}
 		free(buffer);
+		i++;
 	}
 }
 
