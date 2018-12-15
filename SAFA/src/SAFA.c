@@ -251,11 +251,29 @@ void cambiosConfig(){
                                                }
                                                if(MULTIPROGRAMACIONviejo != conf->grado_mp){
                                                        printf("Se modifico el grado de MP de %d a %d \n", MULTIPROGRAMACIONviejo, conf->grado_mp);
-                                                       //modoficar el semaforo semaforpGradoMultiprgramacion
+                                                       //comparo el grado de MP viejo con el nuevo
+                                                       int diferencia = MULTIPROGRAMACIONviejo - conf->grado_mp;
+
+                                                       //si es menor a 0 el viejo es mas chico que el nuevo. Debo hacer la diferencia
+                                                       //en posts para nivelar al nuevo valor de MP.
+                                                       if(diferencia < 0){
+                                                    	   while(diferencia != 0){
+                                                    		   sem_post(&semaforpGradoMultiprgramacion);
+                                                    		   diferencia++;
+                                                    	   }
+                                                       }
+                                                       //con la misma logica pero el viejo es mas grande que el nuevo.
+                                                       if(diferencia > 0){
+                                                    	   while(diferencia != 0){
+                                                    		   sem_wait(&semaforpGradoMultiprgramacion);
+                                                    		   diferencia--;
+                                                    	   }
+                                                       }
+                                                       //si es igual a 0 no hago nada porque es el mismo grado de MP.
                                                }
                                                if(RETARDOviejo != conf->retardo){
                                                        printf("Se modifico el retardo de %d a %d \n", RETARDOviejo, conf->retardo);
-                                                       //todo ver para que se usa.
+                                                       //no hago nada ya que se utilixa directamente de la info del config
                                                }
 //                                     }
                                }
