@@ -40,6 +40,7 @@ void imprimirDTB(t_dtb * dtb);
 void consolaMetricasDTB(char *args);
 void consolaMetricas();
 void imprimirSentenciasDAM();
+void imprimirSentenciasPromEnExit();
 void consoleExit();
 void consoleHelp();
 void consoleClear();

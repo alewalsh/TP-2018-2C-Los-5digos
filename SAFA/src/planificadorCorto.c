@@ -273,16 +273,18 @@ int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq){
 	return EXIT_SUCCESS;
 }
 
-int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq){
+int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbAFinalizar){
 
     pthread_mutex_lock(&mutexEjecutandoList);
-    int index = buscarDTBEnCola(colaEjecutando,dtbABloq);
+    int index = buscarDTBEnCola(colaEjecutando,dtbAFinalizar);
     pthread_mutex_unlock(&mutexEjecutandoList);
 
 	if(index >= 0){
 		pthread_mutex_lock(&mutexEjecutandoList);
 		t_dtb * dtbEjecutandoAFinalizar = (t_dtb *) list_remove(colaEjecutando,index);
 		pthread_mutex_unlock(&mutexEjecutandoList);
+
+		dtbEjecutandoAFinalizar->programCounter = dtbAFinalizar->programCounter;
 
 		pthread_mutex_lock(&mutexExitList);
 	    list_add(colaExit, dtbEjecutandoAFinalizar);
@@ -307,6 +309,8 @@ int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq){
 		pthread_mutex_lock(&mutexBloqueadosList);
 		t_dtb * dtbBloqueadoAFinalizar = (t_dtb *) list_remove(colaBloqueados,index);
 		pthread_mutex_unlock(&mutexBloqueadosList);
+
+		dtbBloqueadoAFinalizar->programCounter = dtbABloq->programCounter;
 
 		pthread_mutex_lock(&mutexExitList);
 	    list_add(colaExit, dtbBloqueadoAFinalizar);
