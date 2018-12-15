@@ -357,7 +357,7 @@ void liberarCpu(int socketCpu)
 		{
 			cpu->libre = 0;
 		}
-		list_add_in_index(listaCpus,i,cpu);
+		list_add(listaCpus,cpu);
 	}
     pthread_mutex_unlock(&mutexCpus);
 	sem_post(&semaforoCpu);
