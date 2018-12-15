@@ -42,6 +42,7 @@ int trasnfer_size;
 //componentes FIFA
 t_bitarray *bitarray;
 pthread_mutex_t semaforoBitarray;
+pthread_mutex_t mutexSolicitudes;
 
 enum codigosError
 {

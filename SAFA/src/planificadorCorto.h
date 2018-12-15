@@ -26,6 +26,7 @@ extern t_log_mutex *logger;
 
 int dummyBloqueado;
 
+extern pthread_mutex_t mutexCpus;
 extern pthread_mutex_t mutexPlanificando;
 extern sem_t desbloquearDTBDummy;
 extern sem_t enviarDtbACPU;

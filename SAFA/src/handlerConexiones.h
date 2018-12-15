@@ -18,6 +18,7 @@ extern configSAFA *conf;
 extern t_log_mutex *logger;
 extern fd_set master;
 extern fd_set readset;
+extern pthread_mutex_t mutexCpus;
 
 t_list* listaCpus;
 t_list* listaRecursoAsignados;

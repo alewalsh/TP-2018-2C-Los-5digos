@@ -89,18 +89,23 @@ void planificadorLP() {
     	//este no estoy seguro.
     	sem_wait(&mandadosPorConsola);
 
+        log_info_mutex(logger, "Hilo Planificador Largo.  Wait al semaforo de grado de multiprogramacion.");
     	sem_wait(&semaforoGradoMultiprgramacion);
 //        pthread_mutex_lock(&mutexReadyList);
+        log_info_mutex(logger, "Hilo Planificador Largo.  Lock al semaforo del dummy.");
     	pthread_mutex_lock(&semDummy);
    		//Me fijo cual es el primer elemento de la lista, no lo saco, solo tengo los datos
+        log_info_mutex(logger, "Hilo Planificador Largo.  Lock al semaforo de la lista de NEW.");
         pthread_mutex_lock(&mutexNewList);
         t_dtb *primerDTB;
         for(int i = 0; i < list_size(colaNew); i++){
         	primerDTB = list_get(colaNew,i);
         	if(primerDTB->realizOpDummy == 0){
+                log_info_mutex(logger, "Hilo Planificador Largo.  DTB %d seleccionado.", primerDTB->idGDT);
         		break;
         	}
         }
+        log_info_mutex(logger, "Hilo Planificador Largo.  Unlock al semaforo de la lista de NEW.");
         pthread_mutex_unlock(&mutexNewList);
 
   		planificadorCPdesbloquearDummy(primerDTB->idGDT,primerDTB->dirEscriptorio);

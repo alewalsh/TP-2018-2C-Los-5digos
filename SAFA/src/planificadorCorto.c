@@ -32,14 +32,18 @@ void planificadorCP() {
  */
 void manejarDummy() {
 	while (1) {
+	    log_info_mutex(logger, "Hilo Planificador Corto. Wait al semaforo de desbloquear DTB dummy.");
 		sem_wait(&desbloquearDTBDummy);
 
+	    log_info_mutex(logger, "Hilo Planificador Corto. Buscar indice DTB para inicializar.");
 		int index = buscarDtbParaInicializar();
 		if (index >= 0) {
 			//Se desbloquea el dummy y se agrega a la lista de ready
 //			pthread_mutex_lock(&mutexDummy);
+		    log_info_mutex(logger, "Hilo Planificador Corto. Desbloquear DUMMY.");
 			desbloquearDummy();
 			//Se hace un signal para avisar que hay procesos en ready para ejecutar
+		    log_info_mutex(logger, "Hilo Planificador Corto. Post al semaforo de hay procesos en ready.");
 			sem_post(&hayProcesosEnReady);
 //			pthread_mutex_unlock(&mutexDummy);
 		}
@@ -53,10 +57,14 @@ void manejarDummy() {
  */
 void manejarDispatcher() {
 	while (1) {
+	    log_info_mutex(logger, "Hilo Planificador Corto. Wait al semaforo de hay procesos en ready.");
 		sem_wait(&hayProcesosEnReady);
+	    log_info_mutex(logger, "Hilo Planificador Corto. Wait al semaforo de CPUs.");
 		sem_wait(&semaforoCpu);
+	    log_info_mutex(logger, "Hilo Planificador Corto. Aplico retardo.");
 		usleep(conf->retardo * 1000);
 
+	    log_info_mutex(logger, "Hilo Planificador Corto. Busco el socket de una CPU libre.");
 		int socketCPU = buscarCPULibre();
 //		log_info_mutex(logger, "CPU donde fue %d", socketCPU);
 		if (socketCPU > 0) {
@@ -109,15 +117,19 @@ int buscarDtbParaInicializar()
 
 void planificadorCPdesbloquearDummy(int idGDT, char * dirScript)
 {
+    log_info_mutex(logger, "Hilo Planificador Largo.  Lock al semaforo de la lista de BLOQ.");
 	// Me fijo cual es el primer elemento de la lista, no lo saco, solo tengo los datos
 	pthread_mutex_lock(&mutexBloqueadosList);
 	t_dtb * dummy = list_remove_by_condition(colaBloqueados, (void *) obtenerDummy);
 	dummy->idGDT = idGDT;
 	dummy->dirEscriptorio = dirScript;
 	list_add(colaBloqueados, dummy);
+    log_info_mutex(logger, "Hilo Planificador Largo. Añado DUMMY a BLOQ y unlock al semaforo de la lista de BLOQ.");
 	pthread_mutex_unlock(&mutexBloqueadosList);
 	//Recibo la solicitud y desbloqueo el dummy.
+    log_info_mutex(logger, "Hilo Planificador Largo. Post al semaforo del dummy.");
 	sem_post(&desbloquearDTBDummy);
+    log_info_mutex(logger, "Hilo Planificador Largo. Set dummyBloqueado en 1.");
 	dummyBloqueado = 1;
 }
 
@@ -434,15 +446,20 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 }
 
 int buscarCPULibre(){
-	for(int i = 0; i<list_size(listaCpus);i++){
+
+    pthread_mutex_lock(&mutexCpus);
+	for(int i = 0; i<list_size(listaCpus);i++)
+	{
 		t_cpus * cpu = list_remove(listaCpus,i);
 		if(cpu->libre== 0)
 		{
 			cpu->libre = 1;
 			list_add(listaCpus,cpu);
+		    pthread_mutex_unlock(&mutexCpus);
 			return cpu->socket;
 		}
 		list_add(listaCpus,cpu);
 	}
+    pthread_mutex_unlock(&mutexCpus);
 	return -1;
 }

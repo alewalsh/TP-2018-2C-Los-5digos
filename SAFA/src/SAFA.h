@@ -46,6 +46,7 @@ pthread_mutex_t mutexExit;
 pthread_mutex_t mutexStop;
 pthread_mutex_t mutexConsole;
 pthread_mutex_t mutexPlanificando;
+pthread_mutex_t mutexCpus;
 pthread_mutex_t semDummy;
 pthread_mutex_t semCargadoEnMemoria;
 

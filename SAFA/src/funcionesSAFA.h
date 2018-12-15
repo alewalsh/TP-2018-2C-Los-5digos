@@ -45,6 +45,7 @@ extern pthread_mutex_t mutexEjecutandoList;
 extern pthread_mutex_t mutexExitList;
 extern pthread_mutex_t mutexDummy;
 extern pthread_mutex_t mutexReadyEspList;
+extern pthread_mutex_t mutexCpus;
 
 extern pthread_mutex_t mutexTotalSentencias;
 extern pthread_mutex_t mutexSentenciasXDAM;

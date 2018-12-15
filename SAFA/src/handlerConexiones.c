@@ -306,7 +306,9 @@ void manejarNuevaCPU(int nuevoFd)
     t_cpus * cpu = crearCpu();
     cpu->libre= 0;
     cpu->socket= nuevoFd;
+    pthread_mutex_lock(&mutexCpus);
     list_add(listaCpus, cpu);
+    pthread_mutex_unlock(&mutexCpus);
     sem_post(&semaforoCpu);
 
 	int size = sizeof(int);

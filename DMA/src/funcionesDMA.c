@@ -116,11 +116,6 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 			string_append(&bufferConcatenado,stringRecibido);
 			free(stringRecibido);
 		}
-
-		if(enviar(t_socketMdj->socket, DAM_MDJ_CONFIRMACION_ENVIO_DEL_MDJ, NULL, 0, logger->logger))
-		{
-			log_error_mutex(logger, "No se pudo enviar confirmacion de llegada de paquete al DAM.");
-		}
 	}
 
 	//una vez recibido tudo el archivo y de haberlo concatenado en un char *
@@ -465,16 +460,6 @@ int enviarPkgDeFm9AMdj(char * path) {
 			return EXIT_FAILURE;
 		}
 		free(bufferToMdj);
-		if(recibir(t_socketMdj->socket,&pkg, logger->logger)){
-			log_error_mutex(logger, "No se recibio confirmacion de envio de paquete.");
-			break;
-		}else{
-			if(pkg.code != DAM_MDJ_CONFIRMACION_ENVIO_DEL_DMA){
-				log_error_mutex(logger, "Se esperaba confirmacion de envio de paquete y llego otra cosa.");
-				break;
-			}
-		}
-
 	}
 	free(bufferTotal);
 
