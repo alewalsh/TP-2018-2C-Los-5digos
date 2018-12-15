@@ -232,6 +232,7 @@ void liberarRecursos()
 	pthread_mutex_destroy(&mutexExit);
 	pthread_mutex_destroy(&mutexMaxfd);
 	pthread_mutex_destroy(&mutexPaginaBuscada);
+	pthread_mutex_destroy(&mutexSegmentoBuscado);
 	pthread_mutex_destroy(&mutexPIDBuscado);
 
 	log_destroy_mutex(logger);
@@ -262,14 +263,10 @@ void crearProceso(int pid)
 int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int lineasAOcupar, int nroSegmento)
 {
 	int i = 0, paginasReservadas = 0;
-	t_pagina * pagina = malloc(sizeof(t_pagina));
-	pagina->pid = pid;
-	pagina->path = path;
 	t_gdt * proceso;
 	if (config->modoEjecucion == SPA)
 	{
 		proceso = dictionary_remove(tablaProcesos, intToString(pid));
-		pagina->nroSegmento = nroSegmento;
 	}
 	while(paginasReservadas != paginasAReservar)
 	{
@@ -279,9 +276,16 @@ int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int li
 		}
 		if(bitarray_test_bit(estadoMarcos,i) == 0)
 		{
-			pagina->nroPagina = paginasReservadas;
+			t_pagina * pagina = malloc(sizeof(int)*5 + strlen(path) + 1);
+			pagina->pid = pid;
+			pagina->path = path;
+			pagina->nroSegmento = nroSegmento;
+			pthread_mutex_lock(&mutexSegmentoBuscado);
+			nroSegmentoBuscado = nroSegmento;
+			pagina->nroPagina = list_size(list_filter(proceso->tablaPaginas, (void *)filtrarPorSegmento));
+			pthread_mutex_unlock(&mutexSegmentoBuscado);
 			pagina->nroMarco = i;
-			if (lineasAOcupar > lineasXPagina)
+			if (lineasAOcupar >= lineasXPagina)
 			{
 				pagina->lineasUtilizadas = lineasXPagina;
 				lineasAOcupar -= lineasXPagina;
@@ -299,6 +303,10 @@ int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int li
 
 			ocuparMarco(pagina->nroMarco);
 			paginasReservadas++;
+//			free(pagina);
+			// TODO: Sacar esto, es solo una prueba!
+//			t_pagina * paginaGuardada = list_get(proceso->tablaPaginas, proceso->tablaPaginas->elements_count - 1);
+//			log_info_mutex(logger, "Los datos del proceso son: NroPagina %d - NroMarco %d - NroSegmento %d", paginaGuardada->nroPagina, paginaGuardada->nroMarco, paginaGuardada->nroSegmento);
 		}
 		i++;
 	}
@@ -309,6 +317,15 @@ int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int li
 		dictionary_put(tablaProcesos, intToString(pid), proceso);
 	}
 	return EXIT_SUCCESS;
+}
+
+bool filtrarPorSegmento(t_pagina * pagina)
+{
+	if (pagina->nroSegmento == nroSegmentoBuscado)
+	{
+		return true;
+	}
+	return false;
 }
 
 void ocuparMarco(int pagina)
@@ -403,9 +420,9 @@ int obtenerLineasProceso(int pid, char * path)
 	return cantidadLineas;
 }
 
-void liberarMarco(t_pagina * pagina)
+void liberarMarco(int nroMarco)
 {
-	bitarray_clean_bit(estadoMarcos, pagina->nroMarco);
+	bitarray_clean_bit(estadoMarcos, nroMarco);
 }
 
 bool hayXMarcosLibres(int cantidad)
@@ -485,4 +502,15 @@ void actualizarPosicionesLibres(int base, int lineasEsperadas, t_bitarray * bitA
 		bitarray_set_bit(bitArray, posicionInicial);
 		posicionInicial++;
 	}
+}
+
+
+void actualizarTablaDeSegmentos(int pid, t_segmento * segmento)
+{
+	char *  pidString = intToString(pid);
+	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
+	char * nroSegmentoString = intToString(segmento->nroSegmento);
+	dictionary_put(gdt->tablaSegmentos,nroSegmentoString,segmento);
+	free(nroSegmentoString);
+	dictionary_put(tablaProcesos,pidString,gdt);
 }

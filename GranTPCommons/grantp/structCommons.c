@@ -39,7 +39,7 @@ void liberarSegmento(t_segmento *self)
 
 void liberarPagina(t_pagina * self)
 {
-	free(self->path);
+	//free(self->path);
 	free(self);
 }
 

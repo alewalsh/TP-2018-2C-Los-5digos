@@ -25,4 +25,6 @@ int cerrarArchivoSegPag(t_package pkg, t_infoCerrarArchivo* datosPaquete, int so
 
 bool filtrarPorNroPagina(t_pagina * pagina);
 int reservarPaginasParaSegmento(t_segmento * segmento, t_infoCargaEscriptorio* datosPaquete, int paginasAReservar);
+
+int obtenerPosicionRelativaPagina(int lineaActual);
 #endif /* SRC_SEGPAGINADA_H_ */

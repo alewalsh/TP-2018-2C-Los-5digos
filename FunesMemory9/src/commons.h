@@ -17,6 +17,8 @@ extern int cantLineas;
 extern int cantPaginas;
 extern int pidBuscado;
 extern int lineasXPagina;
+extern int nroSegmentoBuscado;
+extern pthread_mutex_t mutexSegmentoBuscado;
 
 extern configFM9 * config;
 extern t_bitarray * estadoLineas;
@@ -57,11 +59,13 @@ int reservarPaginasNecesarias(int paginasAReservar, int pid, char * path, int li
 
 void logPosicionesLibres(t_bitarray * bitarray, int modo);
 int obtenerLineasProceso(int pid, char * path);
-void liberarMarco(t_pagina * pagina);
+void liberarMarco(int nroMarco);
 bool hayXMarcosLibres(int cantidad);
 
 t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo, int paginasAReservar);
 void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarray * bitArray);
 
 void enviarInstruccion(int posicionMemoria, int socketSolicitud);
+void actualizarTablaDeSegmentos(int pid, t_segmento * segmento);
+bool filtrarPorSegmento(t_pagina * pagina);
 #endif /* SRC_COMMONS_H_ */

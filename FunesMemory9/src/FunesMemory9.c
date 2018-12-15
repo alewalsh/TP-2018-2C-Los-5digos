@@ -41,6 +41,7 @@ void inicializarSemaforos()
 	pthread_mutex_init(&mutexMaster, NULL);
 	pthread_mutex_init(&mutexMaxfd, NULL);
 	pthread_mutex_init(&mutexPaginaBuscada, NULL);
+	pthread_mutex_init(&mutexSegmentoBuscado, NULL);
 	pthread_mutex_init(&mutexPIDBuscado, NULL);
 	pthread_mutex_init(&mutexReadset, NULL);
 }

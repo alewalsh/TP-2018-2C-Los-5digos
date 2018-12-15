@@ -273,16 +273,6 @@ void imprimirInfoAdministrativaSegmentacion(int pid)
 	}
 }
 
-void actualizarTablaDeSegmentos(int pid, t_segmento * segmento)
-{
-	char *  pidString = intToString(pid);
-	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
-	char * nroSegmentoString = intToString(segmento->nroSegmento);
-	dictionary_put(gdt->tablaSegmentos,nroSegmentoString,segmento);
-	free(nroSegmentoString);
-	dictionary_put(tablaProcesos,pidString,gdt);
-}
-
 // Lógica de segmentación pura
 int ejecutarGuardarEsquemaSegmentacion(t_package pkg, t_infoGuardadoLinea* datosPaquete, int socket)
 {

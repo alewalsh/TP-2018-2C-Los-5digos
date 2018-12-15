@@ -62,7 +62,7 @@ int finGDTTPI(t_package pkg, int idGDT, int socketSolicitud)
 	while(i < cantidadPaginas)
 	{
 		t_pagina * pagina = list_get(paginasProceso, i);
-		liberarMarco(pagina);
+		liberarMarco(pagina->nroMarco);
 	}
 	//ENVIAR MSJ DE EXITO A CPU
 	if (enviar(socketSolicitud,FM9_CPU_GDT_FINALIZADO,pkg.data,pkg.size,logger->logger))
@@ -330,7 +330,7 @@ int cerrarArchivoTPI(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socke
 		t_pagina * pagina = list_get(paginasProceso, i);
 		if (strcmp(pagina->path, datosPaquete->path) == 0)
 		{
-			liberarMarco(pagina);
+			liberarMarco(pagina->nroMarco);
 		}
 	}
 	//ENVIAR MSJ DE EXITO A CPU
