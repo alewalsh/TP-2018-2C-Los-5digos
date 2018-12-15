@@ -123,7 +123,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         */
         case CPU_DAM_FLUSH:
         	if(hacerFlush(pkg,socketFD)){
-				log_error_mutex(logger, "Hubo un error al abrir el archivo: %s",
+				log_error_mutex(logger, "Hubo un error al hacer el flush del archivo: %s",
 						pkg.data);
 				break;
         	}
@@ -133,7 +133,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
         case CPU_DAM_CREAR:
         	if(crearArchivo(pkg,socketFD)){
-				log_error_mutex(logger, "Hubo un error al abrir el archivo: %s",
+				log_error_mutex(logger, "Hubo un error al crear el archivo: %s",
 						pkg.data);
 				break;
 			}
@@ -143,7 +143,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
         case CPU_DAM_BORRAR:
         	if(borrarArchivo(pkg,socketFD)){
-				log_error_mutex(logger, "Hubo un error al abrir el archivo: %s",
+				log_error_mutex(logger, "Hubo un error al borrar el archivo: %s",
 						pkg.data);
 				break;
 			}
