@@ -356,7 +356,7 @@ void liberarCpu(int socketCpu)
 		{
 			cpu->libre = 0;
 		}
-		list_add(listaCpus,cpu);
+		list_add_in_index(listaCpus,i,cpu);
 	}
 	sem_post(&semaforoCpu);
 }
