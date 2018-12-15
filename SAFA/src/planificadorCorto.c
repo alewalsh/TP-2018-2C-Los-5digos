@@ -323,7 +323,7 @@ int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq){
 void pasarDTBdeBLOQaREADYESP(t_dtb * dtbAReadyEsp){
 
 	pthread_mutex_lock(&mutexReadyEspList);
-	int index = buscarDTBEnCola(colaReadyEspecial,dtbAReadyEsp);
+	int index = buscarDTBEnCola(colaBloqueados,dtbAReadyEsp);
 	pthread_mutex_unlock(&mutexReadyEspList);
 	if(index >= 0){
 		pthread_mutex_lock(&mutexBloqueadosList);

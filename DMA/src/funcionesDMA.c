@@ -516,7 +516,7 @@ int enviarPkgDeFm9AMdj(char * path) {
 	//SE ENVIA CONFIRMACION A SAFA
 	enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_CREADO);
 	free(bufferEnvio);
-	return true;
+	return result;
 }
 
 //--------------------------BORRAR ARCHIVO ------------------------------------------
@@ -560,7 +560,7 @@ bool borrarArchivo(t_package paquete, int socketEnUso) {
 
 	//SE ENVIA LA CONFIRMACION A SAFA
 	enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_BORRADO);
-	return true;
+	return result;
 }
 
 //------------------------------------------------------------------------------------------------------------------

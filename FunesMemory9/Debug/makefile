@@ -4,7 +4,7 @@
 
 -include ../makefile.init
 
-RM := rm -rf
+RM := rm
 
 # All of the sources participating in the build are defined here
 -include sources.mk
@@ -26,7 +26,7 @@ endif
 all: FunesMemory9
 
 dependents:
-	-cd /home/utnso/Git/tp-2018-2c-Los-5digos/GranTPCommons/Debug && $(MAKE) clean all
+	-cd /home/utnso/Git/tp-2018-2c-Los-5digos/GranTPCommons/Debug && $(MAKE) all
 
 # Tool invocations
 FunesMemory9: $(OBJS) $(USER_OBJS) /home/utnso/Git/tp-2018-2c-Los-5digos/GranTPCommons/Debug/libGranTPCommons.so
