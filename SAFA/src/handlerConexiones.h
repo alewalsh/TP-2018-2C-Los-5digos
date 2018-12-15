@@ -33,5 +33,5 @@ t_recurso* crearRecurso(char * recurso, int pid);
 void hacerWaitDeRecurso(char * recursoSolicitado, int pid, int socketCPU);
 void hacerSignalDeRecurso(char * recursoSolicitado);
 void actualizarMetricas(t_dtb * dtb);
-
+void manejarNuevaCPU(int nuevoFd);
 #endif /* HANDLERCONEXIONES_H_ */
