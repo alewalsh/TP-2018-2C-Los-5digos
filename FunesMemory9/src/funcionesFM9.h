@@ -8,7 +8,6 @@
 #ifndef FUNCIONESFM9_H_
 #define FUNCIONESFM9_H_
 
-#include <grantp/structCommons.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -18,10 +17,6 @@
 #include <grantp/configuracion.h>
 #include <grantp/mutex_log.h>
 #include <stdbool.h>
-
-
-extern t_list *statusList;
-extern pthread_mutex_t mutexStatusList;
 
 extern pthread_mutex_t mutexMaster;
 extern pthread_mutex_t mutexReadset;

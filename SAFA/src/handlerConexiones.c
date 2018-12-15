@@ -10,47 +10,9 @@
 #include <grantp/socket.h>
 #include <grantp/mutex_log.h>
 #include <grantp/structCommons.h>
-#include "SAFA.h"
-
-
-
-//void manejarSolicitud(t_package pkg, int socketFD) {
-//
-//    switch (pkg.code) {
-//        case ESI_PLAN_CONNECT:
-//            if (esiConnection(socketFD, pkg, logger)) {
-//                log_error_mutex(logger, "Hubo un error en la conexion con el esi");
-//                break;
-//            }
-//            sem_post(&sem_newEsi);
-//            break;
-//        case COORD_PLAN_BLOCK:
-//            //log_info_mutex(logger, "El coordinador me pide que bloquee un recurso");
-//            if (blockKey(socketFD, pkg, logger)) {
-//                log_error_mutex(logger, "No se pudo completar la operacion de bloqueo");
-//            }
-//            break;
-//        case COORD_PLAN_STORE:
-//            //log_info_mutex(logger, "El coordinador me pide que desbloque un recurso");
-//            if (storeKey(socketFD, pkg, logger)) {
-//                log_error_mutex(logger, "No se pudo completar la operacion de desbloqueo");
-//            }
-//            break;
-//        case SOCKET_DISCONECT:
-//            handlerDisconnect(socketFD);
-//            close(socketFD);
-//            deleteSocketFromMaster(socketFD);
-//            break;
-//        default:
-//            log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
-//            log_warning_mutex(logger, "Ojo, estas recibiendo un mensaje que no esperabas.");
-//            break;
-//
-//    }
-//
-//    free(pkg.data);
-//
-//}
+#include "funcionesSAFA.h"
+#include "planificadorCorto.h"
+#include "planificadorLargo.h"
 
 
 void manejarConexiones(){
@@ -59,9 +21,12 @@ void manejarConexiones(){
     uint16_t handshake;
     t_package pkg;
 
-    int estadoSAFA = Corrupto;
+    listaRecursoAsignados = list_create();
+    estadoSAFA = Corrupto;
 	int CPUConectado, DAMConectado = 0;
 	log_trace_mutex(logger, "Se inicializa SAFA en estado Corrupto");
+
+	initCpuList();
 
     //Creo el socket y me quedo escuchando
 	if (escuchar(conf->puerto, &socketListen, logger->logger)) {
@@ -74,8 +39,7 @@ void manejarConexiones(){
 
     addNewSocketToMaster(socketListen);
 
-    //TODO: Voy a tener que agregar que no se empiece a planificar hasta esto
-
+    //Se queda escuchando conexiones hasta estar en estado operativo (DAM CONECTADO Y 1 CPU CONECTADA)
     while(estadoSAFA != Operativo){
 
         if (acceptConnection(socketListen, &nuevoFd, SAFA_HSK, &handshake, logger->logger)) {
@@ -89,9 +53,9 @@ void manejarConexiones(){
             	DAMConectado++;
                 break;
             case CPU_HSK:
-            	log_trace_mutex(logger, "Se me conecto un CPU, socket: %d", nuevoFd);
-                addNewSocketToMaster(nuevoFd);
-                CPUConectado++;
+            	addNewSocketToMaster(nuevoFd);
+            	manejarNuevaCPU(nuevoFd);
+            	CPUConectado++;
                 break;
             default:
                 log_warning_mutex(logger, "Se me quizo conectar alguien que no espero");
@@ -101,7 +65,6 @@ void manejarConexiones(){
 
         if ((CPUConectado != 0) && (DAMConectado != 0)){
         	estadoSAFA = Operativo;
-        	//TODO: Aca podria mandar el dummy
         }
     }
 
@@ -137,14 +100,18 @@ void manejarConexiones(){
                         // añadir al conjunto maestro
                         log_trace_mutex(logger, "Se acepto la nueva conexion solicitada en el SELECT");
                         addNewSocketToMaster(nuevoFd);
+                        if (handshake == CPU_HSK)
+                        {
+                        	manejarNuevaCPU(nuevoFd);
+                        }
                     }
                 } else {
                      //gestionar datos de un cliente
                     if (recibir(i, &pkg, logger->logger)) {
                         log_error_mutex(logger, "No se pudo recibir el mensaje");
-                        //handlerDisconnect(i);
+//                        handlerDisconnect(i);
                     } else {
-                        //manejarSolicitud(pkg, i);
+                        manejarSolicitud(pkg, i);
                     }
 
                 }
@@ -152,4 +119,292 @@ void manejarConexiones(){
         }
     }
 
+}
+
+
+void manejarSolicitud(t_package pkg, int socketFD) {
+    switch (pkg.code) {
+
+    	  /*
+           * -----------------CONFIRMACIONES DEL CPU-----------------
+           */
+        case CPU_SAFA_BLOQUEAR_DTB:{
+        	t_dtb * dtb = transformarPaqueteADTB(pkg);
+        	actualizarMetricas(dtb);
+        	// SI BLOQUEO ES PORQUE FUE A DAM, SUMO 1 a LA METRICA
+        	actualizarSentenciasPasaronPorDAM(1);
+
+        	if(bloquearDTB(dtb))
+        	{
+        		log_error_mutex(logger, "Hubo un error al bloquear el DTB");
+        	}else{
+        		log_info_mutex(logger, "FINALIZO EL PROCESO ID: %d",dtb->idGDT);
+        		//Se libera una cpu y se hace signal del semaforo
+				liberarCpu(socketFD);
+        	}
+        	break;
+        }
+        case CPU_SAFA_ABORTAR_DTB:{
+
+        	t_dtb * dtb = transformarPaqueteADTB(pkg);
+        	actualizarMetricas(dtb);
+
+        	if(abortarDTB(dtb, socketFD))
+        	{
+        		log_error_mutex(logger, "Hubo un error al abortar el DTB.");
+        	}else{
+        		log_info_mutex(logger, "FINALIZO EL PROCESO ID: %d",dtb->idGDT);
+        	}
+        	break;
+        }
+        case CPU_SAFA_ABORTAR_DTB_NUEVO:{
+			t_dtb * dtb = transformarPaqueteADTB(pkg);
+			if(abortarDTBNuevo(dtb))
+			{
+				log_error_mutex(logger, "Hubo un error al abortar el DTB.");
+			}
+			break;
+		}
+        case CPU_SAFA_BLOQUEAR_DUMMMY:
+        	//Se bloquea el dummy
+        	bloquearDummy();
+        	pthread_mutex_unlock(&semDummy);
+        	//Se libera una cpu y se hace signal del semaforo
+			liberarCpu(socketFD);
+        	break;
+        case CPU_SAFA_FIN_EJECUCION_DTB:{
+        	t_dtb * dtb = transformarPaqueteADTB(pkg);
+        	actualizarMetricas(dtb);
+
+        	if(abortarDTB(dtb, socketFD))
+			{
+				log_error_mutex(logger, "Hubo un error al abortar el DTB.");
+			}else{
+				log_info_mutex(logger, "FINALIZO LA EJECUCION DEL PROCESO ID: %d",dtb->idGDT);
+			}
+        	break;
+        }
+        case CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB:{
+        	//TODO AGREGAR LIBERACION DE CPU
+        	t_dtb * dtb = transformarPaqueteADTB(pkg);
+        	actualizarMetricas(dtb);
+
+        	if(finEjecucionPorQuantum(dtb)){
+        		log_error_mutex(logger, "Hubo un error al llevar el DTB a la cola de READY por finalizacion de quantum.");
+        	}else{
+				log_info_mutex(logger, "FINALIZO EL QUANTUM DEL PROCESO ID: %d",dtb->idGDT);
+				//se hace un signal del semaforo para avisar que hay un proceso en ready
+				sem_post(&hayProcesosEnReady);
+				liberarCpu(socketFD);
+			}
+        	break;
+        }
+
+        /*
+         * -----------------CONFIRMACIONES DEL DMA-------------------------------
+         */
+
+        //EL SCRIPTORIO SE INCIALIZÓ
+        case DAM_SAFA_CONFIRMACION_SCRIPT_INICIALIZADO:{
+        	char * buffer = pkg.data;
+        	int pid = copyIntFromBuffer(&buffer);
+			int result = copyIntFromBuffer(&buffer);
+			int cantIOProcess = copyIntFromBuffer(&buffer);
+			int cantLineasProceso = copyIntFromBuffer(&buffer);
+
+			pthread_mutex_lock(&mutexNewList);
+			t_dtb * dtb = buscarDTBPorPIDenCola(colaNew, pid);
+			pthread_mutex_unlock(&mutexNewList);
+			if(result == EXIT_SUCCESS){
+				actualizarIODtb(dtb, cantIOProcess,cantLineasProceso);
+				pasarDTBdeNEWaREADY(dtb); //Se cargó en memoria correctamente
+				log_info_mutex(logger, "Se cargó correctamente en memoria el proceso: %d", pid);
+			}else{
+				abortarDTBNuevo(dtb); //No se pudo cargar a memoria
+				log_error_mutex(logger, "No se pudo cargar en memoria el proceso: %d", pid);
+			}
+
+        	break;
+        }
+
+        //LA PETICION "ABRIR ARCHIVO" SE FINALIZO
+        case DAM_SAFA_CONFIRMACION_PID_CARGADO:{
+        	char * buffer = pkg.data;
+			int pid = copyIntFromBuffer(&buffer);
+			int result = copyIntFromBuffer(&buffer);
+			char * path = copyStringFromBuffer(&buffer);
+
+			if(result == EXIT_SUCCESS){ //SE CARGÓ CORRECTAMENTE
+				//actualizar tabla de direcciones
+				actualizarTablaDirecciones(pid, path);
+			}
+
+			if(confirmacionDMA(pid, result)){
+				//Error
+				log_error_mutex(logger, "No se pudo cargar el proceso pid: %d en memoria", pid);
+			}
+			log_info_mutex(logger,"Se cargó en memoria y se desbloqueó el proceso pid: %d", pid);
+
+			break;
+        }
+
+        //LA PETICION "FLUSH" SE FINALIZÓ
+        //LA PETICION "CREAR ARCHIVO" SE FINALIZÓ
+        //LA PETICION "BORRAR ARCHIVO" SE FINALIZÓ
+		case DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS:
+		case DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO:
+		case DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO:{
+			int pid = copyIntFromBuffer(&pkg.data);
+			int result = copyIntFromBuffer(&pkg.data);
+
+			if(confirmacionDMA(pid, result)){
+				//Error
+				log_error_mutex(logger, "No se pudo cargar el proceso pid: %d en memoria", pid);
+			}
+			log_info_mutex(logger,"Se cargó en memoria y se desbloqueó el proceso pid: %d", pid);
+
+			break;
+	   }
+
+        case CPU_SAFA_SIGNAL_RECURSO:{
+        	char * recurso = copyStringFromBuffer(&pkg.data);
+			hacerSignalDeRecurso(recurso);
+			break;
+        }
+        case CPU_SAFA_WAIT_RECURSO:{
+        	//TODO Fijarse si hay que actualizar las metricas
+        	char * recurso = copyStringFromBuffer(&pkg.data);
+			int pid = copyIntFromBuffer(&pkg.data);
+			hacerWaitDeRecurso(recurso,pid,socketFD);
+			break;
+        }
+
+        case SOCKET_DISCONECT:
+            close(socketFD);
+            break;
+        default:
+            log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
+            log_warning_mutex(logger, "Ojo, estas recibiendo un mensaje que no esperabas.");
+            break;
+
+    }
+
+//    free(pkg.data);
+
+}
+
+void initCpuList(){
+	listaCpus = list_create();
+}
+
+void manejarNuevaCPU(int nuevoFd)
+{
+	log_trace_mutex(logger, "Se me conecto un CPU, socket: %d", nuevoFd);
+//    addNewSocketToMaster(nuevoFd);
+
+    //agregar socket a lista de cpus
+    t_cpus * cpu = crearCpu();
+    cpu->libre= 0;
+    cpu->socket= nuevoFd;
+    list_add(listaCpus, cpu);
+    sem_post(&semaforoCpu);
+
+	int size = sizeof(int);
+    char *buffer = (char *) malloc(size);
+    char *p = buffer;
+    copyIntToBuffer(&p,conf->quantum);
+	if(enviar(nuevoFd, SAFA_CPU_QUANTUM, buffer, size, logger->logger))
+	{
+		log_error_mutex(logger, "No se pudo enviar el quantum al CPU.");
+		free(buffer);
+	}
+	free(buffer);
+}
+
+void hacerSignalDeRecurso(char * recursoSolicitado){
+
+	for(int i =0; i<list_size(listaRecursoAsignados); i++){
+
+		t_recurso * recurso = list_get(listaRecursoAsignados,i);
+		int estaEnLaLista = strcmp(recurso->recursoId, recursoSolicitado);
+		if(estaEnLaLista == 0){
+			t_recurso * recursoUsado = list_remove(listaRecursoAsignados, i);
+			if(list_size(recursoUsado->listProcesos)>0){
+				//TIENE RECURSOS SOLICITANDOLO -> Se toma el primero y se desbloquea
+				int pidSolicitante = (int) list_remove(recursoUsado->listProcesos,0);
+				recursoUsado->procesoDuenio = pidSolicitante;
+
+				//Se desbloquea el proceso pid
+				desbloquearDTBsegunAlgoritmo(pidSolicitante);
+			}else{
+				//NO TIENE RECURSOS SOLICITANDOLO
+				recursoUsado->procesoDuenio = 0;
+			}
+			list_add_in_index(listaRecursoAsignados, i, recursoUsado);
+		}
+	}
+}
+
+void hacerWaitDeRecurso(char * recursoSolicitado, int pid, int socketCPU){
+
+	int posicion = -1;
+
+	for(int i =0; i<list_size(listaRecursoAsignados); i++){
+
+		t_recurso * recurso = list_get(listaRecursoAsignados,i);
+		int estaEnLaLista = strcmp(recurso->recursoId, recursoSolicitado);
+		if(estaEnLaLista == 0){
+			posicion = i;
+			t_recurso * recursoUsado = list_remove(listaRecursoAsignados, posicion);
+			if(recursoUsado->procesoDuenio == 0){
+				//EXISTE Y NO ESTA SIENDO USADO
+				//el recurso no se está utilizando
+				recursoUsado->procesoDuenio = pid;
+			}else{
+				//EXISTE Y ESTA SIENDO USADO
+				//Esta siendo usado y lo tengo que bloquear
+				list_add(recursoUsado->listProcesos,&pid);
+
+				//Se bloquea el proceso
+				pthread_mutex_lock(&mutexEjecutandoList);
+				t_dtb * dtb = buscarDTBPorPIDenCola(colaEjecutando,pid);
+				pthread_mutex_unlock(&mutexEjecutandoList);
+				pasarDTBdeEXECaBLOQUED(dtb);
+
+				//Se libera una cpu y se hace signal del semaforo
+				liberarCpu(socketCPU);
+			}
+			list_add_in_index(listaRecursoAsignados, posicion, recursoUsado);
+		}
+	}
+
+
+	if(posicion >= 0){
+		//NO EXISTE
+		//Si no estaba en la lista lo tengo que crear
+		t_recurso * recursoCreado = crearRecurso(recursoSolicitado,pid);
+		list_add(listaRecursoAsignados, recursoCreado);
+	}
+
+}
+
+t_recurso* crearRecurso(char * recurso, int pid){
+	t_list * listaProcesos = list_create();
+	t_recurso * recursoStruct = malloc(sizeof(t_recurso));
+	recursoStruct->recursoId =recurso;
+	recursoStruct->procesoDuenio = pid;
+	recursoStruct->listProcesos = listaProcesos;
+	return recursoStruct;
+}
+
+void actualizarMetricas(t_dtb * dtb){
+
+	t_dtb * dtbAnterior = buscarDTBPorPIDenCola(colaEjecutando,dtb->idGDT);
+	if(dtbAnterior != NULL){
+		int instruccionesEjecutadas = dtb->programCounter - dtbAnterior->programCounter;
+		//Actualizo la metrica de sentencias que espera un dtb en NEW
+		actualizarMetricasDTBNew(instruccionesEjecutadas);
+		// Actualizo valor general para saber cuantas sentencias en total se ejecutaron.
+		actualizarTotalSentenciasEjecutadas(instruccionesEjecutadas);
+	}
 }

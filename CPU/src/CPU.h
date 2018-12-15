@@ -31,7 +31,7 @@ configCPU * config;
  */
 t_log_mutex * loggerCPU;
 int quantum;
-
+char * pathBuscado;
 /*
  * Sockets
  */
@@ -63,9 +63,9 @@ enum accionEjecutada
 /*
  * Semaforos
  */
-sem_t * sem_nuevoDummy;
 pthread_mutex_t mutexQuantum;
-//pthread_mutex_t mutexDesalojo;
+pthread_mutex_t mutexPath;
+pthread_mutex_t mutexSolicitudes;
 
 /*
  * Funciones
@@ -103,7 +103,7 @@ t_socket * conectarseAProceso(int puerto, char *ip, int * socket, int handshakeP
 void recibirDTB();
 
 void manejarSolicitud(t_package pkg, int socketFD);
-int nuevoDummy(t_package paquete);
+int nuevoDummy(t_dtb * dtb, t_package paquete);
 
 int comenzarEjecucion(t_package paquete);
 int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb);
@@ -112,4 +112,21 @@ int manejarRecursosSAFA(char * recurso, int idGDT, int accion);
 int setQuantum(t_package paquete);
 
 t_dtb * transformarPaqueteADTB(t_package paquete);
+t_package transformarDTBAPaquete(t_dtb * dtb);
+
+void liberarMemoriaTSocket(t_socket * TSocket);
+
+int realizarEjecucion(t_dtb * dtb);
+
+int finalizoEjecucionDTB(t_dtb * dtb, int code);
+
+int eventoSAFA(t_dtb ** dtb, int code);
+
+int ejecucionDAM(t_dtb ** dtb);
+
+int ejecucionFM9(t_dtb ** dtb, int socket);
+int finEjecucionFM9(int idGDT);
+
+t_cpu_operacion obtenerInstruccionMemoria(char * direccionEscriptorio, int idGDT, int posicion);
+bool encontrarPath(char * direccion);
 #endif /* CPU_H_ */

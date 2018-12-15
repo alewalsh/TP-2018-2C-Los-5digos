@@ -60,7 +60,7 @@ void aceptarConexionesDelCpu() {
 			} else {
 				//gestionar datos de un cliente
 				if (recibir(i, &pkg, logger->logger)) {
-					log_error_mutex(logger, "No se pudo recibir el mensaje del CPU");
+					log_error_mutex(logger, "No se pudo recibir el mensaje del socket: %d",i);
 					//handlerDisconnect(i);
 				} else {
 					manejarSolicitudDelCPU(pkg, i);
@@ -93,7 +93,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 		 */
 
         case CPU_DAM_BUSQUEDA_ESCRIPTORIO:
-        	if(leerEscriptorio(pkg,socketFD)){
+        	if(!(leerEscriptorio(pkg,socketFD))){
 				log_error_mutex(logger, "Hubo un error en la inicializacion del escriptorio");
 				break;
 			}
@@ -123,7 +123,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         */
         case CPU_DAM_FLUSH:
         	if(hacerFlush(pkg,socketFD)){
-				log_error_mutex(logger, "Hubo un error al abrir el archivo: %s",
+				log_error_mutex(logger, "Hubo un error al hacer el flush del archivo: %s",
 						pkg.data);
 				break;
         	}
@@ -133,7 +133,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
         case CPU_DAM_CREAR:
         	if(crearArchivo(pkg,socketFD)){
-				log_error_mutex(logger, "Hubo un error al abrir el archivo: %s",
+				log_error_mutex(logger, "Hubo un error al crear el archivo: %s",
 						pkg.data);
 				break;
 			}
@@ -143,7 +143,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
         case CPU_DAM_BORRAR:
         	if(borrarArchivo(pkg,socketFD)){
-				log_error_mutex(logger, "Hubo un error al abrir el archivo: %s",
+				log_error_mutex(logger, "Hubo un error al borrar el archivo: %s",
 						pkg.data);
 				break;
 			}
@@ -152,9 +152,9 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         	break;
 
         case SOCKET_DISCONECT:
-//            handlerDisconnect(socketFD);
             close(socketFD);
             deleteSocketFromMaster(socketFD);
+            exit_gracefully(socketFD);
             break;
         default:
             log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));

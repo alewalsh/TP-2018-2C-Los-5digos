@@ -25,6 +25,48 @@ void destruir_operacion(t_cpu_operacion op){
 	}
 }
 
+
+t_list * parseoInstrucciones(char * path, int cantidadLineas, t_log_mutex * logger )
+{
+	FILE * fp = fopen(path, "r");
+	char * line = NULL;
+	size_t len = 0;
+	ssize_t read;
+	if (fp == NULL){
+		log_error_mutex(logger, "Error al abrir el archivo: ");
+	}
+	t_list * listaInstrucciones = list_create();
+	int i = 1;
+	//TODO: no hay ningun archivo que explicitamente contenga todas las instrucciones, podria ser un char ** e ir utilizando las posiciones. Esto esta bien?
+	while ((read = getline(&line, &len, fp)) != -1)
+	{
+		bool ultimaLinea = (i == cantidadLineas);
+		t_cpu_operacion parsed = parse(line, ultimaLinea);
+		if(parsed.valido)
+		{
+			if(!parsed.esComentario)
+				list_add(listaInstrucciones, &parsed);
+
+			destruir_operacion(parsed);
+//			// TODO: PRUEBA TEMPORAL PARA VERIFICAR QUE NO DESTRUYE LA REFERENCIA QUE SE AGREGÓ EN LISTA INSTRUCCIONES
+//			t_cpu_operacion * operacion = list_get(listaInstrucciones, 0);
+//			printf("Accion: %d", operacion->keyword);
+//			printf("Argumento 1: %s", operacion->argumentos.ABRIR.path);
+		}
+		else
+		{
+			log_error_mutex(logger, "La linea <%d> no es valida\n", i);
+		}
+		i++;
+	}
+
+	fclose(fp);
+	if (line)
+		free(line);
+
+	return listaInstrucciones;
+}
+
 t_cpu_operacion parse(char* line, bool ultimaLinea){
 
 	t_cpu_operacion ret = {
@@ -44,13 +86,12 @@ t_cpu_operacion parse(char* line, bool ultimaLinea){
 	}
 	char* auxLine = string_duplicate(line);
 	string_trim(&auxLine);
-	char** split = string_n_split(auxLine, 3, " ");
+	char** split = string_n_split(auxLine, 4, " ");
 
 	char* keyword = split[0];
 	char* clave = split[1];
 
 	ret._raw = split;
-
 	if(!ultimaLinea)
 	{
 		if (!string_starts_with(keyword,"#"))

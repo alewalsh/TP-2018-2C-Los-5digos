@@ -17,11 +17,20 @@ int main(int argc, char ** argv) {
 	//t_list * lista = parseoInstrucciones(char * path, int cantidadLineas)
 	inicializarCPU(argv[1]);
     pthread_t threadPrincipal;
+//    sig_handler(SIGINT);
 	//Recibir DTB y verificar valor de flag de inicializacion
     pthread_create(&threadPrincipal, &tattr, (void *) recibirDTB, NULL);
-	exit_gracefully(EXIT_SUCCESS);
+	pthread_join(threadPrincipal,NULL);
+    exit_gracefully(EXIT_SUCCESS);
 }
 
+//void sig_handler(int signal)
+//{
+//	if (signal == SIGINT)
+//	{
+//		exit_gracefully(signal);
+//	}
+//}
 void recibirDTB()
 {
 	while(1)
@@ -30,11 +39,14 @@ void recibirDTB()
 		t_package paquete;
 		if (recibir(t_socketSAFA->socket,&paquete,loggerCPU->logger)) {
             log_error_mutex(loggerCPU, "No se pudo recibir el mensaje.");
+            exit_gracefully(EXIT_FAILURE);
             //handlerDisconnect(i);
         }
 		else
 		{
+			pthread_mutex_lock(&mutexSolicitudes);
 			manejarSolicitud(paquete, t_socketSAFA->socket);
+			pthread_mutex_unlock(&mutexSolicitudes);
 		}
 	}
 }
@@ -42,20 +54,12 @@ void recibirDTB()
 void manejarSolicitud(t_package pkg, int socketFD) {
 
     switch (pkg.code) {
-        case SAFA_CPU_NUEVO_DUMMY:
-        	if(nuevoDummy(pkg)){
-                log_error_mutex(loggerCPU, "Hubo un error en la inicializacion del dummy");
-                break;
-        	}
-        	//sem_post(&sem_nuevoDummy);
-            break;
         case SAFA_CPU_EJECUTAR:
         	if(comenzarEjecucion(pkg))
         	{
         		log_error_mutex(loggerCPU, "Hubo un error en la ejecucion del Escriptorio");
         		break;
         	}
-        	//sem_post(&sem_comienzaEjecucion);
         	break;
         case SAFA_CPU_QUANTUM:
         	if(setQuantum(pkg))
@@ -63,20 +67,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         		log_error_mutex(loggerCPU, "Hubo un error en el seteo del nuevo quantum.");
         		break;
         	}
-        	//sem_post(&sem_nuevoQuantum);
         	break;
-//        case COORD_PLAN_BLOCK:
-//            //log_info_mutex(logger, "El coordinador me pide que bloquee un recurso");
-//            if (blockKey(socketFD, pkg, logger)) {
-//                log_error_mutex(logger, "No se pudo completar la operacion de bloqueo");
-//            }
-//            break;
-//        case COORD_PLAN_STORE:
-//            //log_info_mutex(logger, "El coordinador me pide que desbloque un recurso");
-//            if (storeKey(socketFD, pkg, logger)) {
-//                log_error_mutex(logger, "No se pudo completar la operacion de desbloqueo");
-//            }
-//            break;
         case SOCKET_DISCONECT:
 //            handlerDisconnect(socketFD);
             close(socketFD);
@@ -93,16 +84,27 @@ void manejarSolicitud(t_package pkg, int socketFD) {
     free(pkg.data);
 
 }
-int nuevoDummy(t_package paquete)
+int nuevoDummy(t_dtb * dtb, t_package paquete)
 {
 	// Luego de recibirlo tengo que verificar su flag de inicializacion
-	t_dtb * dtb = transformarPaqueteADTB(paquete);
+
 	// Si es 0, levanto un hilo y realizo  la operación Dummy - Iniciar G.DT
 	// Solicitarle al DAM la busqueda del Escriptorio en el MDJ
-	char *buffer;
-	int size = sizeof(int) + strlen(dtb->dirEscriptorio);
-	copyIntToBuffer(&buffer, dtb->idGDT);
-	copyStringToBuffer(&buffer, dtb->dirEscriptorio);
+	int longitudEscriptorio = strlen(dtb->dirEscriptorio) + 1;
+	if (longitudEscriptorio <= 0)
+	{
+		if(enviar(t_socketSAFA->socket,CPU_SAFA_ABORTAR_DTB_NUEVO,paquete.data, paquete.size, loggerCPU->logger))
+		{
+			log_error_mutex(loggerCPU, "No se pudo enviar el ABORTA del Dummy al S-AFA.");
+			return EXIT_FAILURE;
+		}
+		return EXIT_FAILURE;
+	}
+	int size = 2*sizeof(int) + (longitudEscriptorio * sizeof(char));
+	char *buffer = (char *) malloc(size);
+	char * p = buffer;
+	copyIntToBuffer(&p, dtb->idGDT);
+	copyStringToBuffer(&p, dtb->dirEscriptorio);
 	if(enviar(t_socketDAM->socket,CPU_DAM_BUSQUEDA_ESCRIPTORIO,buffer, size, loggerCPU->logger))
 	{
 		log_error_mutex(loggerCPU, "No se pudo enviar la busqueda del escriptorio al DAM.");
@@ -110,107 +112,218 @@ int nuevoDummy(t_package paquete)
 		return EXIT_FAILURE;
 	}
 	free(buffer);
+	log_info_mutex(loggerCPU, "Se envió el pedido de búsqueda de escriptorio del proceso %d al DAM.", dtb->idGDT);
 
 	// Desalojar al DTB Dummy, avisando a SAFA que lo bloquee
 	if(enviar(t_socketSAFA->socket,CPU_SAFA_BLOQUEAR_DUMMMY,paquete.data, paquete.size, loggerCPU->logger))
 	{
 		log_error_mutex(loggerCPU, "No se pudo enviar el bloqueo del Dummy al S-AFA.");
-		free(buffer);
 		return EXIT_FAILURE;
 	}
-	free(buffer);
+	log_info_mutex(loggerCPU, "Se envió el pedido de bloqueo del proceso %d al SAFA.", dtb->idGDT);
 	free(dtb);
 	return EXIT_SUCCESS;
 }
 
-t_list * parseoInstrucciones(char * path, int cantidadLineas)
-{
-	FILE * fp = fopen(path, "r");
-	char * line = NULL;
-	size_t len = 0;
-	ssize_t read;
-	if (fp == NULL){
-		log_error_mutex(loggerCPU, "Error al abrir el archivo: ");
-		exit_gracefully(EXIT_FAILURE);
-	}
-	t_list * listaInstrucciones = list_create();
-	int i = 1;
-	while ((read = getline(&line, &len, fp)) != -1)
-	{
-		bool ultimaLinea = (i == cantidadLineas);
-		t_cpu_operacion parsed = parse(line, ultimaLinea);
-		if(parsed.valido)
-		{
-			if(!parsed.esComentario)
-				list_add(listaInstrucciones, &parsed);
-
-			destruir_operacion(parsed);
-			// PRUEBA TEMPORAL PARA VERIFICAR QUE NO DESTRUYE LA REFERENCIA QUE SE AGREGÓ EN LISTA INSTRUCCIONES
-			t_cpu_operacion * operacion = list_get(listaInstrucciones, 0);
-			printf("Accion: %d", operacion->keyword);
-			printf("Argumento 1: %s", operacion->argumentos.ABRIR.path);
-		}
-		else
-		{
-			log_error_mutex(loggerCPU, "La linea <%d> no es valida\n", i);
-			exit_gracefully(EXIT_FAILURE);
-		}
-		i++;
-	}
-
-	fclose(fp);
-	if (line)
-		free(line);
-
-	return listaInstrucciones;
-
-}
 int comenzarEjecucion(t_package paquete)
 {
 	// Luego de recibirlo tengo que verificar su flag de inicializacion
 	t_dtb * dtb = transformarPaqueteADTB(paquete);
-	if (dtb->flagInicializado != 1)
+	if (dtb->flagInicializado == 0)
 	{
-		log_error_mutex(loggerCPU, "Error: el DTB no ha sido inicializado.");
+		if(nuevoDummy(dtb, paquete))
+		{
+			log_error_mutex(loggerCPU, "Hubo un error en la inicializacion del dummy");
+			return EXIT_FAILURE;
+		}
+	}
+	else if (dtb->flagInicializado == 1)
+	{
+		if(realizarEjecucion(dtb))
+		{
+			log_error_mutex(loggerCPU, "Hubo un error en la ejecucion del DTB");
+			return EXIT_FAILURE;
+		}
+	}
+	else
+	{
+		log_error_mutex(loggerCPU, "Error: el DTB tiene alguna falla.");
 		// TODO: revisar si debería morir el CPU por esto o si simplemente deberia mandarlo al otro método
 		exit_gracefully(EXIT_FAILURE);
 	}
+	return EXIT_SUCCESS;
+}
+
+int realizarEjecucion(t_dtb * dtb)
+{
+	bool finEjecucion = false;
+	bool segFaultDTB = false;
 	// Si es 1, levanto un hilo y comienzo la ejecución de sentencias
 	// if DTB->flagInicializado == 1
-	t_list * listaInstrucciones = parseoInstrucciones(dtb->dirEscriptorio, dtb->cantidadLineas);
 	// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
 	// Por cada unidad de tiempo de quantum, se ejecutara una linea del Escriptorio indicado en el DTB
-    pthread_mutex_lock(&mutexQuantum);
-	while(dtb->programCounter < quantum)
+	pthread_mutex_lock(&mutexQuantum);
+	int periodoEjecucion = 0;
+	while(periodoEjecucion < quantum)
 	{
+		// RETARDO DE EJECUCION:
+		usleep(config->retardo * 1000);
 		// Comunicarse con el FM9 en caso de ser necesario.
 		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
 		// lo pase a la cola de Exit.
-		t_cpu_operacion * operacion = list_get(listaInstrucciones, dtb->programCounter);
-		int respuesta = ejecutarOperacion(operacion, &dtb);
-		switch(respuesta)
+
+		log_info_mutex(loggerCPU, "Se va a ejecutar la operacion %d del proceso %d.",dtb->programCounter, dtb->idGDT);
+		t_cpu_operacion operacion = obtenerInstruccionMemoria(dtb->dirEscriptorio, dtb->idGDT, dtb->programCounter);
+		if (operacion.valido)
 		{
-			case EXIT_FAILURE:
-				log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
-				exit_gracefully(EXIT_FAILURE);
+			int quantumRestante = (quantum - periodoEjecucion)-1;
+			dtb->quantumRestante = quantumRestante;
+			if (operacion.keyword != CONCENTRAR)
+				dtb->programCounter++;
+			int respuesta = ejecutarOperacion(&operacion, &dtb);
+			switch(respuesta)
+			{
+				case EXIT_FAILURE:
+					log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
+					segFaultDTB = true;
+					if (finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
+					{
+						log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
+					}
+					break;
+				case CONCENTRAR_EJECUTADO:
+					periodoEjecucion++;
+					if (dtb->programCounter == dtb->cantidadLineas)
+					{
+						periodoEjecucion = quantum;
+						finEjecucion = true;
+					}
+					continue;
+					break;
+				default:
+					break;
+			}
+			if (respuesta == DTB_DESALOJADO)
+			{
 				break;
-			case CONCENTRAR_EJECUTADO:
-				continue;
-				break;
-			default:
-				break;
+			}
+
+			if (dtb->programCounter == dtb->cantidadLineas)
+			{
+				periodoEjecucion = quantum;
+				finEjecucion = true;
+			}
+			else
+			{
+				periodoEjecucion++;
+			}
 		}
-//		pthread_mutex_lock(&mutexAbrir);
-		if (respuesta == DTB_DESALOJADO)
+		else
 		{
+			log_info_mutex(loggerCPU, "Se aborta el proceso %d porque la operacion %d es inválida.", dtb->idGDT, dtb->programCounter);
+			if(finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
+			{
+				log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
+			}
 			break;
 		}
-//	    pthread_mutex_unlock(&mutexDesalojo);
-		dtb->programCounter++;
 	}
-    pthread_mutex_unlock(&mutexQuantum);
-    free(dtb);
+	pthread_mutex_unlock(&mutexQuantum);
+	if (!segFaultDTB)
+	{
+		if (finEjecucion)
+		{
+			periodoEjecucion--;
+		}
+		// TODO: Recibir la cantidad de lineas real del DTB, ahora voy a forzar que no entre para evitar problemas.
+		//dtb->cantidadLineas = dtb->programCounter + 1;
+		if (dtb->programCounter == dtb->cantidadLineas)
+		{
+			if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_DTB))
+			{
+				log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
+			}
+		}
+		else if (periodoEjecucion == quantum)
+		{
+			if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB))
+			{
+				log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB por quantum.");
+			}
+		}
+	}
+	free(dtb);
 	return EXIT_SUCCESS;
+}
+
+t_cpu_operacion obtenerInstruccionMemoria(char * direccionEscriptorio, int idGDT, int posicion)
+{
+	int size = strlen(direccionEscriptorio)+1 + 3*sizeof(int);
+	char * buffer = malloc(size);
+	char * p = buffer;
+	copyStringToBuffer(&p, direccionEscriptorio);
+	copyIntToBuffer(&p, idGDT);
+	copyIntToBuffer(&p, posicion);
+	if (enviar(t_socketFM9->socket,CPU_FM9_DAME_INSTRUCCION,buffer,size,loggerCPU->logger))
+	{
+		log_error_mutex(loggerCPU, "Hubo un error en el envio de la accion dame instruccion al FM9.");
+	}
+	t_package paquete;
+	if (recibir(t_socketFM9->socket, &paquete, loggerCPU->logger))
+	{
+		log_error_mutex(loggerCPU, "Hubo un error la recepción de la instruccion desde el FM9.");
+	}
+	char * bufferRecepcion = paquete.data;
+	char * instruccion = copyStringFromBuffer(&bufferRecepcion);
+	t_cpu_operacion operacion = parse(instruccion, false);
+	return operacion;
+}
+
+int finalizoEjecucionDTB(t_dtb * dtb, int code)
+{
+	if (eventoSAFA(&dtb, code))
+	{
+		log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
+		return EXIT_FAILURE;
+	}
+	if (code == CPU_SAFA_FIN_EJECUCION_DTB)
+	{
+		if (finEjecucionFM9(dtb->idGDT))
+		{
+			log_error_mutex(loggerCPU, "Hubo un error en el envio de la finalizacion del proceso al FM9.");
+			return EXIT_FAILURE;
+		}
+		log_info_mutex(loggerCPU, "Se ha finalizado la ejecucion del proceso %d.", dtb->idGDT);
+	}
+	else
+	{
+		if (code == CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB)
+			log_info_mutex(loggerCPU, "Se ha desalojado al proceso %d por fin de quantum.", dtb->idGDT);
+		if (code == CPU_SAFA_BLOQUEAR_DTB)
+			log_info_mutex(loggerCPU, "Se ha desalojado al proceso %d por realizar una operación de E/S.", dtb->idGDT);
+	}
+	return EXIT_SUCCESS;
+}
+
+int finEjecucionFM9(int idGDT)
+{
+	int code = CPU_FM9_FIN_GDT;
+	int size = sizeof(int);
+	char * buffer = malloc(size);
+	char * p = buffer;
+	copyIntToBuffer(&p, idGDT);
+	if (enviar(t_socketFM9->socket, code, buffer, size, loggerCPU->logger)){
+		return EXIT_FAILURE;
+	}
+	t_package pkg;
+	if (recibir(t_socketFM9->socket, &pkg, loggerCPU->logger))
+	{
+		return EXIT_FAILURE;
+	}
+	if (pkg.code == FM9_CPU_GDT_FINALIZADO)
+		return EXIT_SUCCESS;
+	else
+		return EXIT_FAILURE;
 }
 
 int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb)
@@ -226,31 +339,27 @@ int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb)
 			if(manejarRecursosSAFA(operacion->argumentos.WAIT.recurso, (*dtb)->idGDT, WAIT))
 			{
 				log_error_mutex(loggerCPU, "No se pudo realizar el WAIT del recurso %s.", operacion->argumentos.WAIT.recurso);
-				break;
 			}
 			break;
 		case SIGNAL:
 			if(manejarRecursosSAFA(operacion->argumentos.SIGNAL.recurso, (*dtb)->idGDT, SIGNAL))
 			{
 				log_error_mutex(loggerCPU, "No se pudo realizar el SIGNAL del recurso %s.", operacion->argumentos.SIGNAL.recurso);
-				break;
 			}
 			break;
 		case ABRIR: case FLUSH: case CREAR: case BORRAR:
 			respuesta = enviarAModulo(operacion, dtb, operacion->keyword, DAM);
-			if(respuesta)
+			if(respuesta == EXIT_FAILURE)
 			{
 				log_error_mutex(loggerCPU, "No se pudo enviar al DAM la operacion indicada.");
-				break;
 			}
 			return respuesta;
 			break;
 		case ASIGNAR: case CLOSE:
 			respuesta = enviarAModulo(operacion, dtb, operacion->keyword, FM9);
-			if(respuesta)
+			if(respuesta == EXIT_FAILURE)
 			{
 				log_error_mutex(loggerCPU, "No se pudo enviar al FM9 la operacion indicada.");
-				break;
 			}
 			return respuesta;
 		default:
@@ -260,122 +369,179 @@ int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb)
 	return EXIT_SUCCESS;
 }
 
-int eventoSAFA(t_dtb ** dtb, int accion, int code)
+int eventoSAFA(t_dtb ** dtb, int code)
 {
-//	int code = CPU_SAFA_BLOQUEAR_DTB;
-	char *buffer;
-	int size = sizeof(int);
-	copyIntToBuffer(&buffer, (*dtb)->idGDT);
-	if(enviar(t_socketSAFA->socket, code, buffer, size, loggerCPU->logger))
+	t_package paquete = transformarDTBAPaquete((*dtb));
+	if(enviar(t_socketSAFA->socket, code, paquete.data, paquete.size, loggerCPU->logger))
 	{
 		log_error_mutex(loggerCPU, "Hubo un error en el envío del paquete al SAFA");
 		return EXIT_FAILURE;
 	}
-//	if (accion == ABRIR)
-//	{
-//		pthread_mutex_lock(&mutexDesalojo);
-//		desalojado = 1;
-	//	pthread_mutex_unlock(&mutexAbrir);
-//	}
-	free(buffer);
 	return EXIT_SUCCESS;
+}
+
+t_package crearPaqueteSegunAccion(int accion, t_cpu_operacion * operacion, t_dtb ** dtb)
+{
+	t_package paquete;
+	char * buffer = malloc(sizeof(char));
+	char * p;
+	switch(accion)
+	{
+		case ABRIR:
+			paquete.code = CPU_DAM_ABRIR_ARCHIVO;
+			paquete.size = (strlen(operacion->argumentos.ABRIR.path) + 1 * sizeof(char)) + 2*sizeof(int);
+			buffer = realloc(buffer, paquete.size);
+			p = buffer;
+			copyIntToBuffer(&p, (*dtb)->idGDT);
+			copyStringToBuffer(&p, operacion->argumentos.ABRIR.path);
+			break;
+		case FLUSH:
+			paquete.code = CPU_DAM_FLUSH;
+			paquete.size = (strlen(operacion->argumentos.FLUSH.path) + 1  * sizeof(char)) + 2*sizeof(int);
+			buffer = realloc(buffer, paquete.size);
+			p = buffer;
+			copyIntToBuffer(&p, (*dtb)->idGDT);
+			copyStringToBuffer(&p, operacion->argumentos.FLUSH.path);
+			break;
+		case CREAR:
+			paquete.code = CPU_DAM_CREAR;
+			paquete.size = (strlen(operacion->argumentos.CREAR.path)  + 1 * sizeof(char)) + 3*sizeof(int);
+			buffer = realloc(buffer, paquete.size);
+			p = buffer;
+			copyIntToBuffer(&p,(*dtb)->idGDT);
+			copyStringToBuffer(&p, operacion->argumentos.CREAR.path);
+			copyIntToBuffer(&p, operacion->argumentos.CREAR.linea);
+			break;
+		case BORRAR:
+			paquete.code = CPU_DAM_BORRAR;
+			paquete.size = (strlen(operacion->argumentos.BORRAR.path) + 1)* sizeof(char) + 2*sizeof(int);
+			buffer = realloc(buffer, paquete.size);
+			p = buffer;
+			copyIntToBuffer(&p,(*dtb)->idGDT);
+			copyStringToBuffer(&p, operacion->argumentos.BORRAR.path);
+			break;
+		case ASIGNAR:
+			paquete.code = CPU_FM9_ASIGNAR;
+			paquete.size = (strlen(operacion->argumentos.ASIGNAR.path) + 1 * sizeof(char)) + 4 * sizeof(int) + (strlen(operacion->argumentos.ASIGNAR.datos) + 1 * sizeof(char));
+			buffer = realloc(buffer, paquete.size);
+			p = buffer;
+			copyIntToBuffer(&p, (*dtb)->idGDT);
+			copyStringToBuffer(&p, operacion->argumentos.ASIGNAR.path);
+			copyIntToBuffer(&p, operacion->argumentos.ASIGNAR.linea);
+			copyStringToBuffer(&p, operacion->argumentos.ASIGNAR.datos);
+			break;
+		case CLOSE:
+			paquete.code = CPU_FM9_CERRAR_ARCHIVO;
+			paquete.size = (strlen(operacion->argumentos.CLOSE.path) + 1 * sizeof(char)) + 2*sizeof(int);
+			buffer = realloc(buffer, paquete.size);
+			p = buffer;
+			copyIntToBuffer(&p, (*dtb)->idGDT);
+			copyStringToBuffer(&p, operacion->argumentos.CLOSE.path);
+			break;
+		default:
+			break;
+	}
+	paquete.data = buffer;
+	return paquete;
 }
 
 int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int modulo)
 {
-	int code = 0, size = 0, socket = 0;
-	char * buffer;
+	int socket = 0;
 	// Segun la accion que se quiera realizar, se establece el codigo, el size y se llena el buffer.
-	switch(accion)
+	t_package paquete = crearPaqueteSegunAccion(accion, operacion, dtb);
+	if (accion == ABRIR)
 	{
-		case ABRIR:
-			// VERIFICAR QUE EL ARCHIVO ESTÉ ABIERTO
-			code = CPU_DAM_ABRIR_ARCHIVO;
-			size = strlen(operacion->argumentos.ABRIR.path);
-			copyStringToBuffer(&buffer, operacion->argumentos.ABRIR.path);
-			break;
-		case FLUSH:
-			code = CPU_DAM_FLUSH;
-			size = strlen(operacion->argumentos.FLUSH.path);
-			copyStringToBuffer(&buffer, operacion->argumentos.FLUSH.path);
-			break;
-		case CREAR:
-			code = CPU_DAM_CREAR;
-			size = strlen(operacion->argumentos.CREAR.path) + sizeof(int);
-			copyStringToBuffer(&buffer, operacion->argumentos.CREAR.path);
-			copyIntToBuffer(&buffer, operacion->argumentos.CREAR.linea);
-			break;
-		case BORRAR:
-			code = CPU_DAM_BORRAR;
-			size = strlen(operacion->argumentos.BORRAR.path);
-			copyStringToBuffer(&buffer, operacion->argumentos.BORRAR.path);
-			break;
-		case ASIGNAR:
-			code = CPU_FM9_ASIGNAR;
-			size = strlen(operacion->argumentos.ASIGNAR.path) + sizeof(int) + strlen(operacion->argumentos.ASIGNAR.datos);
-			copyStringToBuffer(&buffer, operacion->argumentos.ASIGNAR.path);
-			copyIntToBuffer(&buffer, operacion->argumentos.ASIGNAR.linea);
-			copyStringToBuffer(&buffer, operacion->argumentos.ASIGNAR.datos);
-			break;
-		case CLOSE:
-			code = CPU_FM9_CERRAR_ARCHIVO;
-			size = strlen(operacion->argumentos.CLOSE.path);
-			copyStringToBuffer(&buffer, operacion->argumentos.CLOSE.path);
-			break;
-		default:
-			return EXIT_FAILURE;
+		// TODO: Chequear la conversion de DTB a Package y viceversa para replicar correctamente la tabla de direcciones.
+		pthread_mutex_lock(&mutexPath);
+		pathBuscado = operacion->argumentos.ABRIR.path;
+		if (!list_is_empty((*dtb)->tablaDirecciones) && list_any_satisfy((*dtb)->tablaDirecciones, (void *) encontrarPath))
+		{
+			pthread_mutex_unlock(&mutexPath);
+			log_info_mutex(loggerCPU, "El archivo %s ya está abierto por el proceso %d.", operacion->argumentos.ABRIR.path, (*dtb)->idGDT);
+			return EXIT_SUCCESS;
+		}
+		pthread_mutex_unlock(&mutexPath);
 	}
+	int respuesta = 0;
+	// Esta validacion es para que sólo se bloquee el GDT cuando la accion implica una llamada al DAM.
 	if (modulo == DAM)
 	{
 		socket = t_socketDAM->socket;
+		respuesta = ejecucionDAM(dtb);
 	}
+	// Esta validacion es para esperar una respuesta del FM9 y verificar que no haya errores ni accesos inválidos.
 	if (modulo == FM9)
 	{
 		socket = t_socketFM9->socket;
 	}
-	if (code < 1 || strlen(buffer) < 1 || size < 1 || socket < 1)
+	if (paquete.code < 1 || strlen(paquete.data) < 1 || paquete.size < 1 || socket < 1)
 	{
-		log_error_mutex(loggerCPU, "Hubo un error al intentar crear el paquete para el envio al DAM.");
+		log_error_mutex(loggerCPU, "Hubo un error al intentar crear el paquete para el envio.");
 		return EXIT_FAILURE;
 	}
 
 	// Aca se realiza el envío de la operacion que se está ejecutando actualmente
-	if(enviar(socket, code, buffer, size, loggerCPU->logger))
+	if(enviar(socket, paquete.code, paquete.data, paquete.size, loggerCPU->logger))
 	{
 		log_error_mutex(loggerCPU, "Hubo un error en el envío del paquete.");
 		return EXIT_FAILURE;
 	}
 
-	// Esta validacion es para que sólo se bloquee el GDT cuando la accion implica una llamada al DAM.
 	if (modulo == DAM)
 	{
-		if (eventoSAFA(dtb, accion, CPU_SAFA_BLOQUEAR_DTB))
+		return respuesta;
+	}
+	if (modulo == FM9)
+	{
+		return ejecucionFM9(dtb, socket);
+	}
+	return EXIT_SUCCESS;
+}
+
+bool encontrarPath(char * direccion)
+{
+	if (strcmp(direccion, pathBuscado) == 0)
+		return true;
+	return false;
+}
+
+int ejecucionDAM(t_dtb ** dtb)
+{
+	if (finalizoEjecucionDTB((*dtb), CPU_SAFA_BLOQUEAR_DTB))
+	{
+		log_error_mutex(loggerCPU, "Hubo un error en el envio de bloqueo del G.DT.");
+		return EXIT_FAILURE;
+	}
+	return DTB_DESALOJADO;
+}
+
+int ejecucionFM9(t_dtb ** dtb, int socket)
+{
+	t_package package;
+	if(recibir(socket, &package, loggerCPU->logger))
+	{
+		log_error_mutex(loggerCPU, "Hubo un error al recibir la respuesta del FM9.");
+		return EXIT_FAILURE;
+	}
+	if(package.code == (FM9_CPU_ACCESO_INVALIDO || FM9_CPU_PROCESO_INEXISTENTE || FM9_CPU_FALLO_SEGMENTO_MEMORIA))
+	{
+		log_warning_mutex(loggerCPU, "Hubo un error en el FunesMemory9.");
+		if (eventoSAFA(dtb, CPU_SAFA_ABORTAR_DTB))
 		{
-			log_error_mutex(loggerCPU, "Hubo un error en el envio de bloqueo del G.DT.");
+			log_error_mutex(loggerCPU, "Hubo un error en el envio de finalización del G.DT.");
 			return EXIT_FAILURE;
 		}
 		return DTB_DESALOJADO;
 	}
-	// Esta validacion es para esperar una respuesta del FM9 y verificar que no haya errores ni accesos inválidos.
-	if (modulo == FM9)
+	if (package.code == FM9_CPU_LINEA_GUARDADA)
 	{
-		t_package package;
-		if(recibir(socket, &package, loggerCPU->logger))
-		{
-			log_error_mutex(loggerCPU, "Hubo un error al recibir la respuesta del FM9.");
-			return EXIT_FAILURE;
-		}
-		if(package.code == FM9_CPU_ACCESO_INVALIDO || package.code == FM9_CPU_ERROR)
-		{
-			if (eventoSAFA(dtb, accion, CPU_SAFA_ABORTAR_DTB))
-			{
-				log_error_mutex(loggerCPU, "Hubo un error en el envio de finalización del G.DT.");
-				return EXIT_FAILURE;
-			}
-			return DTB_DESALOJADO;
-		}
+		log_info_mutex(loggerCPU, "La linea correspondiente se ha guardado correctamente en memoria.");
 	}
-	free(buffer);
+	if (package.code == FM9_CPU_ARCHIVO_CERRADO)
+	{
+		log_info_mutex(loggerCPU, "El archivo correspondiente ha sido cerrado correctamente.");
+	}
 	return EXIT_SUCCESS;
 }
 
@@ -395,11 +561,11 @@ int manejarRecursosSAFA(char * recurso, int idGDT, int accion)
 		return EXIT_FAILURE;
 	}
 	// Enviar la informacion del recurso y del idGDT que lo bloquea (o desbloquea) al SAFA
-	int size = strlen(recurso) + sizeof(int);
-	char * buffer;
-	copyStringToBuffer(&buffer, recurso);
-	copyIntToBuffer(&buffer,idGDT);
-	size = strlen(buffer);
+	int size = (strlen(recurso) + 1) * sizeof(char) + 2*sizeof(int);
+	char * buffer = malloc(size);
+	char * p = buffer;
+	copyStringToBuffer(&p, recurso);
+	copyIntToBuffer(&p,idGDT);
 	if(enviar(t_socketSAFA->socket,code,buffer, size, loggerCPU->logger))
 	{
 		log_error_mutex(loggerCPU, "No se pudo enviar el bloqueo o desbloqueo del recurso al SAFA..");
@@ -413,28 +579,16 @@ int manejarRecursosSAFA(char * recurso, int idGDT, int accion)
 int setQuantum(t_package paquete)
 {
     pthread_mutex_lock(&mutexQuantum);
-	int quantum = copyIntFromBuffer(&paquete.data);
+    char * buffer = paquete.data;
+	quantum = copyIntFromBuffer(&buffer);
 	if (quantum > 0)
 	{
 		log_info_mutex(loggerCPU, "El valor del quantum es %d", quantum);
+	    pthread_mutex_unlock(&mutexQuantum);
 		return EXIT_SUCCESS;
 	}
     pthread_mutex_unlock(&mutexQuantum);
 	return EXIT_FAILURE;
-}
-
-t_dtb * transformarPaqueteADTB(t_package paquete)
-{
-	// Se realiza lo que sería una deserializacion de la info dentro de paquete->data
-	t_dtb * dtb = malloc(sizeof(t_dtb));
-	char *buffer = paquete.data;
-	dtb->idGDT = copyIntFromBuffer(&buffer);
-	dtb->dirEscriptorio = copyStringFromBuffer(&buffer);
-	dtb->programCounter = copyIntFromBuffer(&buffer);
-	dtb->flagInicializado = copyIntFromBuffer(&buffer);
-	dtb->tablaDirecciones = copyStringFromBuffer(&buffer);
-	dtb->cantidadLineas = copyIntFromBuffer(&buffer);
-	return dtb;
 }
 
 void inicializarCPU(char * pathConfig)
@@ -516,29 +670,28 @@ char * enumToProcess(int proceso)
 
 void exit_gracefully(int error)
 {
-//		if (error != ERROR_SOCKET_DAM)
-//		{
-	close(t_socketDAM->socket);
-	free(t_socketDAM);
-//			if (error != ERROR_SOCKET_SAFA)
-//			{
-	close(t_socketSAFA->socket);
-	free(t_socketSAFA);
-//			}
-//		}
-
-	close(t_socketFM9->socket);
-	free(t_socketFM9);
+	liberarMemoriaTSocket(t_socketDAM);
+	liberarMemoriaTSocket(t_socketSAFA);
+	liberarMemoriaTSocket(t_socketFM9);
+	pthread_mutex_destroy(&mutexQuantum);
+	pthread_mutex_destroy(&mutexPath);
+	pthread_mutex_destroy(&mutexSolicitudes);
 	log_destroy_mutex(loggerCPU);
 	freeConfig(config, CPU);
 	exit(error);
 }
 
-void initMutexs(){
-	pthread_mutex_init(&mutexQuantum, NULL);
-//	pthread_mutex_init(&mutexDesalojo, NULL);
+void liberarMemoriaTSocket(t_socket * TSocket)
+{
+	if(TSocket != NULL && TSocket->socket != 0)
+	{
+		close(TSocket->socket);
+		free(TSocket);
+	}
 }
 
-//void initSems() {
-//    sem_init(&sem_nuevoDummy, 0, 0);
-//}
+void initMutexs(){
+	pthread_mutex_init(&mutexQuantum, NULL);
+	pthread_mutex_init(&mutexPath, NULL);
+	pthread_mutex_init(&mutexSolicitudes, NULL);
+}

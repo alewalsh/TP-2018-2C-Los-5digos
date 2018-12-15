@@ -101,7 +101,7 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             ret = dam;
             break;
         case MDJ:
-            if (checkAmountOfParams(configFile, 3, logger)) {
+            if (checkAmountOfParams(configFile, 7, logger)) {
                 ret = NULL;
                 break;
             }
@@ -110,6 +110,9 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             mdj->ip_propia = leerIP(configFile, "IP_PROPIA", logger);
             mdj->puntoMontaje = leerString(configFile, "PUNTO_MONTAJE", logger);
             mdj->retardo = leerInt(configFile, "RETARDO", logger);
+            mdj->tam_bloq = leerInt(configFile, "TAMANIO_BLOQUES", logger);
+            mdj->cant_bloq = leerInt(configFile, "CANTIDAD_BLOQUES", logger);
+            mdj->magic_num = leerString(configFile, "MAGIC_NUMBER", logger);
             ret = mdj;
             break;
         case FM9:
@@ -122,7 +125,7 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
             funesMemory->ip_propia = leerIP(configFile, "IP_PROPIA", logger);
             char *modo = leerString(configFile, "MODO", logger);
             funesMemory->modoEjecucion = getModoEjecucion(modo);
-            free(modo);
+//            free(modo);
             funesMemory->tamMemoria = leerInt(configFile, "TAMANIO", logger);
             funesMemory->tamMaxLinea = leerInt(configFile, "MAX_LINEA", logger);
             funesMemory->tamPagina = leerInt(configFile, "TAM_PAGINA", logger);
@@ -131,7 +134,7 @@ void *cargarConfiguracion(char *path, processType configType, t_log *logger) {
         default:
             ret = NULL;
     }
-    config_destroy(configFile);
+//    config_destroy(configFile);
     return ret;
 }
 
@@ -241,6 +244,7 @@ void freeConfig(void *conf, processType processType) {
             	mdj = (configMDJ *) conf;
             	free(mdj->ip_propia);
             	free(mdj->puntoMontaje);
+            	free(mdj->magic_num);
             	free(mdj);
             	break;
             default:

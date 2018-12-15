@@ -15,58 +15,65 @@
 #include <grantp/mutex_log.h>
 #include <grantp/structCommons.h>
 #include <grantp/compression.h>
+#include <grantp/split.c>
+#include <commons/bitarray.h>
 #include "funcionesFM9.h"
+#include <errno.h>
+#include "segmentacionSimple.h"
+#include "TPI.h"
+#include "segPaginada.h"
 
 int contLineasUsadas;
 int cantLineas;
+int cantPaginas;
+int lineasXPagina;
+int pidBuscado;
+int nroSegmentoBuscado;
+char * pathBuscado;
 
 t_log_mutex * logger;
 configFM9 * config;
+t_dictionary * tablaProcesos;
+t_list * tablaPaginasInvertida;
+t_bitarray * estadoLineas;
+t_bitarray * estadoMarcos;
+char * storage;
 
 fd_set master;
 fd_set readset;
 int maxfd;
-void * storage;
-
-typedef struct{
-	int nroSegmento;
-	int offset;
-}t_segmento;
-
-typedef struct{
-	t_dtb * dtb;
-	t_segmento segmentoGDT;
-}t_gdt;
-
-typedef struct{
-	int *idProceso;
-	int base;
-	int limite;
-}t_tablaSegmentos;
-
-typedef struct{
-	int base;
-	int offset;
-}t_bloqueMemoria;
 
 pthread_mutex_t mutexMaster;
 pthread_mutex_t mutexReadset;
 pthread_mutex_t mutexMaxfd;
 pthread_mutex_t mutexExit;
+pthread_mutex_t mutexPaginaBuscada;
+pthread_mutex_t mutexPIDBuscado;
+pthread_mutex_t mutexSegmentoBuscado;
+pthread_mutex_t mutexPathBuscado;
 
+void inicializarSemaforos();
 void inicializarContadores();
 void manejarConexiones();
 void manejarSolicitud(t_package pkg, int socketFD);
 void liberarRecursos();
+bool existeProceso(int pid);
+
+int cerrarArchivoSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
+void logicaCerrarArchivo(t_package pkg, int socketSolicitud, int code);
+
 int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
+void logicaGuardarLinea(t_package pkg, int socketSolicitud, int code);
+
 int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
-void ejecutarEsquemaTPI(t_package pkg, int socketSolicitud, int accion);
-void ejecutarEsquemaSegPag(t_package pkg, int socketSolicitud, int accion);
-void ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud);
-void ejecutarCargarEsquemaTPI(t_package pkg, int socketSolicitud);
-void ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud);
-int ejecutarGuardarEsquemaSegmentacion(t_package pkg);
-int ejecutarGuardarEsquemaTPI(t_package pkg);
-int ejecutarGuardarEsquemaSegPag(t_package pkg);
-int retornarLineaSolicitada(t_package pkg, int socketSolicitud);
+void logicaCargarEscriptorio(t_package pkg, int socketSolicitud, int code);
+
+int realizarFlushSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
+void logicaFlush(t_package pkg, int socketSolicitud, int code);
+
+int finGDTSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
+void logicaFinGDT(t_package pkg, int socketSolicitud, int code);
+
+int devolverInstruccionSegunEsquemaMemoria(t_package pkg, int socketSolicitud);
+void logicaDevolverInstruccion(t_package pkg, int socketSolicitud, int code);
 #endif /* FUNESMEMORY9_H_ */

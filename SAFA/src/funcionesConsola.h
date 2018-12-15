@@ -11,67 +11,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-//#include "schedulerFunctions.h"
+#include "funcionesSAFA.h"
 #include <semaphore.h>
-//#include "handlerConnections.h"
 
-
-extern int shouldExit;
 extern pthread_mutex_t mutexExit;
 
-//extern pthread_mutex_t mutexReadyExecute;
-//
-//extern sem_t sem_newEsi;
-//extern int coordinador;
-//
+extern t_list* colaNew;			// Lista New.
+extern t_list* colaReady;			// Lista Ready.
+extern t_list* colaBloqueados;		// Lista Bloqueados.
+extern t_list* colaEjecutando;     // Lista DTBs en ejec
+extern t_list* colaExit;		// Lista Terminados.
+extern t_list* colaReadyEspecial;
+//TODO: Vamos a tener que agregar la cola especial que creo Fran
 
+extern sem_t mandadosPorConsola;
 
-//void consoleStop();
-//
-//void consolePlay();
-//
-//void consoleBlock(char *args);
-//
-//void consoleUnblock(char *esi);
-//
-//void consoleList(char *key);
-//
-//void consoleKill(char *id);
-//
-//void consoleStatus(char *key);
-//
-//void consoleDeadlock();
-//
-//void consolePrintMan();
-//
-
+void consolaEjecutar(char *args);
+void consolaLiberar();
+void consolaStatus();
+void imprimirNEW();
+void imprimirREADY();
+void imprimirEJECUTANDO();
+void imprimirBLOQUEADOS();
+void imprimirEXIT();
+void imprimirREADYESPECIAL();
+void consolaStatusDTB(char *args);
+void imprimirDTB(t_dtb * dtb);
+void consolaMetricasDTB(char *args);
+void consolaMetricas();
+void imprimirSentenciasDAM();
+void imprimirSentenciasPromEnExit();
 void consoleExit();
-
 void consoleHelp();
-
-//void consoleStatusAllESI();
-//
-//void consoleClear();
-//
-//char *statusToString(uint16_t status);
-//
-//char *statusKeyToSting(uint16_t status);
-//
-//void consoleStatusKeys();
-//
-//void detectDeadlock(int e, int k, int need[e][k], int alloc[e][k], int avail[k], t_list *esis);
-//
-
+void consoleClear();
 int getIdFunction(char *function);
 void parseCommand(char *line, char **command, char **args);
 void freeCommand(char *command, char *args);
-
-//--------------------------------------------------------------------------------------------------------------------------------------
-// FUNCIONES PARA LOS HILOS
-//--------------------------------------------------------------------------------------------------------------------------------------
-int getExit();
-void setExit();
-
-
 
 #endif /* FUNCIONESCONSOLA_H_ */

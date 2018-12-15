@@ -9,21 +9,44 @@
  */
 
 #include "FunesMemory9.h"
+#include "consolaFM9.h"
 
 int main(int argc, char** argv) {
 	logger = log_create_mutex("FM9.log", "FM9", true, LOG_LEVEL_INFO);
 	config = cargarConfiguracion(argv[1], FM9, logger->logger);
 	inicializarContadores();
-	storage = malloc(config->tamMemoria);
+	size_t tamanioMemoria = config->tamMemoria;
+	storage = (char *)malloc(tamanioMemoria);
+	pthread_create(&threadConsolaFM9, &tattr, (void *) manejarConsolaFM9, NULL);
 	manejarConexiones();
 	free(storage);
 	return EXIT_SUCCESS;
 }
 
 void inicializarContadores(){
+	inicializarSemaforos();
 	contLineasUsadas = 0;
 	cantLineas = config->tamMemoria / config->tamMaxLinea;
+	cantPaginas = config->tamMemoria / config->tamPagina;
+	lineasXPagina = config->tamPagina / config->tamMaxLinea;
+	tablaProcesos = dictionary_create();
+	tablaPaginasInvertida = list_create();
+	inicializarBitmap(&estadoLineas);
+	inicializarBitmap(&estadoMarcos);
 }
+
+void inicializarSemaforos()
+{
+	pthread_mutex_init(&mutexExit, NULL);
+	pthread_mutex_init(&mutexMaster, NULL);
+	pthread_mutex_init(&mutexMaxfd, NULL);
+	pthread_mutex_init(&mutexPaginaBuscada, NULL);
+	pthread_mutex_init(&mutexSegmentoBuscado, NULL);
+	pthread_mutex_init(&mutexPIDBuscado, NULL);
+	pthread_mutex_init(&mutexPathBuscado, NULL);
+	pthread_mutex_init(&mutexReadset, NULL);
+}
+
 void manejarConexiones(){
 	int socketListen, i,nuevoFd;
 	uint16_t handshake;
@@ -49,7 +72,7 @@ void manejarConexiones(){
 		int result = select(getMaxfd() + 1, &readset, NULL, NULL, NULL);
 		if (result == -1) {
 			log_error_mutex(logger, "Error en el select: %s", strerror(errno));
-			exit(1);
+			exit_gracefully(1);
 		}
 
 		log_trace_mutex(logger, "El valor del select es: %d", result);
@@ -62,9 +85,11 @@ void manejarConexiones(){
 				if (i == socketListen) {
 					// CAMBIOS EN EL SOCKET QUE ESCUCHA, acepto las nuevas conexiones
 					log_trace_mutex(logger, "Cambios en Listener de FM9, se gestionara la conexion correspondiente");
-					if (acceptConnection(socketListen, &nuevoFd, FM9_HSK, &handshake, logger->logger)) {
+					if (acceptConnection(socketListen, &nuevoFd, FM9_HSK, &handshake, logger->logger))
+					{
 						log_error_mutex(logger, "No se acepto la nueva conexion solicitada");
-					} else {
+					} else
+					{
 						// añadir al conjunto maestro
 						log_trace_mutex(logger, "Se acepto la nueva conexion solicitada en el SELECT");
 						addNewSocketToMaster(nuevoFd);
@@ -84,14 +109,6 @@ void manejarConexiones(){
 	}
 }
 
-void liberarRecursos()
-{
-	pthread_mutex_destroy(&mutexMaster);
-	pthread_mutex_destroy(&mutexReadset);
-	log_destroy_mutex(logger);
-	freeConfig(config, FM9);
-}
-
 void manejarSolicitud(t_package pkg, int socketFD) {
 
     switch (pkg.code) {
@@ -106,18 +123,32 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 				log_error_mutex(logger,"Error al cargar el escriptorio en la memoria");
 			}
 			break;
-
-        case DAM_FM9_GUARDARLINEA:
+        case DAM_FM9_FLUSH:
+        	if(realizarFlushSegunEsquemaMemoria(pkg,socketFD)){
+				log_error_mutex(logger,"Error al realizar el flush en la memoria");
+			}
+			break;
+        case CPU_FM9_ASIGNAR:
         	if(guardarLineaSegunEsquemaMemoria(pkg,socketFD)){
-				log_error_mutex(logger,"Error al guardar la data recibida en memoria");
+				log_error_mutex(logger,"Error al guardar los datos recibidos en memoria");
+			}
+			break;
+        case CPU_FM9_CERRAR_ARCHIVO:
+			if(cerrarArchivoSegunEsquemaMemoria(pkg,socketFD)){
+				log_error_mutex(logger,"Error al cerrar el archivo en memoria");
+			}
+			break;
+        case CPU_FM9_FIN_GDT:
+			if(finGDTSegunEsquemaMemoria(pkg,socketFD)){
+				log_error_mutex(logger,"Error al finalizar el GDT en memoria");
+			}
+			break;
+        case CPU_FM9_DAME_INSTRUCCION:
+			if(devolverInstruccionSegunEsquemaMemoria(pkg,socketFD)){
+				log_error_mutex(logger,"Error al devolver una instruccion al GDT");
 			}
 			break;
 
-        case DAM_FM9_RETORNARlINEA:
-        	if(retornarLineaSolicitada(pkg,socketFD)){
-				log_error_mutex(logger,"Error al retornar la memoria solicitada");
-			}
-			break;
         case SOCKET_DISCONECT:
             close(socketFD);
             deleteSocketFromMaster(socketFD);
@@ -132,291 +163,338 @@ void manejarSolicitud(t_package pkg, int socketFD) {
     free(pkg.data);
 
 }
+
+//--------------------------------------FINALIZAR GDT SEGUN ESQUEMA ELEGIDO
+
+int devolverInstruccionSegunEsquemaMemoria(t_package pkg, int socketSolicitud)
+{
+	switch(config->modoEjecucion)
+	{
+		case SEG:
+			logicaDevolverInstruccion(pkg, socketSolicitud, SEG);
+			break;
+		case TPI:
+			logicaDevolverInstruccion(pkg, socketSolicitud, TPI);
+			break;
+		case SPA:
+			logicaDevolverInstruccion(pkg, socketSolicitud, SPA);
+			break;
+		default:
+			return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+void logicaDevolverInstruccion(t_package pkg, int socketSolicitud, int code)
+{
+	t_infoDevolverInstruccion * datosPaquete = guardarDatosPaqueteInstruccion(pkg);
+	int resultado = 0;
+	switch(code)
+	{
+		case SEG:
+			resultado = devolverInstruccionSegmentacion(pkg, datosPaquete, socketSolicitud);
+			break;
+		case TPI:
+			resultado = devolverInstruccionTPI(pkg, datosPaquete, socketSolicitud);
+			break;
+		case SPA:
+			resultado = devolverInstruccionSegPag(pkg, datosPaquete, socketSolicitud);
+			break;
+		default:
+			log_warning_mutex(logger, "No se especifico el esquema para devolver una instruccion.");
+	}
+	if (resultado != 0)
+	{
+		int errorCode = FM9_CPU_ERROR;
+		log_error_mutex(logger,"Error al devolver una instruccion.");
+		if (enviar(socketSolicitud,errorCode,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU del error al devolver una instruccion.");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "Se retornó correctamente la instruccion al GDT.");
+	}
+}
+
+//--------------------------------------FINALIZAR GDT SEGUN ESQUEMA ELEGIDO
+
+int finGDTSegunEsquemaMemoria(t_package pkg, int socketSolicitud)
+{
+	switch(config->modoEjecucion)
+	{
+		case SEG:
+				logicaFinGDT(pkg, socketSolicitud, SEG);
+				break;
+		case TPI:
+				logicaFinGDT(pkg, socketSolicitud, TPI);
+				break;
+		case SPA:
+				logicaFinGDT(pkg, socketSolicitud, SPA);
+				break;
+		default:
+				return EXIT_FAILURE;
+		}
+	return EXIT_SUCCESS;
+}
+
+void logicaFinGDT(t_package pkg, int socketSolicitud, int code)
+{
+	char * buffer = pkg.data;
+	int idGDT = copyIntFromBuffer(&buffer);
+	int resultado = 0;
+	switch(code)
+	{
+		case SEG:
+			resultado = finGDTSegmentacion(pkg, idGDT, socketSolicitud);
+			break;
+		case TPI:
+			resultado = finGDTTPI(pkg, idGDT, socketSolicitud);
+			break;
+		case SPA:
+			resultado = finGDTSegPag(pkg, idGDT, socketSolicitud);
+			break;
+		default:
+			log_warning_mutex(logger, "No se especifico el esquema para finalizar un GDT.");
+	}
+	if (resultado != 0)
+	{
+		int errorCode = FM9_CPU_ERROR;
+		log_error_mutex(logger,"Error al finalizar el proceso indicado.");
+		if (enviar(socketSolicitud,errorCode,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU del error al finalizar el proceso.");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "Se finalizó correctamente el proceso indicado.");
+	}
+}
+
+//--------------------------------------CERRAR ARCHIVO SEGUN ESQUEMA ELEGIDO
+
+int cerrarArchivoSegunEsquemaMemoria(t_package pkg, int socketSolicitud)
+{
+	switch(config->modoEjecucion)
+	{
+		case SEG:
+				logicaCerrarArchivo(pkg, socketSolicitud, SEG);
+				break;
+		case TPI:
+				logicaCerrarArchivo(pkg, socketSolicitud, TPI);
+				break;
+		case SPA:
+				logicaCerrarArchivo(pkg, socketSolicitud, SPA);
+				break;
+		default:
+				return EXIT_FAILURE;
+		}
+	return EXIT_SUCCESS;
+}
+
+void logicaCerrarArchivo(t_package pkg, int socketSolicitud, int code)
+{
+	t_infoCerrarArchivo * datosPaquete = guardarDatosPaqueteCierreArchivo(pkg);
+	int resultado = 0;
+	switch(code)
+	{
+		case SEG:
+			resultado = cerrarArchivoSegmentacion(pkg, datosPaquete, socketSolicitud);
+			break;
+		case TPI:
+			resultado = cerrarArchivoTPI(pkg, datosPaquete, socketSolicitud);
+			break;
+		case SPA:
+			resultado = cerrarArchivoSegPag(pkg, datosPaquete, socketSolicitud);
+			break;
+		default:
+			log_warning_mutex(logger, "No se especifico el esquema para cerrar un archivo.");
+	}
+	if (resultado != 0)
+	{
+		log_error_mutex(logger,"Error al cerrar el archivo indicado.");
+		if (enviar(socketSolicitud,code,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU del error al cerrar un archivo.");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "Se cerró correctamente el archivo indicado.");
+	}
+}
+
 //--------------------------------------GUARDAR DATOS EN MEMORIA SEGUN ESQUEMA ELEGIDO
 
-int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
+int guardarLineaSegunEsquemaMemoria(t_package pkg, int socketSolicitud)
+{
 	switch (config->modoEjecucion){
 	case SEG:
-
-		if(ejecutarGuardarEsquemaSegmentacion(pkg)){
-			log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: SEG");
-			//ENVIAR ERROR AL DMA (socketSolicitud)
-		}else{
-			log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
-		}
+		logicaGuardarLinea(pkg, socketSolicitud, SEG);
 	    break;
-
 	case TPI:
-		if(ejecutarGuardarEsquemaTPI(pkg)){
-			log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: TPI");
-			//ENVIAR ERROR AL DMA (socketSolicitud)
-		}else{
-			log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
-		}
-	    break;
-
+		logicaGuardarLinea(pkg, socketSolicitud, TPI);
+		break;
 	case SPA:
-		if(ejecutarGuardarEsquemaSegPag(pkg)){
-			log_error_mutex(logger,"Error al guardar la linea recibida en Memoria. Esquema: SPA");
-			//ENVIAR ERROR AL DMA (socketSolicitud)
-		}else{
-			log_info_mutex(logger, "Se cargó correctamente la linea recibida en Memoria");
-		}
-	    break;
-
+		logicaGuardarLinea(pkg, socketSolicitud, SPA);
+		break;
 	default:
-		log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas");
+		log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas.");
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }
 
-
-int ejecutarGuardarEsquemaSegmentacion(t_package pkg){
-	//logica de segmentacion pura
-
-
-	return EXIT_SUCCESS;
-
-}
-
-int ejecutarGuardarEsquemaTPI(t_package pkg){
-	//logica de tabla de paginas invertida
-	return EXIT_SUCCESS;
-}
-
-int ejecutarGuardarEsquemaSegPag(t_package pkg){
-	//logica de segmentacion paginada
-	return EXIT_SUCCESS;
+void logicaGuardarLinea(t_package pkg, int socketSolicitud, int code)
+{
+	t_infoGuardadoLinea * datosPaquete = guardarDatosPaqueteGuardadoLinea(pkg);
+	int resultado = 0;
+	switch(code)
+	{
+		case SEG:
+			resultado = ejecutarGuardarEsquemaSegmentacion(pkg, datosPaquete, socketSolicitud);
+			break;
+		case TPI:
+			resultado = ejecutarGuardarEsquemaTPI(pkg, datosPaquete, socketSolicitud);
+			break;
+		case SPA:
+			resultado = ejecutarGuardarEsquemaSegPag(pkg, datosPaquete, socketSolicitud);
+			break;
+		default:
+			log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas.");
+	}
+	if (resultado != 0)
+	{
+		log_error_mutex(logger,"Error al guardar la línea especificada.");
+		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
+		if (enviar(socketSolicitud,FM9_CPU_ERROR_LINEA_GUARDADA,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar a la CPU del error en el guardado de la linea");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "Se cargó correctamente el Escriptorio recibido.");
+	}
+	free(datosPaquete);
 }
 
 //------------------------------CARGAR ESCRIPTORIO EN MEMORIA SEGUN ESQUEMA ELEGIDO
-int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud){
+
+int cargarEscriptorioSegunEsquemaMemoria(t_package pkg, int socketSolicitud)
+{
 	switch (config->modoEjecucion){
 	case SEG:
-		ejecutarCargarEsquemaSegmentacion(pkg,socketSolicitud);
+		logicaCargarEscriptorio(pkg, socketSolicitud, SEG);
 	    break;
-
 	case TPI:
-	    ejecutarCargarEsquemaTPI(pkg,socketSolicitud);
+		logicaCargarEscriptorio(pkg, socketSolicitud, TPI);
 		break;
 	case SPA:
-		ejecutarCargarEsquemaSegPag(pkg,socketSolicitud);
+		logicaCargarEscriptorio(pkg, socketSolicitud, SPA);
 		break;
-
 	default:
-		log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas");
+		log_warning_mutex(logger, "No se especifico el esquema para la carga de escriptorio");
 		return EXIT_FAILURE;
 	}
+	return EXIT_SUCCESS;
+}
+
+void logicaCargarEscriptorio(t_package pkg, int socketSolicitud, int code)
+{
+	t_infoCargaEscriptorio * datosPaquete = guardarDatosPaqueteCargaEscriptorio(pkg);
+	int resultado = 0;
+	switch(code)
+	{
+		case SEG:
+			resultado = ejecutarCargarEsquemaSegmentacion(pkg, datosPaquete, socketSolicitud);
+			break;
+		case TPI:
+			resultado = ejecutarCargarEsquemaTPI(pkg, datosPaquete, socketSolicitud);
+			break;
+		case SPA:
+			resultado = ejecutarCargarEsquemaSegPag(pkg, datosPaquete, socketSolicitud);
+			break;
+		default:
+			log_warning_mutex(logger, "No se especifico el esquema para la carga de un escriptorio.");
+	}
+	if (resultado != 0)
+	{
+		log_error_mutex(logger,"Error al cargar el Escriptorio recibido.");
+		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
+		if (enviar(socketSolicitud,FM9_DAM_ERROR_CARGA_ESCRIPTORIO,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al DAM del error en la carga del escriptorio");
+			exit_gracefully(-1);
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "Se cargó correctamente el Escriptorio recibido.");
+	}
+	free(datosPaquete);
+}
+
+//------------------------------REALIZAR FLUSH SEGUN ESQUEMA ELEGIDO
+
+int realizarFlushSegunEsquemaMemoria(t_package pkg, int socketSolicitud)
+{
+	switch (config->modoEjecucion)
+	{
+		case SEG:
+			logicaFlush(pkg, socketSolicitud, SEG);
+		    break;
+		case TPI:
+			logicaFlush(pkg,socketSolicitud, TPI);
+			break;
+		case SPA:
+			logicaFlush(pkg,socketSolicitud, SPA);
+			break;
+		default:
+			log_warning_mutex(logger, "No se especifico el esquema para el guardado de lineas");
+			return EXIT_FAILURE;
+	}
 
 	return EXIT_SUCCESS;
 }
 
-int tengoMemoriaDisponible(int cantidadACargarBytes){
-
-	int cantACargarEnLineas = cantidadACargarBytes / config->tamMaxLinea;
-	int memoriaDisponible = cantLineas - contLineasUsadas;
-
-	if(memoriaDisponible > cantACargarEnLineas){
-		//Tengo espacio disponible.
-		return EXIT_SUCCESS;
-	}else{
-		//No tengo espacio disponible.
-		return EXIT_FAILURE;
+void logicaFlush(t_package pkg, int socketSolicitud, int code)
+{
+	t_datosFlush * infoFlush = guardarDatosPaqueteFlush(pkg);
+	int resultado = 0;
+	switch(code)
+	{
+		case SEG:
+			resultado = flushSegmentacion(socketSolicitud, infoFlush, AccionFLUSH);
+			break;
+		case TPI:
+			resultado = flushTPI(socketSolicitud, infoFlush, AccionFLUSH);
+			break;
+		case SPA:
+			resultado = flushSegmentacionPaginada(socketSolicitud, infoFlush, AccionFLUSH);
+			break;
+		default:
+			log_warning_mutex(logger, "No se especifico el esquema para el flush");
 	}
-
-	return EXIT_SUCCESS;
-}
-
-void ejecutarCargarEsquemaSegmentacion(t_package pkg, int socketSolicitud){
-	//logica de segmentacion pura
-
-	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
-	char * buffer= pkg.data;
-	int pid = copyIntFromBuffer(&buffer);
-	int cantPaquetes = copyIntFromBuffer(&buffer);
-	int tamanioPaquetes = copyIntFromBuffer(&buffer);
-	free(buffer);
-
-	int cantidadACargar = cantPaquetes * tamanioPaquetes;
-
-	if(tengoMemoriaDisponible(cantidadACargar) == 1){
-		//fallo
-		//avisarle al socket que no hay memoria disponible
-	}
-
-	//ACA HAY QUE FIJARSE EN LA TABLA SEGMENTOS SI TENGO UN SEGMENTO CONTIGUO PARA ALMACENAR LOS DATOS
-	//EN CASO QUE SI RESERVAR UN SEGMENTO
-	//int segmento = reservarSegmento();
-	//actualizar tabla de segmentos
-	//actualizarTablaDeSegmentos(pid,segmento);
-
-	//CON EL TAMAÑO PUEDO CALCULAR CUANTOS PAQUETES PUEDEN ENTRAR EN 1 LINEA DE MEMORIA
-	//Calcular la parte entera
-	int paquetesXLinea = config->tamMaxLinea / tamanioPaquetes;
-
-	char * bufferConcatenado = malloc(config->tamMaxLinea);
-
-	for(int i = 0; i < cantPaquetes; i++){
-		t_package paquete;
-		if(recibir(socketSolicitud,&paquete,logger->logger)){
-			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
-			//enviarErrorAlDam();
-		}else{
-
-			if((i+1) < paquetesXLinea){
-				//si no supere los paquetes por linea lo sumo al bufferConcatenado
-				copyStringToBuffer(&bufferConcatenado,paquete.data);
-			}else{
-				//si llego a los paquetes máximos -> Guardo la linea
-				copyStringToBuffer(&bufferConcatenado,paquete.data);
-
-				//TODO GUARDAR LINEA EN SEGMENTO
-				//guardarlinea(bufferConcatenado,segmento);
-
-				//Descarto el buffer y lo creo de nuevo para la nueva linea
-				free(bufferConcatenado);
-				bufferConcatenado = malloc(config->tamMaxLinea);
-			}
+	if (resultado != 0)
+	{
+		log_error_mutex(logger,"Error al realizar el flush.");
+		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
+		if (enviar(socketSolicitud,FM9_DAM_ERROR_FLUSH,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al DAM del error en el flush");
+			exit_gracefully(-1);
 		}
 	}
-
-	//TODO GUARDAR LINEA EN SEGMENTO
-	//guardarlinea(bufferConcatenado,segmento);
-	free(bufferConcatenado);
-
-
-	//ENVIAR MSJ DE EXITO A DAM
-}
-
-void ejecutarCargarEsquemaTPI(t_package pkg,int socketSolicitud){
-	//logica de tabla de paginas invertida
-	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
-	char * buffer= pkg.data;
-	int pid = copyIntFromBuffer(&buffer);
-	int cantPaquetes = copyIntFromBuffer(&buffer);
-	int tamanioPaquetes = copyIntFromBuffer(&buffer);
-	free(buffer);
-
-	int cantidadACargar = cantPaquetes * tamanioPaquetes;
-
-	if(tengoMemoriaDisponible(cantidadACargar) == 1){
-		//fallo
-		//avisarle al socket que no hay memoria disponible
-		//enviarMsjErrorAlDam()
+	else
+	{
+		log_info_mutex(logger, "Se ha realizado correctamente el flush.");
 	}
-
-	//ACA HAY QUE FIJARSE EN LA TABLA INVERTIDA SI TENGO UNA PAGINA SIN PID ASOCIADO PARA ALMACENAR LOS DATOS
-	//EN CASO QUE SI RESERVAR DICHA PAGINA
-	//int pagina = reservarPagina();
-	//actualizar tabla invertida
-	//actualizarTablaInvertida(pid,pagina);
-
-	//CON EL TAMAÑO PUEDO CALCULAR CUANTOS PAQUETES PUEDEN ENTRAR EN 1 LINEA DE MEMORIA
-	//Calcular la parte entera
-	int paquetesXLinea = config->tamMaxLinea / tamanioPaquetes;
-
-	char * bufferConcatenado = malloc(config->tamMaxLinea);
-
-	for(int i = 0; i < cantPaquetes; i++){
-		t_package paquete;
-		if(recibir(socketSolicitud,&paquete,logger->logger)){
-			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
-			//enviarErrorAlDam();
-		}else{
-
-			if((i+1) < paquetesXLinea){
-				//si no supere los paquetes por linea lo sumo al bufferConcatenado
-				copyStringToBuffer(&bufferConcatenado,paquete.data);
-			}else{
-				//si llego a los paquetes máximos -> Guardo la linea
-				copyStringToBuffer(&bufferConcatenado,paquete.data);
-
-				//TODO GUARDAR LINEA EN PAGINA
-				//guardarlineaEsquemaTPI(bufferConcatenado,segmento);
-
-				//Descarto el buffer y lo creo de nuevo para la nueva linea
-				free(bufferConcatenado);
-				bufferConcatenado = malloc(config->tamMaxLinea);
-			}
-		}
-	}
-
-	//TODO GUARDAR LINEA EN PAGINA
-	//guardarlinea(bufferConcatenado,segmento);
-	free(bufferConcatenado);
-
-
-	//Enviar msj de confirmacion al dam
+	free(infoFlush);
 }
-
-void ejecutarCargarEsquemaSegPag(t_package pkg, int socketSolicitud){
-	//logica de segmentacion paginada
-	//En el 1er paquete recibo la cantidad de paquetes a recibir y el tamaño de cada paquete
-	char * buffer= pkg.data;
-	int pid = copyIntFromBuffer(&buffer);
-	int cantPaquetes = copyIntFromBuffer(&buffer);
-	int tamanioPaquetes = copyIntFromBuffer(&buffer);
-	free(buffer);
-
-	int cantidadACargar = cantPaquetes * tamanioPaquetes;
-
-	if(tengoMemoriaDisponible(cantidadACargar) == 1){
-		//fallo
-		//avisarle al socket que no hay memoria disponible
-		//enviarErrorAlDam();
-	}
-
-	//ACA HAY QUE FIJARSE EN LAS TABLAS SI TENGO UNA PAGINA ASOCIADA A UN SEGMENTE LIBRE PARA ALMACENAR LOS DATOS
-	//EN CASO QUE SI RESERVAR DICHA PAGINA
-	//int pagina = reservarPagina();
-	//actualizar las tablas
-	//actualizarTablaSegmento(pid,segmento);
-	//actualizarTablaPaginas(pid,pagina);
-
-	//CON EL TAMAÑO PUEDO CALCULAR CUANTOS PAQUETES PUEDEN ENTRAR EN 1 LINEA DE MEMORIA
-	//Calcular la parte entera
-	int paquetesXLinea = config->tamMaxLinea / tamanioPaquetes;
-
-	char * bufferConcatenado = malloc(config->tamMaxLinea);
-
-	for(int i = 0; i < cantPaquetes; i++){
-		t_package paquete;
-		if(recibir(socketSolicitud,&paquete,logger->logger)){
-			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
-			//enviarErrorAlDam();
-		}else{
-
-			if((i+1) < paquetesXLinea){
-				//si no supere los paquetes por linea lo sumo al bufferConcatenado
-				copyStringToBuffer(&bufferConcatenado,paquete.data);
-			}else{
-				//si llego a los paquetes máximos -> Guardo la linea
-				copyStringToBuffer(&bufferConcatenado,paquete.data);
-
-				//TODO GUARDAR LINEA EN PAGINA
-				//guardarlineaEsquemaSPA(bufferConcatenado,segmento);
-
-				//Descarto el buffer y lo creo de nuevo para la nueva linea
-				free(bufferConcatenado);
-				bufferConcatenado = malloc(config->tamMaxLinea);
-			}
-		}
-	}
-
-	//TODO GUARDAR LINEA EN PAGINA
-	//guardarlineaEsquemaSPA(bufferConcatenado,segmento);
-	free(bufferConcatenado);
-
-
-	//Enviar msj confirmacion al dam
-}
-
-//--------------------------------------------------RETORNAR DATOS DE MEMORIA
-
-int retornarLineaSolicitada(t_package pkg, int socketSolicitud){
-
-	//logica para retornar una linea pedida
-	return EXIT_SUCCESS;
-}
-

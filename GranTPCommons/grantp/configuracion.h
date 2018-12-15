@@ -71,6 +71,9 @@ typedef struct {
     char *ip_propia;
     char *puntoMontaje;
     int retardo;
+    int tam_bloq;
+  	int cant_bloq;
+  	char *magic_num;
 } configMDJ;
 
 void *cargarConfiguracion(char *path, processType configType, t_log *logger);

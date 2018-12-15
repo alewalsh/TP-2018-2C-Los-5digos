@@ -16,29 +16,35 @@ int seguirEjecutando = 1;
 void executeCommand(int comando, char *args) {
     switch (comando) {
         case EJECUTAR:
-//            consolePlay(args);
-            printf("Comando EJECUTAR (%d) seleccionado.\n", comando);
+            consolaEjecutar(args);
             break;
         case STATUS:
-//            consoleStop();
-            printf("Comando STATUS seleccionado.\n");
+        	if (args != NULL){
+	            consolaStatusDTB(args);}
+			else {
+	            consolaStatus();}
             break;
         case FINALIZAR:
+            consolaLiberar();
 //            consoleBlock(args);
-            printf("Comando FINALIZAR seleccionado.\n");
+//            printf("Comando FINALIZAR seleccionado.\n");
             break;
         case METRICAS:
-//            consoleUnblock(args);
-            printf("Comando METRICAS seleccionado.\n");
+        	if (args != NULL){
+                consolaMetricasDTB(args);}
+        	else {
+                consolaMetricas();}
             break;
         case EXIT:
-            printf("Comando EXIT seleccionado.\n");
         	seguirEjecutando = 0;
             consoleExit();
             break;
         case HELP:
             printf("Comando HELP seleccionado.\n");
             consoleHelp();
+            break;
+        case CLEAR:
+            consoleClear();
             break;
         default:
             printf("El comando igresado no es valido.\n");
@@ -58,14 +64,16 @@ void mainConsola() {
 
     while (seguirEjecutando) {
 
-        rawline = readline("\n➜  ~ ");
+    	rawline = readline("\n➜  ~ ");
+    	string_trim_left(&rawline);
 
-        if (rawline) {
+    	if (rawline) {
 
             //agrego la linea al historial
             add_history(rawline);
 
             if (strlen(rawline)) {
+            	string_trim_right(&rawline);
 
                 //Parseo el comando
                 parseCommand(rawline, &comando, &args);
@@ -76,10 +84,13 @@ void mainConsola() {
                 //lo ejecuto
                 executeCommand(id, args);
             }
-        }
 
-        freeCommand(comando, args);
-        free(rawline);
+        }
+    	if(strlen(rawline)){
+    		freeCommand(comando, args);
+			free(rawline);
+    	}
+
     }
 }
 
