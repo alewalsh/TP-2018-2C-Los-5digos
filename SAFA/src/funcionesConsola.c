@@ -304,11 +304,13 @@ void imprimirSentenciasDAM(){
     pthread_mutex_unlock(&mutexTotalSentencias);
     pthread_mutex_unlock(&mutexSentenciasXDAM);
 	div_t x = div(i,j);
+	int prom = (i*100)/j;
 
     printf("*--------------------------------------------------------------------------*\n\n");
     printf("Cantidad de Total de Sentencias Ejecutadas: %d \n", i);
     printf("Cantidad de Sentencias que pasaron por DAM: %d \n", j);
-    printf("PROMEDIO: %d \n", x.quot);
+    printf("Cantidad promedio de sentencias: %d \n", x.quot);
+    printf("PROMEDIO: %d \n", prom);
     printf("*--------------------------------------------------------------------------*\n\n");
 }
 

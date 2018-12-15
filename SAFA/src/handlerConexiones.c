@@ -407,9 +407,11 @@ t_recurso* crearRecurso(char * recurso, int pid){
 void actualizarMetricas(t_dtb * dtb){
 
 	t_dtb * dtbAnterior = buscarDTBPorPIDenCola(colaEjecutando,dtb->idGDT);
-	int instruccionesEjecutadas = dtb->programCounter - dtbAnterior->programCounter;
-	//Actualizo la metrica de sentencias que espera un dtb en NEW
-	actualizarMetricasDTBNew(instruccionesEjecutadas);
-	// Actualizo valor general para saber cuantas sentencias en total se ejecutaron.
-	actualizarTotalSentenciasEjecutadas(instruccionesEjecutadas);
+	if(dtbAnterior != NULL){
+		int instruccionesEjecutadas = dtb->programCounter - dtbAnterior->programCounter;
+		//Actualizo la metrica de sentencias que espera un dtb en NEW
+		actualizarMetricasDTBNew(instruccionesEjecutadas);
+		// Actualizo valor general para saber cuantas sentencias en total se ejecutaron.
+		actualizarTotalSentenciasEjecutadas(instruccionesEjecutadas);
+	}
 }

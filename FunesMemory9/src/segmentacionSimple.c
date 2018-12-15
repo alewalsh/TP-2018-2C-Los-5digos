@@ -233,7 +233,7 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 			int j = 0;
 			if (strcmp(segmento->archivo, data->path) == 0)
 			{
-				while(j <= segmento->limite)
+				while(j < segmento->limite)
 				{
 					char * linea = obtenerLinea(direccion(segmento->base, j));
 					if (accion == AccionDUMP)
