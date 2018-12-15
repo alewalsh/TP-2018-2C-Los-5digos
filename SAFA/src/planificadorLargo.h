@@ -25,7 +25,7 @@ extern t_list* colaNew;			// Lista New.
 extern t_list* colaReady;			// Lista Ready.
 extern t_list* listaMetricasLP;
 extern sem_t mandadosPorConsola;
-extern sem_t semaforpGradoMultiprgramacion;
+extern sem_t semaforoGradoMultiprgramacion;
 
 
 int consolaNuevoGDT(char*);

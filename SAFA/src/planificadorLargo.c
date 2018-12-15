@@ -89,7 +89,7 @@ void planificadorLP() {
     	//este no estoy seguro.
     	sem_wait(&mandadosPorConsola);
 
-    	sem_wait(&semaforpGradoMultiprgramacion);
+    	sem_wait(&semaforoGradoMultiprgramacion);
 //        pthread_mutex_lock(&mutexReadyList);
 
    		//Me fijo cual es el primer elemento de la lista, no lo saco, solo tengo los datos

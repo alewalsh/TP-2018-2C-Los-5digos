@@ -55,7 +55,7 @@ pthread_mutex_t mutexSentenciasXDAM;
 sem_t desbloquearDTBDummy;
 sem_t hayProcesosEnReady;
 sem_t mandadosPorConsola;
-sem_t semaforpGradoMultiprgramacion;
+sem_t semaforoGradoMultiprgramacion;
 sem_t semaforoCpu;
 
 

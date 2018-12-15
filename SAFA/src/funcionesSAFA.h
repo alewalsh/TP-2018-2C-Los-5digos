@@ -22,7 +22,7 @@
 //DTB DUMMY
 t_dtb * dummyDTB;
 extern pthread_mutex_t semCargadoEnMemoria;
-extern sem_t semaforpGradoMultiprgramacion;
+extern sem_t semaforoGradoMultiprgramacion;
 //Semaforo para el dummy
 extern pthread_mutex_t semDummy;
 
@@ -140,5 +140,11 @@ int desbloquearDTBsegunAlgoritmo(int pid);
 //------------------------------------------------------------------------------------------------------------------
 void actualizarTotalSentenciasEjecutadas(int cantidadDeSentencias);
 void actualizarSentenciasPasaronPorDAM(int cantidadDeSentencias);
+
+//------------------------------------------------------------------------------------------------------------------
+//		FUNCIONES PARA INOTIFY
+//------------------------------------------------------------------------------------------------------------------
+void notificarCambioQuantumCPUS(int nuevoQuantum);
+void notificarCambioGradoMultiprogramacion(int viejoGradoMP, int nuevoGradoMP);
 
 #endif /* FUNCIONESSAFA_H_ */

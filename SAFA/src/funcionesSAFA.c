@@ -469,4 +469,49 @@ void actualizarSentenciasPasaronPorDAM(int cantidadDeSentencias){
     pthread_mutex_unlock(&mutexSentenciasXDAM);
 }
 
+//------------------------------------------------------------------------------------------------------------------
+//		FUNCIONES PARA EL INOTIFY
+//------------------------------------------------------------------------------------------------------------------
+void notificarCambioQuantumCPUS(int nuevoQuantum)
+{
+	//agregar socket a lista de cpus
+	int cantidadCPUS = list_size(listaCpus);
+	int i = 0;
+	while(i < cantidadCPUS)
+	{
+		t_cpus * cpu = list_get(listaCpus, i);
+		int size = sizeof(int);
+	    char *buffer = (char *) malloc(size);
+	    char *p = buffer;
+	    copyIntToBuffer(&p,nuevoQuantum);
+		if(enviar(cpu->socket, SAFA_CPU_QUANTUM, buffer, size, logger->logger))
+		{
+			log_error_mutex(logger, "No se pudo enviar el quantum al CPU.");
+			free(buffer);
+		}
+		free(buffer);
+	}
+}
 
+void notificarCambioGradoMultiprogramacion(int viejoGradoMP, int nuevoGradoMP)
+{
+	// comparo el grado de MP viejo con el nuevo
+	int diferencia = viejoGradoMP - nuevoGradoMP;
+
+	//si es menor a 0 el viejo es mas chico que el nuevo. Debo hacer la diferencia
+	//en posts para nivelar al nuevo valor de MP.
+	if(diferencia < 0){
+		while(diferencia != 0){
+			sem_post(&semaforoGradoMultiprgramacion);
+			diferencia++;
+		}
+	}
+	//con la misma logica pero el viejo es mas grande que el nuevo.
+	if(diferencia > 0){
+		while(diferencia != 0){
+			sem_wait(&semaforoGradoMultiprgramacion);
+			diferencia--;
+		}
+	}
+	//si es igual a 0 no hago nada porque es el mismo grado de MP.
+}

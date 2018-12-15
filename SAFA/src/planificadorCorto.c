@@ -292,7 +292,7 @@ int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbAFinalizar){
 		return EXIT_FAILURE;
 	}
 
-	sem_post(&semaforpGradoMultiprgramacion);
+	sem_post(&semaforoGradoMultiprgramacion);
 	return EXIT_SUCCESS;
 }
 
@@ -315,7 +315,7 @@ int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq){
 	}else{
 		return EXIT_FAILURE;
 	}
-	sem_post(&semaforpGradoMultiprgramacion);
+	sem_post(&semaforoGradoMultiprgramacion);
 	return EXIT_SUCCESS;
 }
 
@@ -394,7 +394,7 @@ int pasarDTBdeNEWaEXIT(t_dtb * dtbAExit){
 		return EXIT_FAILURE;
 	}
 
-	sem_post(&semaforpGradoMultiprgramacion);
+	sem_post(&semaforoGradoMultiprgramacion);
 	return EXIT_SUCCESS;
 }
 

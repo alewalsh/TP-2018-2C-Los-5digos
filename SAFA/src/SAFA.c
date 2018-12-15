@@ -114,7 +114,7 @@ void liberarRecursos(){
     pthread_mutex_destroy(&mutexTotalSentencias);
     pthread_mutex_destroy(&mutexSentenciasXDAM);
 
-    sem_destroy(&semaforpGradoMultiprgramacion);
+    sem_destroy(&semaforoGradoMultiprgramacion);
     sem_destroy(&mandadosPorConsola);
     sem_destroy(&desbloquearDTBDummy);
     sem_destroy(&hayProcesosEnReady);
@@ -174,7 +174,7 @@ void initMutexs(){
 	pthread_mutex_init(&mutexSentenciasXDAM, NULL);
 
 	pthread_mutex_init(&semDummy, NULL);
-	sem_init(&semaforpGradoMultiprgramacion, 0 ,conf->grado_mp);
+	sem_init(&semaforoGradoMultiprgramacion, 0 ,conf->grado_mp);
 	sem_init(&mandadosPorConsola, 0, 0);
 	sem_init(&semaforoCpu,0,0);
 
@@ -234,47 +234,30 @@ void cambiosConfig(){
                                } else {
                                        //para filtarar solo los cambios en el config y no otros archivos.clea
 //                                     if(strcmp(event->name, "config.cfg") ==0){
-                                               int ALGORITMOviejo = conf->algoritmo;
-                                               int QUANTUMviejo = conf->quantum;
-                                               int MULTIPROGRAMACIONviejo = conf->grado_mp;
-                                               int RETARDOviejo = conf->retardo;
+									   int ALGORITMOviejo = conf->algoritmo;
+									   int QUANTUMviejo = conf->quantum;
+									   int MULTIPROGRAMACIONviejo = conf->grado_mp;
+									   int RETARDOviejo = conf->retardo;
 
-                                               freeConfig(conf, SAFA);
-                                               conf = (configSAFA *) cargarConfiguracion(rutaConfig, SAFA, logger->logger);
+									   freeConfig(conf, SAFA);
+									   conf = (configSAFA *) cargarConfiguracion(rutaConfig, SAFA, logger->logger);
 
-                                               if(ALGORITMOviejo != conf->algoritmo){
-                                                       printf("Se modifico el algortimo de %d a %d \n", ALGORITMOviejo, conf->algoritmo);
-                                               }
-                                               if(QUANTUMviejo != conf->quantum){
-                                                       printf("Se modifico el quentum de %d a %d \n", QUANTUMviejo, conf->quantum);
-                                                       //todo enviar a todas las cpus.
-                                               }
-                                               if(MULTIPROGRAMACIONviejo != conf->grado_mp){
-                                                       printf("Se modifico el grado de MP de %d a %d \n", MULTIPROGRAMACIONviejo, conf->grado_mp);
-                                                       //comparo el grado de MP viejo con el nuevo
-                                                       int diferencia = MULTIPROGRAMACIONviejo - conf->grado_mp;
-
-                                                       //si es menor a 0 el viejo es mas chico que el nuevo. Debo hacer la diferencia
-                                                       //en posts para nivelar al nuevo valor de MP.
-                                                       if(diferencia < 0){
-                                                    	   while(diferencia != 0){
-                                                    		   sem_post(&semaforpGradoMultiprgramacion);
-                                                    		   diferencia++;
-                                                    	   }
-                                                       }
-                                                       //con la misma logica pero el viejo es mas grande que el nuevo.
-                                                       if(diferencia > 0){
-                                                    	   while(diferencia != 0){
-                                                    		   sem_wait(&semaforpGradoMultiprgramacion);
-                                                    		   diferencia--;
-                                                    	   }
-                                                       }
-                                                       //si es igual a 0 no hago nada porque es el mismo grado de MP.
-                                               }
-                                               if(RETARDOviejo != conf->retardo){
-                                                       printf("Se modifico el retardo de %d a %d \n", RETARDOviejo, conf->retardo);
-                                                       //no hago nada ya que se utilixa directamente de la info del config
-                                               }
+									   if(ALGORITMOviejo != conf->algoritmo){
+											   log_info_mutex(logger, "Se modifico el algortimo de %d a %d \n", ALGORITMOviejo, conf->algoritmo);
+											   // No hago nada ya que se utiliza directamente de la info del config
+									   }
+									   if(QUANTUMviejo != conf->quantum){
+										   	   log_info_mutex(logger, "Se modifico el quentum de %d a %d \n", QUANTUMviejo, conf->quantum);
+											   notificarCambioQuantumCPUS(conf->quantum);
+									   }
+									   if(MULTIPROGRAMACIONviejo != conf->grado_mp){
+										   	   log_info_mutex(logger, "Se modifico el grado de MP de %d a %d \n", MULTIPROGRAMACIONviejo, conf->grado_mp);
+											   notificarCambioGradoMultiprogramacion(MULTIPROGRAMACIONviejo, conf->grado_mp);
+									   }
+									   if(RETARDOviejo != conf->retardo){
+										   	   log_info_mutex(logger, "Se modifico el retardo de %d a %d \n", RETARDOviejo, conf->retardo);
+											   //no hago nada ya que se utiliza directamente de la info del config
+									   }
 //                                     }
                                }
                        }
