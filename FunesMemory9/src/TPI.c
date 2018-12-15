@@ -72,7 +72,8 @@ int finGDTTPI(t_package pkg, int idGDT, int socketSolicitud)
 		log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
 		exit_gracefully(-1);
 	}
-	list_clean_and_destroy_elements(paginasProceso,(void *)liberarPagina);
+	eliminarPaginasDeTPI(paginasProceso);
+	//	list_clean_and_destroy_elements(paginasProceso,(void *)liberarPagina);
 
 	return EXIT_SUCCESS;
 }
@@ -348,7 +349,42 @@ int cerrarArchivoTPI(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socke
 		log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
 		exit_gracefully(-1);
 	}
-	list_clean_and_destroy_elements(paginasProceso,(void *)liberarPagina);
+	eliminarPaginasDeTPI(paginasProceso);
+//	list_clean_and_destroy_elements(paginasProceso,(void *)liberarPagina);
 
 	return EXIT_SUCCESS;
+}
+
+void eliminarPaginasDeTPI(t_list * paginasProceso)
+{
+	int cantidadPaginas = list_size(paginasProceso);
+	int i = 0;
+	while(i < cantidadPaginas)
+	{
+		t_pagina * pagina = list_get(paginasProceso, i);
+		int indice = buscarPaginaEnTPI(tablaPaginasInvertida,pagina);
+		t_pagina * paginaOriginal = list_remove(tablaPaginasInvertida, indice);
+		liberarPagina(paginaOriginal);
+		i++;
+	}
+}
+
+int buscarPaginaEnTPI(t_list * cola, t_pagina * paginaABuscar)
+{
+	int index = -1;
+	int listSize = list_size(cola);
+	if(listSize<= 0) return index;
+
+	for(int i = 0; i<listSize;i++){
+		t_pagina * pagina = list_get(cola,i);
+		if( pagina->pid == paginaABuscar->pid &&
+			pagina->nroPagina == paginaABuscar->nroPagina &&
+			pagina->nroMarco == paginaABuscar->nroMarco &&
+			strcmp(pagina->path, paginaABuscar->path) == 0)
+		{
+			index = i;
+			break;
+		}
+	}
+	return index;
 }
