@@ -291,6 +291,8 @@ void consolaMetricasDTB(char *args){
 void consolaMetricas(){
 
 	imprimirSentenciasDAM();
+	imprimirSentenciasPromEnExit();
+
 }
 
 void imprimirSentenciasDAM(){
@@ -310,6 +312,24 @@ void imprimirSentenciasDAM(){
     printf("*--------------------------------------------------------------------------*\n\n");
 }
 
+void imprimirSentenciasPromEnExit(){
+	int sentenciasTotales = 0;
+	int sentenciasPromEnExit = 0;
+	int cantidadDTBEnExit = list_size(colaExit);
+
+	for(int i = 0; i < cantidadDTBEnExit; i++){
+		t_dtb * dtb = list_get(colaExit,i);
+		sentenciasTotales += dtb->programCounter;
+	}
+
+	sentenciasPromEnExit = sentenciasTotales / cantidadDTBEnExit;
+	printf("*--------------------------------------------------------------------------*\n\n");
+	printf("La cantidad total de sentencias en la cola de EXIT es de: %d\n",sentenciasTotales);
+	printf("La cantidad de DTBs en la cola de EXIT es de: %d\n", cantidadDTBEnExit);
+	printf("La cantidad de sentencias promedio de la cola de EXIT es de: %d\n",sentenciasPromEnExit);
+	printf("*--------------------------------------------------------------------------*\n\n");
+
+}
 
 void consoleClear() {
     system("clear");
