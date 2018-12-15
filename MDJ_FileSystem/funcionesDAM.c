@@ -67,6 +67,9 @@ void manejarDAM(t_package pkg)
 				string_append(&pathArchivoNuevo, configuracion->puntoMontaje);
 				char * pathArchivosCreo = "Archivos";
 				string_append(&pathArchivoNuevo, pathArchivosCreo);
+				if(pathArchivoNuevoSinPM[0] != '/'){
+					string_append(&pathArchivoNuevo, "/");
+				}
 				string_append(&pathArchivoNuevo, pathArchivoNuevoSinPM);
 
 				crearPathArchivo(pathArchivoNuevo);

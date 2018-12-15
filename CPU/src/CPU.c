@@ -120,8 +120,8 @@ int nuevoDummy(t_dtb * dtb, t_package paquete)
 		log_error_mutex(loggerCPU, "No se pudo enviar el bloqueo del Dummy al S-AFA.");
 		return EXIT_FAILURE;
 	}
-	free(dtb);
 	log_info_mutex(loggerCPU, "Se envió el pedido de bloqueo del proceso %d al SAFA.", dtb->idGDT);
+	free(dtb);
 	return EXIT_SUCCESS;
 }
 

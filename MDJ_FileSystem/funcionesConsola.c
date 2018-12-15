@@ -84,21 +84,22 @@ void inicializarCosnola() {
 				statusMd5 = validarArchivo(pathMD5);
 				if (statusMd5) {
 					metadataArchivo *metadataArchivoALeer = leerMetadata(pathMD5);
-
-					char * datosMD5 = obtenerDatos(pathMD5,0, metadataArchivoALeer->tamanio);
+					const char * datosMD5 = obtenerDatos(pathMD5,0, metadataArchivoALeer->tamanio);
 
 					unsigned char digest[MD5_DIGEST_LENGTH];
 					MD5_CTX context;
 					MD5_Init(&context);
 
-					MD5_Update(&context, datosMD5, strlen(datosMD5) + 1);
+					MD5_Update(&context, (const unsigned char *) datosMD5, strlen(datosMD5));
 					MD5_Final(digest, &context);
 					printf("MD5 de %s es: ", pathMD5);
 
-					int i;
-					for (i=0;i<MD5_DIGEST_LENGTH;i++){
-						printf ("%02x", digest[i]);
+					char md5string[MD5_DIGEST_LENGTH*2];
+					for(int i = 0; i < MD5_DIGEST_LENGTH; ++i){
+					    sprintf(&md5string[i*2] , "%02x", (unsigned int)digest[i]);
 					}
+
+					printf("%s\n", md5string);
 					printf("\n");
 
 					free(metadataArchivoALeer->bloques);
