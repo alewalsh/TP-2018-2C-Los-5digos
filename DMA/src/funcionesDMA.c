@@ -483,7 +483,7 @@ int enviarPkgDeFm9AMdj(char * path) {
 	//SE ENVIA CONFIRMACION A SAFA
 	enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_CREADO);
 	free(bufferEnvio);
-	return result;
+	return true;
 }
 
 //--------------------------BORRAR ARCHIVO ------------------------------------------
