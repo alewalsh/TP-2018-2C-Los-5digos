@@ -126,18 +126,49 @@ void liberarRecursos(){
 }
 
 void destruirListas(){
-	list_destroy_and_destroy_elements(colaNew,(void*)destruir_dtb);
-	list_destroy_and_destroy_elements(colaReady,(void*)destruir_dtb);
-	list_destroy_and_destroy_elements(colaReadyEspecial,(void*)destruir_dtb);
-	list_destroy_and_destroy_elements(colaBloqueados,(void*)destruir_dtb);
-	list_destroy_and_destroy_elements(colaEjecutando,(void*)destruir_dtb);
-	list_destroy_and_destroy_elements(colaExit,(void*)destruir_dtb);
-	list_destroy_and_destroy_elements(listaMetricasLP,(void *) destruirMetricaLP);
+	if (list_size(colaNew) > 0) {
+		list_destroy_and_destroy_elements(colaNew,(void*)destruir_dtb);
+	} else {
+		list_destroy(colaNew);
+	}
+	if (list_size(colaReady) > 0) {
+		list_destroy_and_destroy_elements(colaReady,(void*)destruir_dtb);
+	} else {
+		list_destroy(colaReady);
+	}
+	if (list_size(colaReadyEspecial) > 0) {
+		list_destroy_and_destroy_elements(colaReadyEspecial,(void*)destruir_dtb);
+	} else {
+		list_destroy(colaReadyEspecial);
+	}
+	if (list_size(colaBloqueados) > 0) {
+		list_destroy_and_destroy_elements(colaBloqueados,(void*)destruir_dtb);
+	} else {
+		list_destroy(colaBloqueados);
+	}
+	if (list_size(colaEjecutando) > 0) {
+		list_destroy_and_destroy_elements(colaEjecutando,(void*)destruir_dtb);
+	} else {
+		list_destroy(colaEjecutando);
+	}
+	if (list_size(colaExit) > 0) {
+		list_destroy_and_destroy_elements(colaExit,(void*)destruir_dtb);
+	} else {
+		list_destroy(colaExit);
+	}
+	if (list_size(listaMetricasLP) > 0) {
+		list_destroy_and_destroy_elements(listaMetricasLP,(void *) destruirMetricaLP);
+	} else {
+		list_destroy(listaMetricasLP);
+	}
 }
 
 void destruir_dtb(t_dtb * dtb){
+	if(dtb->dirEscriptorio!=NULL)
 	free(dtb->dirEscriptorio);
-	list_destroy_and_destroy_elements(dtb->tablaDirecciones,(void *)liberarDirecciones);
+	if(dtb->tablaDirecciones != NULL){
+		list_destroy_and_destroy_elements(dtb->tablaDirecciones,(void *)liberarDirecciones);
+	}
 	free(dtb);
 }
 
