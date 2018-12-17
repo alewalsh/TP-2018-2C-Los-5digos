@@ -184,7 +184,6 @@ int bloquearDTB(t_dtb * dtb){
 		dtbABloquear->quantumRestante = dtb->quantumRestante;
 	else
 		dtbABloquear->quantumRestante = 0;
-	dtbABloquear->quantumRestante = dtb->quantumRestante;
 	dtbABloquear->programCounter = dtb->programCounter;
 	pthread_mutex_lock(&mutexBloqueadosList);
 	list_add(colaBloqueados,dtbABloquear);
