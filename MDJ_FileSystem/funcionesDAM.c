@@ -519,8 +519,9 @@ void borrarArchivo(char *path){
 void enviarStringDAMporTRansferSize(char *datosEnvio){
 	t_package pkg;
 	// Calculo cantidad de paquetes.
-	int cuantosPaquetes = strlen(datosEnvio)/trasnfer_size;
-	if(strlen(datosEnvio) % trasnfer_size != 0){
+	int tamanioReal = trasnfer_size - sizeof(int) -1;
+	int cuantosPaquetes = strlen(datosEnvio)/tamanioReal;
+	if(strlen(datosEnvio) % tamanioReal != 0){
 		cuantosPaquetes ++;
 	}
 
@@ -530,10 +531,10 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 	if (cuantosPaquetes > 1)
 	{
 		// EL - SIZE OF INT ES POR COMO SE UTILIZA EL COPY STRING TO BUFFER
-		offset = trasnfer_size - sizeof(int);
+		offset = tamanioReal;
 	}
 	// EL - 1 VA POR EL \0
-	int tamanioLinea = trasnfer_size - sizeof(int);
+  //	int tamanioLinea = tamanioReal;
 	char * bufferEnvio;
 	char * p;
 
@@ -546,7 +547,7 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 			int longitudDatos = string_length(datosRestantes) + 1;
 			int size = longitudDatos + sizeof(int);
 			if (size > trasnfer_size)
-				log_error_mutex(loggerAtencionDAM, "Ojo, el size es mayor al transfer size, esto no deberia suceder");
+				log_error_mutex(loggerAtencionDAM, "Ojo, el size %d es mayor al transfer size %d, esto no deberia suceder", size, trasnfer_size);
 			bufferEnvio = malloc(size);
 			p = bufferEnvio;
 			copyStringToBuffer(&p,datosRestantes);
@@ -561,7 +562,7 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 		else
 		// if (cuantosPaquetes > 0)
 		{
-			char * retornoOffset = string_substring_until(datosEnvio+viejoOffset, tamanioLinea);
+			char * retornoOffset = string_substring_until(datosEnvio+viejoOffset, tamanioReal);
 			int longitudDatos = string_length(retornoOffset) + 1;
 			int size = longitudDatos + sizeof(int);
 			bufferEnvio = malloc(size);
@@ -576,7 +577,7 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 
 		}
 		viejoOffset = offset;
-		offset = offset + tamanioLinea;
+		offset = offset + tamanioReal;
 
 		cuantosPaquetes--;
 		free(bufferEnvio);

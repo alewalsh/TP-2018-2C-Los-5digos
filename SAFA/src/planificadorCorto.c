@@ -272,7 +272,10 @@ int pasarDTBdeEXECaBLOQUED(t_dtb * dtbABloq){
 		t_dtb * dtbEjecutandoABloquear = (t_dtb *) list_remove(colaEjecutando,index);
 		pthread_mutex_unlock(&mutexEjecutandoList);
 		dtbEjecutandoABloquear->programCounter = dtbABloq->programCounter;
-		dtbEjecutandoABloquear->quantumRestante = dtbABloq->quantumRestante;
+		if (conf->algoritmo == VRR)
+			dtbEjecutandoABloquear->quantumRestante = dtbABloq->quantumRestante;
+		else
+			dtbEjecutandoABloquear->quantumRestante = 0;
 		pthread_mutex_lock(&mutexBloqueadosList);
 	    list_add(colaBloqueados, dtbEjecutandoABloquear);
 	    pthread_mutex_unlock(&mutexBloqueadosList);

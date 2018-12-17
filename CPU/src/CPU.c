@@ -167,7 +167,10 @@ int realizarEjecucion(t_dtb * dtb)
 	// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
 	// Por cada unidad de tiempo de quantum, se ejecutara una linea del Escriptorio indicado en el DTB
 	pthread_mutex_lock(&mutexQuantum);
-	int periodoEjecucion = 0;
+	// TODO: Verificar si esto es suficiente para ejecutar correctamente VRR
+	int periodoEjecucion = dtb->quantumRestante;
+	// TODO: Pasar esto a trace en caso de que funcione.
+	log_info_mutex(loggerCPU, "El quantum restante que ejecutará el proceso es: %d", quantum - periodoEjecucion);
 	while(periodoEjecucion < quantum)
 	{
 		// RETARDO DE EJECUCION:
@@ -653,7 +656,7 @@ int setQuantum(t_package paquete)
 
 void inicializarCPU(char * pathConfig)
 {
-	loggerCPU = log_create_mutex("CPU.log", "CPU", true, LOG_LEVEL_INFO);
+	loggerCPU = log_create_mutex("CPU.log", "CPU", true, LOG_LEVEL_TRACE);
 	if (pathConfig != NULL)
 	{
 		log_trace_mutex(loggerCPU, "Se va a cargar la configuracion.");

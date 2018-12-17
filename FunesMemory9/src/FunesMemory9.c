@@ -163,7 +163,8 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         default:
             log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
             log_warning_mutex(logger, "Ojo, estas recibiendo un mensaje que no esperabas.");
-            exit_gracefully(EXIT_FAILURE);
+            // TODO: Verificar lo que se realiza en este caso.
+//            exit_gracefully(EXIT_FAILURE);
             break;
 
     }
