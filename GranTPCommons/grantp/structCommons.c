@@ -31,6 +31,33 @@
 //    free(bk1);
 //}
 
+void liberarGDT(t_gdt * gdt)
+{
+	dictionary_destroy_and_destroy_elements(gdt->tablaSegmentos, (void *)liberarSegmento);
+	list_destroy_and_destroy_elements(gdt->tablaPaginas, (void *)liberarPagina);
+	free(gdt);
+}
+
+void destruir_dtb(t_dtb * dtb)
+{
+	if(dtb->dirEscriptorio!=NULL)
+	free(dtb->dirEscriptorio);
+	if(dtb->tablaDirecciones != NULL){
+		list_destroy_and_destroy_elements(dtb->tablaDirecciones,(void *)liberarDirecciones);
+	}
+	free(dtb);
+}
+
+void liberarDirecciones(char * direccion)
+{
+	free(direccion);
+}
+
+void destruirMetricaLP(t_metricaLP * metrica)
+{
+	free(metrica);
+}
+
 void liberarSegmento(t_segmento *self)
 {
 	free(self->archivo);

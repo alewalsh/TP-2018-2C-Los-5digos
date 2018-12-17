@@ -17,6 +17,7 @@
 #include <grantp/compression.h>
 #include <grantp/split.c>
 #include <commons/bitarray.h>
+#include <semaphore.h>
 #include "funcionesFM9.h"
 #include <errno.h>
 #include "segmentacionSimple.h"
@@ -57,8 +58,9 @@ pthread_mutex_t mutexExit;
 pthread_mutex_t mutexSolicitudes;
 
 pthread_t threadConsolaFM9;
-pthread_t threadConexiones;
 
+void sig_handler(int signo);
+void handlerDisconnect(int socketFD);
 void inicializarSemaforos();
 void inicializarContadores();
 void manejarConexiones();

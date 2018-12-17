@@ -33,6 +33,10 @@ typedef struct {
     bool esDummy;
 } t_dtb;
 
+typedef struct {
+	int idDTB;
+    int tiempoEnNEW;
+} t_metricaLP;
 
 typedef struct{
 	int pid;
@@ -163,6 +167,14 @@ enum command {
     EJECUTAR = 1, STATUS, FINALIZAR, METRICAS, EXIT, HELP, CLEAR
 };
 //LIST, STATUS, KILL, DEADLOCK, CLEAR, MAN, ESIS, KEYS
+
+void liberarGDT(t_gdt * gdt);
+
+void destruir_dtb(t_dtb * dtb);
+
+void liberarDirecciones(char * direccion);
+
+void destruirMetricaLP(t_metricaLP * metrica);
 
 void freeEsiInstruction(void *esi);
 

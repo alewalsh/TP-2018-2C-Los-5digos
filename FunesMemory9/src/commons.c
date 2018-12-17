@@ -285,6 +285,8 @@ void liberarRecursos()
 	pthread_mutex_destroy(&mutexPIDBuscado);
 	pthread_mutex_destroy(&mutexPathBuscado);
 	pthread_mutex_destroy(&mutexSolicitudes);
+	dictionary_destroy_and_destroy_elements(tablaProcesos, (void *)liberarGDT);
+	list_destroy_and_destroy_elements(tablaPaginasInvertida, (void *)liberarPagina);
 	log_destroy_mutex(logger);
 	freeConfig(config, FM9);
 	free(storage);
@@ -471,6 +473,7 @@ int obtenerLineasProceso(int pid, char * path)
 		}
 	return cantidadLineas;
 }
+
 
 void liberarMarco(int nroMarco)
 {
