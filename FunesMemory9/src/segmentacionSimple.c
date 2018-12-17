@@ -11,6 +11,7 @@ int finGDTSegmentacion(t_package pkg, int idGDT, int socketSolicitud)
 {
 	char * pidString = intToString(idGDT);
 	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
+	free(pidString);
 	if (gdt == NULL)
 	{
 		return FM9_CPU_PROCESO_INEXISTENTE;
@@ -71,8 +72,11 @@ int cerrarArchivoSegmentacion(t_package pkg, t_infoCerrarArchivo* datosPaquete, 
 
 int devolverInstruccionSegmentacion(t_package pkg, t_infoDevolverInstruccion* datosPaquete, int socketSolicitud)
 {
+	log_trace_mutex(logger, "Path %s - PID %d - Posicion buscada %d", datosPaquete->path, datosPaquete->pid, datosPaquete->posicion);
 	int posicionBuscada = datosPaquete->posicion;
-	t_gdt * gdt = dictionary_get(tablaProcesos,intToString(datosPaquete->pid));
+	char * pidString = intToString(datosPaquete->pid);
+	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
+	free(pidString);
 	if (gdt == NULL)
 	{
 		return FM9_CPU_PROCESO_INEXISTENTE;
@@ -83,11 +87,15 @@ int devolverInstruccionSegmentacion(t_package pkg, t_infoDevolverInstruccion* da
 	{
 		for(int i = 0; i < cantidadSegmentos; i++)
 		{
-			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
+			char * nroSegmentoString = intToString(i);
+			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, nroSegmentoString);
+			free(nroSegmentoString);
 			if (strcmp(segmento->archivo,datosPaquete->path) == 0 && segmento->limite >= posicionBuscada)
 			{
 				enviarInstruccion(direccion(segmento->base,posicionBuscada), socketSolicitud);
 				pudeObtener = true;
+				// TODO: Sacar esto antes de realizar las pruebas oficiales.
+//				mostrarEstadoStorage();
 				break;
 			}
 		}
@@ -107,6 +115,7 @@ int devolverInstruccionSegmentacion(t_package pkg, t_infoDevolverInstruccion* da
 	return EXIT_SUCCESS;
 }
 
+
 // Lógica de segmentacion pura
 int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* datosPaquete, int socketSolicitud)
 {
@@ -118,84 +127,89 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
 		{
 			log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
-			// exit_gracefully(-1);
 		}
+		return EXIT_FAILURE;
 	}
-	if (!existeProceso(datosPaquete->pid))
-		crearProceso(datosPaquete->pid);
-
-	char * pidString = intToString(datosPaquete->pid);
-	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
-	free(pidString);
-	t_segmento * segmento = reservarSegmento(datosPaquete->cantidadLineasARecibir, gdt->tablaSegmentos, datosPaquete->path, 0);
-	// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ LINEAS HAY LIBRES
-	if (segmento == NULL)
+	else
 	{
-		logPosicionesLibres(estadoLineas,SEG);
-		return FM9_DAM_MEMORIA_INSUFICIENTE_FRAG_EXTERNA;
-	}
-	actualizarTablaDeSegmentos(datosPaquete->pid,segmento);
-	// ACTUALIZO LA GLOBAL CON LAS LINEAS QUE UTILICE RECIEN
-	// ESTO PARA QUE ESTA?????
-	contLineasUsadas += datosPaquete->cantidadLineasARecibir;
+		if (!existeProceso(datosPaquete->pid))
+			crearProceso(datosPaquete->pid);
 
-	char * bufferGuardado = malloc(config->tamMaxLinea);
-	int i = 0, offset = 0, tamanioPaqueteReal = 0;
-	int lineaLeida = 1;
-	int limite = segmento->limite;
-	while(i < limite)
-	{
-		t_package paquete;
-		if(recibir(socketSolicitud,&paquete,logger->logger))
+		char * pidString = intToString(datosPaquete->pid);
+		t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
+		free(pidString);
+		t_segmento * segmento = reservarSegmento(datosPaquete->cantidadLineasARecibir, gdt->tablaSegmentos, datosPaquete->path, 0);
+		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ LINEAS HAY LIBRES
+		if (segmento == NULL)
 		{
-			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
-			if (enviar(socketSolicitud,FM9_DAM_ERROR_PAQUETES,pkg.data,pkg.size,logger->logger))
+			logPosicionesLibres(estadoLineas,SEG);
+			return FM9_DAM_MEMORIA_INSUFICIENTE_FRAG_EXTERNA;
+		}
+		actualizarTablaDeSegmentos(datosPaquete->pid,segmento);
+		// ACTUALIZO LA GLOBAL CON LAS LINEAS QUE UTILICE RECIEN
+		// ESTO PARA QUE ESTA?????
+		contLineasUsadas += datosPaquete->cantidadLineasARecibir;
+
+		char * bufferGuardado = malloc(config->tamMaxLinea);
+		int i = 0, offset = 0, tamanioPaqueteReal = 0;
+		int lineaLeida = 1;
+		int limite = segmento->limite;
+		while(i < limite)
+		{
+			t_package paquete;
+			if(recibir(socketSolicitud,&paquete,logger->logger))
 			{
-				log_error_mutex(logger, "Error al recibir los paquetes del DAM.");
-				exit_gracefully(-1);
+				log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
+				if (enviar(socketSolicitud,FM9_DAM_ERROR_PAQUETES,pkg.data,pkg.size,logger->logger))
+				{
+					log_error_mutex(logger, "Error al recibir los paquetes del DAM.");
+					exit_gracefully(-1);
+				}
+			}
+			char * bufferLinea = paquete.data;
+			int nroLinea = copyIntFromBuffer(&bufferLinea);
+			int tamanioPaquete = copyIntFromBuffer(&bufferLinea);
+			char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
+			if (nroLinea != lineaLeida)
+			{
+				bufferGuardado[tamanioPaqueteReal] = '\n';
+				char * lineaAGuardar = prepararLineaMemoria(bufferGuardado);
+				log_trace_mutex(logger, "Se guardó la linea '%s' en la posicion de memoria: %d",lineaAGuardar, direccion(segmento->base,i));
+				guardarLinea(direccion(segmento->base,i), lineaAGuardar);
+				i++;
+				offset = 0;
+				tamanioPaqueteReal = 0;
+				free(bufferGuardado);
+				bufferGuardado = malloc(config->tamMaxLinea);
+				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
+				offset += (tamanioPaquete);
+				tamanioPaqueteReal += tamanioPaquete;
+			}
+			else
+			{
+				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
+				offset += (tamanioPaquete);
+				tamanioPaqueteReal += tamanioPaquete;
+			}
+			lineaLeida = nroLinea;
+			if (nroLinea == limite)
+			{
+				bufferGuardado[tamanioPaqueteReal] = '\n';
+				char * lineaAGuardar = prepararLineaMemoria(bufferGuardado);
+				log_trace_mutex(logger, "Se guardó la linea '%s' en la posicion de memoria: %d",lineaAGuardar, direccion(segmento->base,i));
+				guardarLinea(direccion(segmento->base,i), bufferGuardado);
+				i++;
 			}
 		}
-		char * bufferLinea = paquete.data;
-		int nroLinea = copyIntFromBuffer(&bufferLinea);
-		int tamanioPaquete = copyIntFromBuffer(&bufferLinea);
-		char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
-		if (nroLinea != lineaLeida)
+		free(bufferGuardado);
+		//ENVIAR MSJ DE EXITO A DAM
+		if (enviar(socketSolicitud,FM9_DAM_ESCRIPTORIO_CARGADO,pkg.data,pkg.size,logger->logger))
 		{
-			bufferGuardado[tamanioPaqueteReal] = '\n';
-			log_trace_mutex(logger, "Se guardó la linea '%s' en la posicion de memoria: %d°",bufferGuardado, direccion(segmento->base,i));
-			guardarLinea(direccion(segmento->base,i), bufferGuardado);
-			i++;
-			offset = 0;
-			tamanioPaqueteReal = 0;
-			free(bufferGuardado);
-			bufferGuardado = malloc(config->tamMaxLinea);
-			memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
-			offset += (tamanioPaquete);
-			tamanioPaqueteReal += tamanioPaquete;
+			log_error_mutex(logger, "Error al avisar al DAM el aviso de que se ha cargado el Escriptorio.");
+			exit_gracefully(-1);
 		}
-		else
-		{
-			memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
-			offset += (tamanioPaquete);
-			tamanioPaqueteReal += tamanioPaquete;
-		}
-		lineaLeida = nroLinea;
-		if (nroLinea == limite)
-		{
-			bufferGuardado[tamanioPaqueteReal] = '\n';
-			log_trace_mutex(logger, "Se guardó la linea '%s' en la posicion de memoria: %d°",bufferGuardado, direccion(segmento->base,i));
-			guardarLinea(direccion(segmento->base,i), bufferGuardado);
-			i++;
-		}
+		return EXIT_SUCCESS;
 	}
-	free(bufferGuardado);
-	//ENVIAR MSJ DE EXITO A DAM
-	if (enviar(socketSolicitud,FM9_DAM_ESCRIPTORIO_CARGADO,pkg.data,pkg.size,logger->logger))
-	{
-		log_error_mutex(logger, "Error al avisar al DAM el aviso de que se ha cargado el Escriptorio.");
-		exit_gracefully(-1);
-	}
-	return EXIT_SUCCESS;
 }
 
 int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
@@ -291,7 +305,9 @@ int ejecutarGuardarEsquemaSegmentacion(t_package pkg, t_infoGuardadoLinea* datos
 			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
 			if (strcmp(segmento->archivo,datosPaquete->path) == 0 && segmento->limite >= posicionGuardado)
 			{
-				guardarLinea(direccion(segmento->base,posicionGuardado), datosPaquete->datos);
+				int direccionGuardado = direccion(segmento->base,posicionGuardado);
+				log_trace_mutex(logger, "Se guardó la linea %s en la posicion de memoria: %d",datosPaquete->datos, direccionGuardado);
+				guardarLinea(direccionGuardado, datosPaquete->datos);
 				pudeGuardar = true;
 				break;
 			}

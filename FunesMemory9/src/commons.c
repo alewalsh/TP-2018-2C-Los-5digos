@@ -14,6 +14,19 @@ char * intToString(int numero)
 	return string;
 }
 
+char * prepararLineaMemoria(char * buffer)
+{
+	char * lineaAGuardar = string_new();
+	char ** split = string_split(buffer, "\n");
+	int tamanioLinea = string_length(split[0]);
+	char * linea = split[0];
+	linea[tamanioLinea] = '\n';
+	string_append(&lineaAGuardar, linea);
+	lineaAGuardar = string_substring_until(lineaAGuardar, config->tamMaxLinea - 1);
+	free(split);
+	return lineaAGuardar;
+}
+
 void enviarInstruccion(int posicionMemoria, int socketSolicitud)
 {
 	char * lineaCompleta = obtenerLinea(posicionMemoria);
@@ -22,6 +35,7 @@ void enviarInstruccion(int posicionMemoria, int socketSolicitud)
 	char * buffer = malloc(size);
 	char * p = buffer;
 	copyStringToBuffer(&p, split[0]);
+	log_trace_mutex(logger, "Se devuelve la linea %s", split[0]);
 	if (enviar(socketSolicitud,FM9_CPU_DEVUELVO_LINEA,buffer,size,logger->logger))
 	{
 		log_error_mutex(logger, "Error al avisar al CPU que se ha devuelto correctamente la línea.");
@@ -54,21 +68,43 @@ void inicializarBitmap(t_bitarray **bitArray)
 {
 	int tamBitarray = 0;
 	if (config->modoEjecucion == SEG)
+	{
 		tamBitarray = cantLineas/8;
-	else
-		tamBitarray = cantPaginas/8;
-
-	if(cantLineas % 8 != 0){
-		tamBitarray++;
+		if(cantLineas % 8 != 0)
+		{
+			tamBitarray++;
+		}
 	}
+	else
+	{
+		tamBitarray = cantPaginas/8;
+		if(cantPaginas % 8 != 0)
+		{
+			tamBitarray++;
+		}
+	}
+
+
 	char* data=malloc(tamBitarray);
 	*bitArray = bitarray_create_with_mode(data,tamBitarray,LSB_FIRST); // if create falla error.
 
 	int bit;
 	bit = 0;
-	while(bit <= cantLineas){
-		bitarray_clean_bit(*bitArray, bit);
-		bit ++;
+	if (config->modoEjecucion == SEG)
+	{
+		while(bit <= cantLineas)
+		{
+			bitarray_clean_bit(*bitArray, bit);
+			bit ++;
+		}
+	}
+	else
+	{
+		while(bit <= cantPaginas)
+		{
+			bitarray_clean_bit(*bitArray, bit);
+			bit ++;
+		}
 	}
 }
 
@@ -76,7 +112,7 @@ void liberarLineas(int base, int limite)
 {
 	int i = base;
 	int ultimaLinea = base + limite;
-	while(i <= ultimaLinea)
+	while(i < ultimaLinea)
 	{
 		bitarray_clean_bit(estadoLineas, i);
 		i++;
@@ -86,7 +122,7 @@ void liberarLineas(int base, int limite)
 int tengoMemoriaDisponible(int cantACargar)
 {
 	int memoriaDisponible = 0;
-	if (config->modoEjecucion == SEG || config->modoEjecucion == SPA)
+	if (config->modoEjecucion == SEG)
 		memoriaDisponible = posicionesLibres(&estadoLineas);
 	else
 		memoriaDisponible = posicionesLibres(&estadoMarcos);
@@ -118,7 +154,9 @@ int posicionesLibres(t_bitarray ** bitArray)
 
 void guardarLinea(int posicionMemoria, char * linea)
 {
+	pthread_mutex_lock(&mutexSolicitudes);
 	memcpy(storage+posicionMemoria, linea, strlen(linea) + 1);
+	pthread_mutex_unlock(&mutexSolicitudes);
 }
 
 void realizarFlush(char * linea, int nroLinea, int transferSize, int socket)
@@ -222,8 +260,10 @@ void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int transfer
 
 char * obtenerLinea(int posicionMemoria)
 {
+	pthread_mutex_lock(&mutexSolicitudes);
 	char * buffer = malloc(config->tamMaxLinea);
 	memcpy(buffer, storage+posicionMemoria, config->tamMaxLinea);
+	pthread_mutex_unlock(&mutexSolicitudes);
 	return buffer;
 }
 
@@ -241,7 +281,6 @@ void liberarRecursos()
 	pthread_mutex_destroy(&mutexReadset);
 	pthread_mutex_destroy(&mutexExit);
 	pthread_mutex_destroy(&mutexMaxfd);
-	pthread_mutex_destroy(&mutexPaginaBuscada);
 	pthread_mutex_destroy(&mutexSegmentoBuscado);
 	pthread_mutex_destroy(&mutexPIDBuscado);
 	pthread_mutex_destroy(&mutexPathBuscado);
@@ -463,12 +502,13 @@ t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos
 	int size = sizeof(t_segmento) + string_length(archivo) + 1;
 	t_segmento * segmento = malloc(size);
 	int lineasLibresContiguas = 0, i = 0, base = -1;
-	if (config->modoEjecucion == SEG){
-		while(i <= cantLineas)
+	if (config->modoEjecucion == SEG)
+	{
+		while(i < cantLineas)
 		{
 			if(bitarray_test_bit(estadoLineas,i) == 0)
 			{
-				if(base<0)
+				if(base < 0)
 					base = i;
 				lineasLibresContiguas++;
 				if (lineasLibresContiguas == lineasEsperadas)
@@ -483,7 +523,7 @@ t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos
 			}
 			i++;
 		}
-		actualizarPosicionesLibres(base, lineasEsperadas, estadoLineas);
+		actualizarPosicionesLibres(base, lineasEsperadas, &estadoLineas);
 	}
 	if (config->modoEjecucion == SPA)
 	{
@@ -507,12 +547,14 @@ t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos
 		return NULL;
 }
 
-void actualizarPosicionesLibres(int base, int lineasEsperadas, t_bitarray * bitArray)
+void actualizarPosicionesLibres(int base, int lineasEsperadas, t_bitarray ** bitArray)
 {
 	int posicionInicial = base;
-	while (posicionInicial < lineasEsperadas)
+	// TODO: Esto es lo que estaba mal, en vez de comparar contra base + lineas, comparaba solo contra lineas, por lo tanto
+	// solo funcionaba para la 1er o 2da carga de escriptorio y después empezaba a superponer las cosas.
+	while (posicionInicial < (base + lineasEsperadas))
 	{
-		bitarray_set_bit(bitArray, posicionInicial);
+		bitarray_set_bit((*bitArray), posicionInicial);
 		posicionInicial++;
 	}
 }

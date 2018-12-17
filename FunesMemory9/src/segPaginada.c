@@ -116,108 +116,115 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 	if(datosPaquete->cantidadLineasARecibir % lineasXPagina != 0){
 		paginasNecesarias++;
 	}
-	if(tengoMemoriaDisponible(paginasNecesarias) == 1){
+	if(tengoMemoriaDisponible(paginasNecesarias) == 1)
+	{
 		log_error_mutex(logger, "No hay memoria disponible para cargar el Escriptorio.");
 		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
 		logPosicionesLibres(estadoMarcos,SPA);
 		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
 		{
 			log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
-			exit_gracefully(-1);
+//			exit_gracefully(-1);
 		}
+		return EXIT_FAILURE;
 	}
-	if (!existeProceso(datosPaquete->pid))
-		crearProceso(datosPaquete->pid);
-
-	//ACA HAY QUE FIJARSE EN LAS TABLAS SI TENGO UNA PAGINA ASOCIADA A UN SEGMENTE LIBRE PARA ALMACENAR LOS DATOS
-	//EN CASO QUE SI RESERVAR DICHA PAGINA
-
-	char * pidString = intToString(datosPaquete->pid);
-	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
-	free(pidString);
-	t_segmento * segmento = reservarSegmento(datosPaquete->cantidadLineasARecibir,gdt->tablaSegmentos,datosPaquete->path,paginasNecesarias);
-//	int code = reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, cantLineas);
-	if (segmento == NULL)
+	else
 	{
-		logPosicionesLibres(estadoLineas,SPA);
-		return FM9_DAM_MEMORIA_INSUFICIENTE;
-	}
-	actualizarTablaDeSegmentos(datosPaquete->pid,segmento);
-	reservarPaginasParaSegmento(segmento, datosPaquete, paginasNecesarias);
-//	reservarSegmentoSegmentacionPaginada(gdt, datosPaquete->pid);
-	// ESTO PARA QUE ESTA?????
-	contLineasUsadas += datosPaquete->cantidadLineasARecibir;
+		if (!existeProceso(datosPaquete->pid))
+			crearProceso(datosPaquete->pid);
 
-	gdt = dictionary_get(tablaProcesos,pidString);
-	char * bufferGuardado = malloc(config->tamMaxLinea);
-	int i = 0, lineasGuardadas = 0, tamanioPaqueteReal = 0;
-	int lineaLeida = 1;
-	int lineaActual = segmento->base;
-	int finalSegmento = segmento->base + segmento->limite;
-	while (lineaActual < finalSegmento)
-	{
-		t_package paquete;
-		if(recibir(socketSolicitud,&paquete,logger->logger))
+		//ACA HAY QUE FIJARSE EN LAS TABLAS SI TENGO UNA PAGINA ASOCIADA A UN SEGMENTE LIBRE PARA ALMACENAR LOS DATOS
+		//EN CASO QUE SI RESERVAR DICHA PAGINA
+
+		char * pidString = intToString(datosPaquete->pid);
+		t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
+		free(pidString);
+		t_segmento * segmento = reservarSegmento(datosPaquete->cantidadLineasARecibir,gdt->tablaSegmentos,datosPaquete->path,paginasNecesarias);
+	//	int code = reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, cantLineas);
+		if (segmento == NULL)
 		{
-			log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
-			if (enviar(socketSolicitud,FM9_DAM_ERROR_PAQUETES,pkg.data,pkg.size,logger->logger))
+			logPosicionesLibres(estadoLineas,SPA);
+			return FM9_DAM_MEMORIA_INSUFICIENTE;
+		}
+		actualizarTablaDeSegmentos(datosPaquete->pid,segmento);
+		reservarPaginasParaSegmento(segmento, datosPaquete, paginasNecesarias);
+	//	reservarSegmentoSegmentacionPaginada(gdt, datosPaquete->pid);
+		// ESTO PARA QUE ESTA?????
+		contLineasUsadas += datosPaquete->cantidadLineasARecibir;
+
+		gdt = dictionary_get(tablaProcesos,pidString);
+		char * bufferGuardado = malloc(config->tamMaxLinea);
+		int i = 0, lineasGuardadas = 0, tamanioPaqueteReal = 0;
+		int lineaLeida = 1;
+		int lineaActual = segmento->base;
+		int finalSegmento = segmento->base + segmento->limite;
+		while (lineaActual < finalSegmento)
+		{
+			t_package paquete;
+			if(recibir(socketSolicitud,&paquete,logger->logger))
 			{
-				log_error_mutex(logger, "Error al recibir los paquetes del DAM.");
-				exit_gracefully(-1);
+				log_error_mutex(logger, "Error al recibir el paquete N°: %d",i);
+				if (enviar(socketSolicitud,FM9_DAM_ERROR_PAQUETES,pkg.data,pkg.size,logger->logger))
+				{
+					log_error_mutex(logger, "Error al recibir los paquetes del DAM.");
+					exit_gracefully(-1);
+				}
+			}
+			char * bufferLinea = paquete.data;
+			int nroLinea = copyIntFromBuffer(&bufferLinea);
+			int tamanioPaquete = copyIntFromBuffer(&bufferLinea);
+			char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
+			if (nroLinea != lineaLeida)
+			{
+				int posicionPagina = lineasGuardadas / lineasXPagina;
+				pthread_mutex_lock(&mutexSegmentoBuscado);
+				nroSegmentoBuscado = segmento->nroSegmento;
+				t_list * listaPorSegmento = list_filter(gdt->tablaPaginas, (void *)filtrarPorSegmento);
+				pthread_mutex_unlock(&mutexSegmentoBuscado);
+				t_pagina * pagina = list_get(listaPorSegmento, posicionPagina);
+				bufferGuardado[tamanioPaqueteReal] = '\n';
+				char * lineaAGuardar = prepararLineaMemoria(bufferGuardado);
+				int posicionRelativaPagina = obtenerPosicionRelativaPagina(lineasGuardadas);
+				guardarLinea(direccion(pagina->nroMarco,posicionRelativaPagina), lineaAGuardar);
+				lineasGuardadas++;
+				tamanioPaqueteReal = 0;
+				free(bufferGuardado);
+				bufferGuardado = malloc(config->tamMaxLinea);
+				memcpy(bufferGuardado, contenidoLinea, tamanioPaquete);
+				tamanioPaqueteReal += tamanioPaquete;
+				lineaActual++;
+			}
+			else
+			{
+				memcpy(bufferGuardado, contenidoLinea, tamanioPaquete);
+				tamanioPaqueteReal += tamanioPaquete;
+			}
+			lineaLeida = nroLinea;
+			if (nroLinea == segmento->limite)
+			{
+				int posicionPagina = lineasGuardadas / lineasXPagina;
+				pthread_mutex_lock(&mutexSegmentoBuscado);
+				nroSegmentoBuscado = segmento->nroSegmento;
+				t_list * listaPorSegmento = list_filter(gdt->tablaPaginas, (void *)filtrarPorSegmento);
+				pthread_mutex_unlock(&mutexSegmentoBuscado);
+				t_pagina * pagina = list_get(listaPorSegmento, posicionPagina);
+				bufferGuardado[tamanioPaqueteReal] = '\n';
+				char * lineaAGuardar = prepararLineaMemoria(bufferGuardado);
+				int posicionRelativaPagina = obtenerPosicionRelativaPagina(lineasGuardadas);
+				guardarLinea(direccion(pagina->nroMarco,posicionRelativaPagina), lineaAGuardar);
+				lineaActual++;
 			}
 		}
-		char * bufferLinea = paquete.data;
-		int nroLinea = copyIntFromBuffer(&bufferLinea);
-		int tamanioPaquete = copyIntFromBuffer(&bufferLinea);
-		char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
-		if (nroLinea != lineaLeida)
-		{
-			int posicionPagina = lineasGuardadas / lineasXPagina;
-			pthread_mutex_lock(&mutexSegmentoBuscado);
-			nroSegmentoBuscado = segmento->nroSegmento;
-			t_list * listaPorSegmento = list_filter(gdt->tablaPaginas, (void *)filtrarPorSegmento);
-			pthread_mutex_unlock(&mutexSegmentoBuscado);
-			t_pagina * pagina = list_get(listaPorSegmento, posicionPagina);
-			bufferGuardado[tamanioPaqueteReal] = '\n';
-			int posicionRelativaPagina = obtenerPosicionRelativaPagina(lineasGuardadas);
-			guardarLinea(direccion(pagina->nroMarco,posicionRelativaPagina), bufferGuardado);
-			lineasGuardadas++;
-			tamanioPaqueteReal = 0;
-			free(bufferGuardado);
-			bufferGuardado = malloc(config->tamMaxLinea);
-			memcpy(bufferGuardado, contenidoLinea, tamanioPaquete);
-			tamanioPaqueteReal += tamanioPaquete;
-			lineaActual++;
-		}
-		else
-		{
-			memcpy(bufferGuardado, contenidoLinea, tamanioPaquete);
-			tamanioPaqueteReal += tamanioPaquete;
-		}
-		lineaLeida = nroLinea;
-		if (nroLinea == segmento->limite)
-		{
-			int posicionPagina = lineasGuardadas / lineasXPagina;
-			pthread_mutex_lock(&mutexSegmentoBuscado);
-			nroSegmentoBuscado = segmento->nroSegmento;
-			t_list * listaPorSegmento = list_filter(gdt->tablaPaginas, (void *)filtrarPorSegmento);
-			pthread_mutex_unlock(&mutexSegmentoBuscado);
-			t_pagina * pagina = list_get(listaPorSegmento, posicionPagina);
-			bufferGuardado[tamanioPaqueteReal] = '\n';
-			int posicionRelativaPagina = obtenerPosicionRelativaPagina(lineasGuardadas);
-			guardarLinea(direccion(pagina->nroMarco,posicionRelativaPagina), bufferGuardado);
-			lineaActual++;
-		}
-	}
-	free(bufferGuardado);
+		free(bufferGuardado);
 
-	//ENVIAR MSJ DE EXITO A DAM
-	if (enviar(socketSolicitud,FM9_DAM_ESCRIPTORIO_CARGADO,pkg.data,pkg.size,logger->logger))
-	{
-		log_error_mutex(logger, "Error al avisar al DAM el aviso de que se ha cargado el Escriptorio.");
-		exit_gracefully(-1);
+		//ENVIAR MSJ DE EXITO A DAM
+		if (enviar(socketSolicitud,FM9_DAM_ESCRIPTORIO_CARGADO,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al DAM el aviso de que se ha cargado el Escriptorio.");
+			exit_gracefully(-1);
+		}
+		return EXIT_SUCCESS;
 	}
-	return EXIT_SUCCESS;
 }
 
 int obtenerPosicionRelativaPagina(int lineaActual)

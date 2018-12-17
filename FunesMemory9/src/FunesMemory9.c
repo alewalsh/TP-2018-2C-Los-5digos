@@ -19,8 +19,9 @@ int main(int argc, char** argv) {
 	inicializarContadores();
 	size_t tamanioMemoria = config->tamMemoria;
 	storage = (char *)malloc(tamanioMemoria);
+	log_info_mutex(logger, "Se inicializÓ correctamente el FM9");
 	pthread_create(&threadConsolaFM9, &tattr, (void *) manejarConsolaFM9, NULL);
-	pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
+	manejarConexiones();
 	pthread_join(threadConsolaFM9, NULL);
 	free(storage);
 	return EXIT_SUCCESS;
@@ -43,7 +44,6 @@ void inicializarSemaforos()
 	pthread_mutex_init(&mutexExit, NULL);
 	pthread_mutex_init(&mutexMaster, NULL);
 	pthread_mutex_init(&mutexMaxfd, NULL);
-	pthread_mutex_init(&mutexPaginaBuscada, NULL);
 	pthread_mutex_init(&mutexSegmentoBuscado, NULL);
 	pthread_mutex_init(&mutexPIDBuscado, NULL);
 	pthread_mutex_init(&mutexPathBuscado, NULL);
@@ -63,7 +63,7 @@ void manejarConexiones(){
 	}
 
 	log_trace_mutex(logger, "El socket de escucha de FM9 es: %d", socketListen);
-	log_info_mutex(logger, "El socket de escucha de FM9 es: %d", socketListen);
+//	log_info_mutex(logger, "El socket de escucha de FM9 es: %d", socketListen);
 
 	addNewSocketToMaster(socketListen);
 
@@ -98,7 +98,7 @@ void manejarConexiones(){
 						addNewSocketToMaster(nuevoFd);
 					}
 				} else {
-					pthread_mutex_lock(&mutexSolicitudes);
+//					pthread_mutex_lock(&mutexSolicitudes);
 					 //gestionar datos de un cliente
 					if (recibir(i, &pkg, logger->logger))
 					{
@@ -108,7 +108,7 @@ void manejarConexiones(){
 					{
 						manejarSolicitud(pkg, i);
 					}
-					pthread_mutex_unlock(&mutexSolicitudes);
+//					pthread_mutex_unlock(&mutexSolicitudes);
 
 				}
 			}
@@ -163,6 +163,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         default:
             log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
             log_warning_mutex(logger, "Ojo, estas recibiendo un mensaje que no esperabas.");
+            exit_gracefully(EXIT_FAILURE);
             break;
 
     }
@@ -387,7 +388,7 @@ void logicaGuardarLinea(t_package pkg, int socketSolicitud, int code)
 	}
 	else
 	{
-		log_info_mutex(logger, "Se cargó correctamente el Escriptorio recibido.");
+		log_info_mutex(logger, "Se guardó correctamente la linea recibida.");
 	}
 	free(datosPaquete);
 }

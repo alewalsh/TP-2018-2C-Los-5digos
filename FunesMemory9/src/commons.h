@@ -31,13 +31,14 @@ extern pthread_mutex_t mutexMaster;
 extern pthread_mutex_t mutexReadset;
 extern pthread_mutex_t mutexPIDBuscado;
 extern pthread_mutex_t mutexMaxfd;
-extern pthread_mutex_t mutexPaginaBuscada;
 extern pthread_mutex_t mutexExit;
 extern pthread_mutex_t mutexPathBuscado;
 extern pthread_mutex_t mutexSolicitudes;
 
 extern t_list * tablaPaginasInvertida;
 
+void mostrarEstadoStorage();
+char * prepararLineaMemoria(char * buffer);
 char * intToString(int numero);
 int direccion(int base, int desplazamiento);
 void inicializarBitmap(t_bitarray **bitArray);
@@ -67,7 +68,7 @@ void liberarMarco(int nroMarco);
 bool hayXMarcosLibres(int cantidad);
 
 t_segmento * reservarSegmento(int lineasEsperadas, t_dictionary * tablaSegmentos, char * archivo, int paginasAReservar);
-void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarray * bitArray);
+void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarray ** bitArray);
 
 void enviarInstruccion(int posicionMemoria, int socketSolicitud);
 void actualizarTablaDeSegmentos(int pid, t_segmento * segmento);
