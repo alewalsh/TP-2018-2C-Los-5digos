@@ -517,14 +517,13 @@ void borrarArchivo(char *path){
 }
 
 void enviarStringDAMporTRansferSize(char *datosEnvio){
-	t_package pkg;
 	// Calculo cantidad de paquetes.
 	int tamanioReal = trasnfer_size - sizeof(int) -1;
 	int cuantosPaquetes = strlen(datosEnvio)/tamanioReal;
 	if(strlen(datosEnvio) % tamanioReal != 0){
 		cuantosPaquetes ++;
 	}
-
+	log_trace_mutex(loggerMDJ, "Se envian %d paquetes", cuantosPaquetes);
 	// Lo cambie porque aca tiene que iniciar con el transfer size, si no, el primer paquete va vacío - Ale 5/12/2018 - 23:11
 	int offset = 0;
 	int viejoOffset = 0;
@@ -565,6 +564,9 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 			char * retornoOffset = string_substring_until(datosEnvio+viejoOffset, tamanioReal);
 			int longitudDatos = string_length(retornoOffset) + 1;
 			int size = longitudDatos + sizeof(int);
+			if (size > trasnfer_size)
+				log_error_mutex(loggerAtencionDAM, "Ojo, el size %d es mayor al transfer size %d, esto no deberia suceder", size, trasnfer_size);
+
 			bufferEnvio = malloc(size);
 			p = bufferEnvio;
 			copyStringToBuffer(&p,retornoOffset);

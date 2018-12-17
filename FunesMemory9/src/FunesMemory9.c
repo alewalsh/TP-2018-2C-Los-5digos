@@ -16,6 +16,9 @@ pthread_attr_t tattr;
 int main(int argc, char** argv) {
 	logger = log_create_mutex("FM9.log", "FM9", true, LOG_LEVEL_INFO);
 	config = cargarConfiguracion(argv[1], FM9, logger->logger);
+	signal(SIGINT, sig_handler);
+	signal(SIGTERM, sig_handler);
+	signal(SIGKILL, sig_handler);
 	inicializarContadores();
 	size_t tamanioMemoria = config->tamMemoria;
 	storage = (char *)malloc(tamanioMemoria);
@@ -25,6 +28,15 @@ int main(int argc, char** argv) {
 	pthread_join(threadConsolaFM9, NULL);
 	free(storage);
 	return EXIT_SUCCESS;
+}
+
+void sig_handler(int signo)
+{
+  if (signo == SIGTERM || signo == SIGKILL || signo == SIGINT)
+  {
+	  log_warning_mutex(logger, "Se recibió una señal de finalizacion del proceso.");
+	  exit_gracefully(EXIT_FAILURE);
+  }
 }
 
 void inicializarContadores(){
@@ -58,12 +70,12 @@ void manejarConexiones(){
 
 	//Creo el socket y me quedo escuchando
 	if (escuchar(config->puertoFM9, &socketListen, logger->logger)) {
-		liberarRecursos();
-		pthread_exit(NULL);
+//		liberarRecursos();
+//		pthread_exit(NULL);
+		exit_gracefully(EXIT_FAILURE);
 	}
 
 	log_trace_mutex(logger, "El socket de escucha de FM9 es: %d", socketListen);
-//	log_info_mutex(logger, "El socket de escucha de FM9 es: %d", socketListen);
 
 	addNewSocketToMaster(socketListen);
 
@@ -81,34 +93,37 @@ void manejarConexiones(){
 		log_trace_mutex(logger, "El valor del select es: %d", result);
 		log_trace_mutex(logger, "Analizo resultado del select para ver quien me hablo");
 
-		for (i = 0; i <= getMaxfd(); i++) {
-
-			if (isSetted(i)) { // ¡¡tenemos datos!!
-
-				if (i == socketListen) {
+		for (i = 0; i <= getMaxfd(); i++)
+		{
+			if (isSetted(i))
+			{ 	// ¡¡tenemos datos!!
+				if (i == socketListen)
+				{
 					// CAMBIOS EN EL SOCKET QUE ESCUCHA, acepto las nuevas conexiones
 					log_trace_mutex(logger, "Cambios en Listener de FM9, se gestionara la conexion correspondiente");
 					if (acceptConnection(socketListen, &nuevoFd, FM9_HSK, &handshake, logger->logger))
 					{
 						log_error_mutex(logger, "No se acepto la nueva conexion solicitada");
-					} else
+					}
+					else
 					{
 						// añadir al conjunto maestro
 						log_trace_mutex(logger, "Se acepto la nueva conexion solicitada en el SELECT");
 						addNewSocketToMaster(nuevoFd);
 					}
-				} else {
-//					pthread_mutex_lock(&mutexSolicitudes);
+				}
+				else
+				{
 					 //gestionar datos de un cliente
 					if (recibir(i, &pkg, logger->logger))
 					{
 						log_error_mutex(logger, "No se pudo recibir el mensaje");
-						//handlerDisconnect(i);
-					} else
+						handlerDisconnect(i);
+					}
+					else
 					{
 						manejarSolicitud(pkg, i);
 					}
-//					pthread_mutex_unlock(&mutexSolicitudes);
 
 				}
 			}
@@ -157,20 +172,25 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 			break;
 
         case SOCKET_DISCONECT:
-            close(socketFD);
-            deleteSocketFromMaster(socketFD);
+        	handlerDisconnect(socketFD);
             break;
         default:
             log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
             log_warning_mutex(logger, "Ojo, estas recibiendo un mensaje que no esperabas.");
             // TODO: Verificar lo que se realiza en este caso.
-//            exit_gracefully(EXIT_FAILURE);
+            exit_gracefully(EXIT_FAILURE);
             break;
 
     }
 
     free(pkg.data);
 
+}
+
+void handlerDisconnect(int socketFD)
+{
+    close(socketFD);
+    deleteSocketFromMaster(socketFD);
 }
 
 //--------------------------------------FINALIZAR GDT SEGUN ESQUEMA ELEGIDO

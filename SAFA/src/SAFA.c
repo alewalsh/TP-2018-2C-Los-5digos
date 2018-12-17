@@ -164,22 +164,6 @@ void destruirListas(){
 	}
 }
 
-void destruir_dtb(t_dtb * dtb){
-	if(dtb->dirEscriptorio!=NULL)
-	free(dtb->dirEscriptorio);
-	if(dtb->tablaDirecciones != NULL){
-		list_destroy_and_destroy_elements(dtb->tablaDirecciones,(void *)liberarDirecciones);
-	}
-	free(dtb);
-}
-
-void liberarDirecciones(char * direccion){
-	free(direccion);
-}
-
-void destruirMetricaLP(t_metricaLP * metrica){
-	free(metrica);
-}
 void initMutexs(){
 
 	//Se inicializan todos los semaforos MUTEX a ser utilizados

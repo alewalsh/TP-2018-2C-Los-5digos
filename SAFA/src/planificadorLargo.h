@@ -15,11 +15,6 @@
 #include <commons/collections/list.h>
 
 
-typedef struct {
-	int idDTB;
-    int tiempoEnNEW;
-} t_metricaLP;
-
 extern configSAFA *conf;
 extern t_list* colaNew;			// Lista New.
 extern t_list* colaReady;			// Lista Ready.
