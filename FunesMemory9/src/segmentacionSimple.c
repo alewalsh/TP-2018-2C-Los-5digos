@@ -179,8 +179,6 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 				i++;
 				offset = 0;
 				tamanioPaqueteReal = 0;
-				free(bufferGuardado);
-				bufferGuardado = malloc(config->tamMaxLinea);
 				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
 				offset += (tamanioPaquete);
 				tamanioPaqueteReal += tamanioPaquete;
