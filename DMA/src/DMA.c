@@ -63,7 +63,9 @@ void aceptarConexionesDelCpu() {
 					log_error_mutex(logger, "No se pudo recibir el mensaje del socket: %d",i);
 					//handlerDisconnect(i);
 				} else {
+					pthread_mutex_lock(&mutexSolicitud);
 					manejarSolicitudDelCPU(pkg, i);
+					pthread_mutex_unlock(&mutexSolicitud);
 				}
 
 			}
@@ -168,6 +170,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
 void initVariables() {
 	cpusConectadas = 0;
+	pthread_mutex_init(&mutexSolicitud, NULL);
 }
 
 void cargarArchivoDeConfig(char * pathConfig) {
@@ -205,6 +208,7 @@ void exit_gracefully(int return_nr) {
 	}
 
 	log_destroy_mutex(logger);
+	pthread_mutex_destroy(&mutexSolicitud);
 	exit(return_nr);
 }
 

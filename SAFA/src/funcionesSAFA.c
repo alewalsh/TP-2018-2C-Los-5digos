@@ -180,6 +180,10 @@ int bloquearDTB(t_dtb * dtb){
 	t_dtb * dtbABloquear = list_remove(colaEjecutando,i);
 	pthread_mutex_unlock(&mutexEjecutandoList);
 	//actualizo el quantum restante
+	if (conf->algoritmo == VRR)
+		dtbABloquear->quantumRestante = dtb->quantumRestante;
+	else
+		dtbABloquear->quantumRestante = 0;
 	dtbABloquear->quantumRestante = dtb->quantumRestante;
 	dtbABloquear->programCounter = dtb->programCounter;
 	pthread_mutex_lock(&mutexBloqueadosList);

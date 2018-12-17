@@ -485,90 +485,184 @@ char *codigoIDToString(uint16_t code) {
 			return "Handshake DAM";
 		case MDJ_HSK:
 			return "Handshake MDJ";
-//        case INS_COORD_CONNECT:
-//            return "INS_COORD_CONNECT";
-//        case INS_COORD_OK:
-//            return "INS_COORD_OK";
-//        case INS_COORD_FAIL:
-//            return "INS_COORD_FAIL";
-//        case INS_COORD_GET_FAIL:
-//            return "INS_COORD_GET_FAIL";
-//        case INS_COORD_SET_FAIL:
-//            return "INS_COORD_SET_FAIL";
-//        case INS_COORD_STORE_FAIL:
-//            return "INS_COORD_STORE_FAIL";
-//        case INS_COORD_GET_OK:
-//            return "INS_COORD_GET_OK";
-//        case INS_COORD_SET_OK:
-//            return "INS_COORD_SET_OK";
-//        case INS_COORD_STORE_OK:
-//            return "INS_COORD_STORE_OK";
-//        case INS_COORD_COMPACT_OK:
-//            return "INS_COORD_COMPACT_OK";
-//        case INS_COORD_BEGIN_COMPACT:
-//            return "INS_COORD_BEGIN_COMPACT";
-//        case COORD_INS_WELCOME :
-//            return "COORD_INS_WELCOME";
-//        case COORD_INS_OK :
-//            return "COORD_INS_OK";
-//        case COORD_INS_FAIL :
-//            return "COORD_INS_FAIL";
-//        case COORD_INS_GET :
-//            return "COORD_INS_GET";
-//        case COORD_INS_STORE :
-//            return "COORD_INS_STORE";
-//        case COORD_INS_SET :
-//            return "COORD_INS_SET";
-//        case COORD_INS_COMPACT :
-//            return "COORD_INS_COMPACT";
-//        case ESI_PLAN_CONNECT :
-//            return "ESI_PLAN_CONNECT";
-//        case ESI_PLAN_OK :
-//            return "ESI_PLAN_OK";
-//        case ESI_PLAN_FAIL :
-//            return "ESI_PLAN_FAIL";
-//        case ESI_PLAN_FINISH :
-//            return "ESI_PLAN_FINISH";
-//        case ESI_PLAN_EOF :
-//            return "ESI_PLAN_EOF";
-//        case PLAN_ESI_WELCOME :
-//            return "PLAN_ESI_WELCOME";
-//        case PLAN_ESI_PLAY :
-//            return "PLAN_ESI_PLAY";
-//        case PLAN_ESI_DEAD :
-//            return "PLAN_ESI_DEAD";
-//        case ESI_COORD_CONNECT :
-//            return "ESI_COORD_CONNECT";
-//        case ESI_COORD_SENDPKG :
-//            return "ESI_COORD_SENDPKG";
-//        case COORD_ESI_WELCOME :
-//            return "COORD_ESI_WELCOME";
-//        case COORD_ESI_OK :
-//            return "COORD_ESI_OK";
-//        case COORD_ESI_FAIL :
-//            return "COORD_ESI_FAIL";
-//        case COORD_PLAN_WELCOME :
-//            return "COORD_PLAN_WELCOME";
-//        case COORD_PLAN_BLOCK :
-//            return "COORD_PLAN_BLOCK";
-//        case COORD_PLAN_STORE :
-//            return "COORD_PLAN_STORE";
-//        case CORRD_PLAN_STATUS_FOUND :
-//            return "CORRD_PLAN_STATUS_FOUND";
-//        case CORRD_PLAN_STATUS_NOT_FOUND :
-//            return "CORRD_PLAN_STATUS_NOT_FOUND";
-//        case PLAN_COORD_CONNECT :
-//            return "PLAN_COORD_CONNECT";
-//        case PLAN_COORD_OK :
-//            return "PLAN_COORD_OK";
-//        case PLAN_COORD_BLOCKED :
-//            return "PLAN_COORD_BLOCKED";
-//        case PLAN_CORRD_STORE_FAIL :
-//            return "PLAN_CORRD_STORE_FAIL";
-//        case PLAN_CORRD_STORE_OK :
-//            return "PLAN_CORRD_STORE_OK";
-//        case PLAN_CORRD_STATUS :
-//            return "PLAN_CORRD_STATUS";
+		case SAFA_CPU_CONNECT:// = 1006,
+			return "Conexión SAFA - CPU.";
+		case SAFA_CPU_OK:// = 1007,
+			return "SAFA - CPU OK.";
+		case SAFA_CPU_FAIL:// = 1008,
+			return "SAFA - CPU FAIL.";
+		case SAFA_CPU_DISCONNECT:// = 1009,
+			return "Desconexión SAFA - CPU.";
+		case SAFA_CPU_NUEVO_DUMMY:// = 1010,
+			return "El SAFA envió un nuevo dummy al CPU.";
+		case SAFA_CPU_EJECUTAR:// = 1011,
+			return "El SAFA ordenó una ejecución al CPU.";
+		case SAFA_CPU_QUANTUM:
+			return "El SAFA envió un nuevo quantum al CPU.";
+		case DAM_FM9_CONNECT:// = 1013,
+			return "Conexión DAM - FM9.";
+		case DAM_FM9_OK:// = 1014,
+			return "DAM - FM9 OK.";
+		case DAM_FM9_FAIL:// = 1015,
+			return "DAM - FM9 FAIL.";
+		case DAM_FM9_DISCONNECT:// = 1016,
+			return "Desconexión DAM - FM9.";
+		case DAM_FM9_CARGAR_ESCRIPTORIO:// = 1018,
+			return "El DAM ordenó cargar un escriptorio en FM9.";
+		case DAM_FM9_ENVIO_PKG:// = 1019,
+			return "El DAM envió un paquete para guardar en un escriptorio.";
+		case DAM_FM9_FLUSH:
+			return "El DAM ordenó la realización del flush de un escriptorio.";
+		case DAM_MDJ_CONNECT:// = 1021,
+			return "Conexión DAM - MDJ.";
+		case DAM_MDJ_OK:// = 1022,
+			return "DAM - MDJ OK.";
+		case DAM_MDJ_FAIL:// = 1023,
+			return "DAM - MDJ FAIL.";
+		case DAM_MDJ_DISCONNECT:// = 1024,
+			return "Desconexión DAM - MDJ.";
+		case DAM_MDJ_TRANSFER_SIZE:// = 1025,
+			return "El DAM envió al MDJ el transfer size.";
+		case DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO:// = 1026,
+			return "El DAM pide la confirmación de la existencia del archivo.";
+		case DAM_MDJ_CARGAR_ESCRIPTORIO:// = 1027,
+			return "El DAM pide la carga de un escriptorio.";
+		case DAM_MDJ_HACER_FLUSH:// = 1028,
+			return "El DAM manda el flush al MDJ.";
+		case DAM_MDJ_GUARDAR_DATOS:// = 1029,
+			return "El DAM manda un guardado de datos al MDJ.";
+		case DAM_MDJ_CREAR_ARCHIVO:// = 1030,
+			return "El DAM ordena la creación de un archivo.";
+		case DAM_MDJ_BORRAR_ARCHIVO:// = 1031,
+			return "El DAM ordena el borrado de un archivo.";
+		case DAM_MDJ_CONFIRMACION_ENVIO_DEL_MDJ:// =
+			return "El DAM realiza la confirmacion del envio proviniente del MDJ.";
+		case DAM_MDJ_CONFIRMACION_ENVIO_DEL_DMA:
+			return "El MDJ realiza la confirmacion del envio proviniente del DAM.";
+		case DAM_SAFA_CONNECT:// = 1032,
+			return "Conexión DAM - SAFA.";
+		case DAM_SAFA_OK:// = 1033,
+			return "DAM - SAFA OK.";
+		case DAM_SAFA_FAIL:// = 1034,
+			return "DAM - SAFA FAIL.";
+		case DAM_SAFA_DISCONNECT:// = 1035,
+			return "Desconexión DAM - SAFA.";
+		case DAM_SAFA_CONFIRMACION_PID_CARGADO:// = 1036,
+			return "El DAM envía la confirmación de la carga de un escriptorio al PID correspondiente al SAFA.";
+		case DAM_SAFA_CONFIRMACION_SCRIPT_INICIALIZADO:// = 1038,
+			return "El DAM envía la confirmación de la inicialización del escriptorio al SAFA.";
+		case DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS:// = 1039,
+			return "El DAM realiza la confirmación del guardado de datos al SAFA.";
+		case DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO:// = 1040,
+			return "El DAM realiza la confirmación del archivo creado al SAFA.";
+		case DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO:// = 1041,
+			return "El DAM realiza la confirmación del archivo borrado al SAFA.";
+		case CPU_FM9_CONNECT:// = 1042,
+			return "Conexión CPU - FM9.";
+		case CPU_FM9_OK:// = 1043,
+			return "CPU - FM9 OK.";
+		case CPU_FM9_FAIL:// = 1044,
+			return "CPU - FM9 FAIL.";
+		case CPU_FM9_DISCONNECT:// = 1045,
+			return "Desconexión CPU - FM9.";
+		case CPU_FM9_CERRAR_ARCHIVO:// = 1046,
+			return "El CPU pide cerrar un archivo en el FM9.";
+		case CPU_FM9_ASIGNAR:// = 1047,
+			return "El CPU pide guardar una linea en el FM9.";
+		case CPU_FM9_CARGAR_ESCRIPTORIO:// = 1048,
+			return "El CPU pide cargar un escriptorio en el FM9.";
+		case CPU_FM9_FIN_GDT:// = 1049,
+			return "El CPU avisa del fin de la ejecución del GDT al FM9.";
+		case CPU_FM9_DAME_INSTRUCCION:// = 1050
+			return "El CPU pide una instrucción al FM9.";
+		case CPU_DAM_CONNECT:// = 1049,
+			return "Conexión CPU - DAM.";
+		case CPU_DAM_OK:// = 1050,
+			return "CPU - DAM OK.";
+		case CPU_DAM_FAIL:// = 1051,
+			return "CPU - DAM FAIL.";
+		case CPU_DAM_DISCONNECT:// = 1052,
+			return "Desconexión CPU - DAM.";
+		case CPU_DAM_BUSQUEDA_ESCRIPTORIO:// = 1053,
+			return "El CPU pide buscar un escriptorio al DAM.";
+		case CPU_DAM_ABRIR_ARCHIVO:// = 1054,
+			return "El CPU pide abrir un escriptorio al DAM.";
+		case CPU_DAM_FLUSH:// = 1055,
+			return "El CPU pide realizar el flush de un escriptorio al DAM.";
+		case CPU_DAM_CREAR:// = 1056,
+			return "El CPU pide crear un escriptorio al DAM.";
+		case CPU_DAM_BORRAR:// = 1057,
+			return "El CPU pide borrar un escriptorio al DAM.";
+		case CPU_SAFA_CONNECT:// = 1049,
+			return "Conexión CPU - SAFA.";
+		case CPU_SAFA_OK:// = 1050,
+			return "CPU - SAFA OK.";
+		case CPU_SAFA_FAIL:// = 1051:
+			return "CPU - SAFA FAIL.";
+		case CPU_SAFA_DISCONNECT:// = 1052:
+			return "Desconexión CPU - SAFA.";
+		case CPU_SAFA_BLOQUEAR_DUMMMY:// = 1058:
+			return "El CPU pide al SAFA bloquear el dummy.";
+		case CPU_SAFA_WAIT_RECURSO:// = 1059:
+			return "El CPU pide al SAFA realizar un wait de un recurso.";
+		case CPU_SAFA_SIGNAL_RECURSO:// = 1060:
+			return "El CPU pide al SAFA realizar un signal de un recurso.";
+		case CPU_SAFA_BLOQUEAR_DTB:// = 1061:
+			return "El CPU pide al SAFA bloquear el DTB.";
+		case CPU_SAFA_ABORTAR_DTB:// = 1062:
+			return "El CPU pide al SAFA abortar el DTB.";
+		case CPU_SAFA_ABORTAR_DTB_NUEVO:// = 1062:
+			return "El CPU pide al SAFA abortar el DTB proviniente de NEW.";
+		case CPU_SAFA_FIN_EJECUCION_DTB:// = 1063:
+			return "El CPU pide al SAFA finalizar la ejecución del DTB.";
+		case CPU_SAFA_FIN_EJECUCION_X_QUANTUM_DTB:// = 1064
+			return "El CPU pide al SAFA finalizar la ejecución del DTB por fin de quantum.";
+		case FM9_CPU_CONNECT:// = 1049:
+			return "Conexión FM9 - CPU.";
+		case FM9_CPU_OK:// = 1050:
+			return "FM9 - CPU OK.";
+		case FM9_CPU_FAIL:// = 1051:
+			return "FM9 - CPU FAIL.";
+		case FM9_CPU_DISCONNECT:// = 1052:
+			return "Desconexión FM9 - CPU.";
+		case FM9_CPU_ACCESO_INVALIDO:// = 1065:
+			return "El FM9 informa al CPU de un acceso invalido.";
+		case FM9_CPU_ERROR:// = 1066:
+			return "El FM9 informa al CPU de un error inesperado.";
+		case FM9_CPU_MEMORIA_INSUFICIENTE:// = 1067:
+			return "El FM9 informa al CPU que no hay suficiente memoria para la petición.";
+		case FM9_CPU_FALLO_SEGMENTO_MEMORIA:// = 1068:
+			return "El FM9 informa al CPU que hubo un fallo en un segmento de memoria.";
+		case FM9_CPU_PROCESO_INEXISTENTE:// = 1069:
+			return "El FM9 informa al CPU que no existe el proceso indicado.";
+		case FM9_CPU_LINEA_GUARDADA:// = 1070:
+			return "El FM9 informa al CPU que se ha guardado la linea indicada.";
+		case FM9_CPU_ERROR_LINEA_GUARDADA:// = 1071:
+			return "El FM9 informa al CPU que hubo un error en el guardado de la linea indicada.";
+		case FM9_CPU_ARCHIVO_CERRADO:// = 1072:
+			return "El FM9 informa al CPU que el archivo fue cerrado exitosamente.";
+		case FM9_CPU_GDT_FINALIZADO:
+			return "El FM9 informa al CPU que el GDT fue finalizado exitosamente.";
+		case FM9_CPU_DEVUELVO_LINEA:// = 1070:
+			return "El FM9 informa al CPU que devolvió la linea pedida exitosamente.";
+		case FM9_DAM_MEMORIA_INSUFICIENTE:// = 1073:
+			return "El FM9 informa al DAM que la memoria es insuficiente para cumplir la peticion.";
+		case FM9_DAM_MEMORIA_INSUFICIENTE_FRAG_EXTERNA:// = 1074:
+			return "El FM9 informa al DAM que la memoria es insuficiente para cumplir la peticion por fragmentación externa.";
+		case FM9_DAM_ARCHIVO_INEXISTENTE:// = 1075:
+			return "El FM9 informa al DAM que no existe el archivo indicado.";
+		case FM9_DAM_PROCESO_INEXISTENTE:// = 1076:
+			return "El FM9 informa al DAM que no existe el proceso indicado.";
+		case FM9_DAM_ERROR_PAQUETES:// = 1077:
+			return "El FM9 informa al DAM que hubo un error con los paquetes.";
+		case FM9_DAM_ESCRIPTORIO_CARGADO:// = 1078:
+			return "El FM9 informa al DAM que se cargó el escriptorio correctamente.";
+		case FM9_DAM_ERROR_CARGA_ESCRIPTORIO:// = 1079:
+			return "El FM9 informa al DAM que hubo un error al cargar el escriptorio.";
+		case FM9_DAM_FLUSH:// = 1080:
+			return "El FM9 informa al DAM que se realizó el flush.";
+		case FM9_DAM_ERROR_FLUSH:// = 1081:
+			return "El FM9 informa al DAM que hubo un error al realizar el flush.";
         case SOCKET_DISCONECT :
             return "SOCKET_DISCONECT";
         case PING:

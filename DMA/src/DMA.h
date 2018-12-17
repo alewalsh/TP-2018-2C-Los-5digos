@@ -37,6 +37,7 @@ pthread_mutex_t mutexMaster;
 pthread_mutex_t mutexReadset;
 pthread_mutex_t mutexMaxfd;
 pthread_mutex_t mutexExit;
+pthread_mutex_t mutexSolicitud;
 
 int * socketSafa;
 int * socketMdj;
