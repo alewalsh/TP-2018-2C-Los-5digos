@@ -27,17 +27,24 @@ int contLineasUsadas;
 int cantLineas;
 int cantPaginas;
 int lineasXPagina;
-int pidBuscado;
-int nroSegmentoBuscado;
-char * pathBuscado;
 
-t_log_mutex * logger;
-configFM9 * config;
+int pidBuscado;
+pthread_mutex_t mutexPIDBuscado;
+
+int nroSegmentoBuscado;
+pthread_mutex_t mutexSegmentoBuscado;
+
+char * pathBuscado;
+pthread_mutex_t mutexPathBuscado;
+
 t_dictionary * tablaProcesos;
 t_list * tablaPaginasInvertida;
 t_bitarray * estadoLineas;
 t_bitarray * estadoMarcos;
 char * storage;
+
+t_log_mutex * logger;
+configFM9 * config;
 
 fd_set master;
 fd_set readset;
@@ -47,10 +54,6 @@ pthread_mutex_t mutexMaster;
 pthread_mutex_t mutexReadset;
 pthread_mutex_t mutexMaxfd;
 pthread_mutex_t mutexExit;
-pthread_mutex_t mutexPaginaBuscada;
-pthread_mutex_t mutexPIDBuscado;
-pthread_mutex_t mutexSegmentoBuscado;
-pthread_mutex_t mutexPathBuscado;
 pthread_mutex_t mutexSolicitudes;
 
 pthread_t threadConsolaFM9;
