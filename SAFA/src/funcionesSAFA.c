@@ -352,6 +352,7 @@ void actualizarTablaDirecciones(int pid, char * path){
 
 void liberarCpu(int socketCpu)
 {
+    pthread_mutex_lock(&mutexCpus);
 	for(int i = 0; i < list_size(listaCpus);i++)
 	{
 		t_cpus * cpu = list_remove(listaCpus,i);
@@ -359,8 +360,9 @@ void liberarCpu(int socketCpu)
 		{
 			cpu->libre = 0;
 		}
-		list_add_in_index(listaCpus,i,cpu);
+		list_add(listaCpus,cpu);
 	}
+    pthread_mutex_unlock(&mutexCpus);
 	sem_post(&semaforoCpu);
 }
 
@@ -478,6 +480,7 @@ void actualizarSentenciasPasaronPorDAM(int cantidadDeSentencias){
 void notificarCambioQuantumCPUS(int nuevoQuantum)
 {
 	//agregar socket a lista de cpus
+    pthread_mutex_lock(&mutexCpus);
 	int cantidadCPUS = list_size(listaCpus);
 	int i = 0;
 	while(i < cantidadCPUS)
@@ -495,6 +498,7 @@ void notificarCambioQuantumCPUS(int nuevoQuantum)
 		free(buffer);
 		i++;
 	}
+    pthread_mutex_unlock(&mutexCpus);
 }
 
 void notificarCambioGradoMultiprogramacion(int viejoGradoMP, int nuevoGradoMP)

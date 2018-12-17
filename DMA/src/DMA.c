@@ -24,6 +24,15 @@ int main(int argc, char ** argv) {
 	exit_gracefully(0);
 }
 
+void initMutex()
+{
+	pthread_mutex_init(&mutexMaster, NULL);
+	pthread_mutex_init(&mutexReadset, NULL);
+	pthread_mutex_init(&mutexMaxfd, NULL);
+	pthread_mutex_init(&mutexExit, NULL);
+	pthread_mutex_init(&mutexSolicitudes, NULL);
+}
+
 void aceptarConexionesDelCpu() {
 	t_package pkg;
 	// Recibo y acepto las conexiones del cpu
@@ -58,6 +67,7 @@ void aceptarConexionesDelCpu() {
 					addNewSocketToMaster(nuevoFd);
 				}
 			} else {
+				pthread_mutex_lock(&mutexSolicitudes);
 				//gestionar datos de un cliente
 				if (recibir(i, &pkg, logger->logger)) {
 					log_error_mutex(logger, "No se pudo recibir el mensaje del socket: %d",i);
@@ -65,7 +75,7 @@ void aceptarConexionesDelCpu() {
 				} else {
 					manejarSolicitudDelCPU(pkg, i);
 				}
-
+				pthread_mutex_unlock(&mutexSolicitudes);
 			}
 		}
 	}
@@ -197,6 +207,11 @@ void configure_logger() {
 //Funcion para cerrar el programa
 void exit_gracefully(int return_nr) {
 
+	pthread_mutex_destroy(&mutexMaster);
+	pthread_mutex_destroy(&mutexReadset);
+	pthread_mutex_destroy(&mutexMaxfd);
+	pthread_mutex_destroy(&mutexExit);
+	pthread_mutex_destroy(&mutexSolicitudes);
 	bool returnCerrarSockets = cerrarSockets();
 	if (return_nr > 0 || returnCerrarSockets) {
 		log_error_mutex(logger, "Fin del proceso: DAM");

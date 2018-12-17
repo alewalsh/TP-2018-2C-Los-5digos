@@ -20,6 +20,7 @@ void inicializarMDJ(char * pathConfig){
 	loggerMDJ = log_create_mutex("MDJ.log", "MDJ", true, LOG_LEVEL_INFO);
 	loggerAtencionDAM = log_create_mutex("FS.log", "FS", true, LOG_LEVEL_INFO);
 	pthread_mutex_init(&semaforoBitarray, NULL);
+	pthread_mutex_init(&mutexSolicitudes, NULL);
 
 	if (pathConfig != NULL){
 		configuracion = cargarConfiguracion(pathConfig, MDJ, loggerMDJ->logger);
@@ -200,6 +201,7 @@ void inicializarConexion(){
 void esperarInstruccionDAM(){
 	while(!getExit()){
 		t_package paquete;
+		pthread_mutex_lock(&mutexSolicitudes);
 		if (recibir(socketDAM,&paquete,loggerMDJ->logger)) {
 			log_error_mutex(loggerMDJ, "No se pudo recibir el mensaje.");
 			//handlerDisconnect(i);
@@ -209,6 +211,7 @@ void esperarInstruccionDAM(){
 //			pthread_create(&threadDAM, &tattr, (void *) responderDAM, NULL); Si el DAM no es concurrente es al pedo.
 			manejarDAM(paquete); //todo en thread distinto por cada recibir.
 		}
+		pthread_mutex_unlock(&mutexSolicitudes);
 	}
 }
 
@@ -290,6 +293,8 @@ void exit_gracefully(int error){
 	log_destroy_mutex(loggerMDJ);
 	log_destroy_mutex(loggerAtencionDAM);
 	fileSystemAvtivo = 0;
+	pthread_mutex_destroy(&semaforoBitarray);
+	pthread_mutex_destroy(&mutexSolicitudes);
 	bitarray_destroy(bitarray);
 	exit(error);
 }

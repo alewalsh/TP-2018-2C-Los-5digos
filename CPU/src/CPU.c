@@ -9,7 +9,6 @@
  */
 #include "CPU.h"
 
-//int desalojado = 0;
 pthread_attr_t tattr;
 
 int main(int argc, char ** argv) {

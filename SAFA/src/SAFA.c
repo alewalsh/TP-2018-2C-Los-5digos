@@ -113,6 +113,7 @@ void liberarRecursos(){
 
     pthread_mutex_destroy(&mutexTotalSentencias);
     pthread_mutex_destroy(&mutexSentenciasXDAM);
+    pthread_mutex_destroy(&mutexCpus);
 
     sem_destroy(&semaforoGradoMultiprgramacion);
     sem_destroy(&mandadosPorConsola);
@@ -203,6 +204,7 @@ void initMutexs(){
 
 	pthread_mutex_init(&mutexTotalSentencias, NULL);
 	pthread_mutex_init(&mutexSentenciasXDAM, NULL);
+	pthread_mutex_init(&mutexCpus, NULL);
 
 	pthread_mutex_init(&semDummy, NULL);
 	sem_init(&semaforoGradoMultiprgramacion, 0 ,conf->grado_mp);

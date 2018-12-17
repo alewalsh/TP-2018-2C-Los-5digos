@@ -37,6 +37,7 @@ pthread_mutex_t mutexMaster;
 pthread_mutex_t mutexReadset;
 pthread_mutex_t mutexMaxfd;
 pthread_mutex_t mutexExit;
+pthread_mutex_t mutexSolicitudes;
 
 int * socketSafa;
 int * socketMdj;
@@ -65,6 +66,7 @@ enum codigosError
 
 //Declaracion de funciones
 void aceptarConexionesDelCpu();
+void initMutex();
 void initVariables();
 void cargarArchivoDeConfig(char * pathConfig);
 void configure_logger();
