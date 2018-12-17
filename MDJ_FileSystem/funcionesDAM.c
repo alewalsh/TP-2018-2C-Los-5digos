@@ -530,10 +530,10 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 	if (cuantosPaquetes > 1)
 	{
 		// EL - SIZE OF INT ES POR COMO SE UTILIZA EL COPY STRING TO BUFFER
-		offset = trasnfer_size - sizeof(int) - 1;
+		offset = trasnfer_size - sizeof(int);
 	}
 	// EL - 1 VA POR EL \0
-	int tamanioLinea = trasnfer_size - sizeof(int) - 1;
+	int tamanioLinea = trasnfer_size - sizeof(int);
 	char * bufferEnvio;
 	char * p;
 
@@ -557,8 +557,6 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 			}
 			free(datosRestantes);
 
-			//espero confirmacion de recempcion del DAM.
-
 		}
 		else
 		// if (cuantosPaquetes > 0)
@@ -575,7 +573,6 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 				free(bufferEnvio);
 			}
 			free(retornoOffset);
-			//espero confirmacion de recempcion del DAM.
 
 		}
 		viejoOffset = offset;
@@ -585,15 +582,15 @@ void enviarStringDAMporTRansferSize(char *datosEnvio){
 		free(bufferEnvio);
 
 		//espero confirmacion del DAM.
-		if(recibir(socketDAM,&pkg, loggerAtencionDAM->logger)){
-			log_error_mutex(loggerAtencionDAM, "No se recibio confirmacion de envio de paquete.");
-			break;
-		}else{
-			if(pkg.code != DAM_MDJ_CONFIRMACION_ENVIO_DEL_MDJ){
-				log_error_mutex(loggerAtencionDAM, "Se esperaba confirmacion de envio de paquete y llego otra cosa.");
-				break;
-			}
-		}
+//		if(recibir(socketDAM,&pkg, loggerAtencionDAM->logger)){
+//			log_error_mutex(loggerAtencionDAM, "No se recibio confirmacion de envio de paquete.");
+//			break;
+//		}else{
+//			if(pkg.code != DAM_MDJ_CONFIRMACION_ENVIO_DEL_MDJ){
+//				log_error_mutex(loggerAtencionDAM, "Se esperaba confirmacion de envio de paquete y llego otra cosa.");
+//				break;
+//			}
+//		}
 	}
 }
 
@@ -618,10 +615,10 @@ char * rebirStringDAMporTRansferSize(int cantidadPaquetes){
 			log_error_mutex(loggerAtencionDAM, "Error se recibieron menos paquetes de los esperados.");
 		}
 
-		if(enviar(socketDAM, DAM_MDJ_CONFIRMACION_ENVIO_DEL_DMA, NULL, 0, loggerAtencionDAM->logger))
-		{
-			log_error_mutex(loggerAtencionDAM, "No se pudo enviar confirmacion de llegada de paquete al DAM.");
-		}
+//		if(enviar(socketDAM, DAM_MDJ_CONFIRMACION_ENVIO_DEL_DMA, NULL, 0, loggerAtencionDAM->logger))
+//		{
+//			log_error_mutex(loggerAtencionDAM, "No se pudo enviar confirmacion de llegada de paquete al DAM.");
+//		}
 	}
 
 	return stringTotal;
