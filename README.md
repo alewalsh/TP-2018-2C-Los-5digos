@@ -11,10 +11,10 @@ Pueden ver los protocolos definidos [acá](https://docs.google.com/spreadsheets/
 
 3- cd tp-2018-2c-Los-5digos
 
-4- ejecutar: ./COMPONENTEcompile.sh
+4- ejecutar: ./COMPONENTEcompile.sh (Ej: SAFAcompile.sh)
 
-Nota: Al ejecutar un sh, ejecuta un comando sudo por lo que les pedirá la contraseña del usuario utnso.
+Nota: Al finalizar la compilación ya estás habilitado a entrar en la carpeta Debug del proceso y levantarlo.
 
-Nota2: Al finalizar la compilación ya estás habilitado a entrar en la carpeta Debug del proceso y levantarlo.
+Nota2: En caso de necesitar levantar un 2do proceso, con solo compilarlo ya se puede levantar.
 
-Nota3: En caso de necesitar levantar un 2do proceso, con solo compilarlo ya se puede levantar.
+Nota3: Al ejecutar un sh, ejecuta un comando sudo por lo que les pedirá la contraseña del usuario utnso.
