@@ -14,5 +14,7 @@ Pueden ver los protocolos definidos [acá](https://docs.google.com/spreadsheets/
 4- ejecutar: ./COMPONENTEcompile.sh
 
 Nota: Al ejecutar un sh, ejecuta un comando sudo por lo que les pedirá la contraseña del usuario utnso.
+
 Nota2: Al finalizar la compilación ya estás habilitado a entrar en la carpeta Debug del proceso y levantarlo.
+
 Nota3: En caso de necesitar levantar un 2do proceso, con solo compilarlo ya se puede levantar.
