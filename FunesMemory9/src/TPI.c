@@ -318,6 +318,7 @@ int ejecutarGuardarEsquemaTPI(t_package pkg, t_infoGuardadoLinea* datosPaquete, 
 
 int cerrarArchivoTPI(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socketSolicitud)
 {
+	bool pudoCerrar = false;
 	pthread_mutex_lock(&mutexPIDBuscado);
 	pidBuscado = datosPaquete->pid;
 	pathBuscado = datosPaquete->path;
@@ -335,6 +336,7 @@ int cerrarArchivoTPI(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socke
 		if (strcmp(pagina->path, datosPaquete->path) == 0)
 		{
 			liberarMarco(pagina->nroMarco);
+			pudoCerrar = true;
 		}
 		i++;
 	}
@@ -345,6 +347,14 @@ int cerrarArchivoTPI(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socke
 		exit_gracefully(-1);
 	}
 	eliminarPaginasDeTPI(paginasProceso);
+	if (pudoCerrar)
+	{
+		log_trace_mutex(logger, "El archivo %s del proceso %d fue cerrado correctamente", datosPaquete->path, datosPaquete->pid);
+	}
+	else
+	{
+		log_trace_mutex(logger, "El archivo %s del proceso %d no fue encontrado para cerrar.", datosPaquete->path, datosPaquete->pid);
+	}
 //	list_clean_and_destroy_elements(paginasProceso,(void *)liberarPagina);
 
 	return EXIT_SUCCESS;

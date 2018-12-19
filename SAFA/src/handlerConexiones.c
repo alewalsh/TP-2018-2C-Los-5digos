@@ -295,7 +295,8 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 			if (cantIOProcess != 0 || cantLineasProceso != 0)
 				log_warning_mutex(logger, "Estas recibiendo información distinta a la que deberias recibir.");
 
-			if(confirmacionDMA(pid, result)){
+			if(confirmacionDMA(pid, result))
+			{
 				//Error
 				log_error_mutex(logger, "No se pudo cargar el proceso pid: %d en memoria", pid);
 			}

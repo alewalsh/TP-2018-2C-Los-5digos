@@ -340,7 +340,7 @@ void actualizarTablaDirecciones(int pid, char * path){
 	// TODO: OJO QUE ESTÁ DEVOLVIENDO EL DUMMY Y NO EL GDT BUSCADO
 	int index = buscarPosicionPorPIDenCola(colaBloqueados,pid);
 	if(index >= 0){
-		t_dtb * dtbAModificar = list_get(colaBloqueados,index);
+		t_dtb * dtbAModificar = list_remove(colaBloqueados,index);
 		list_add(dtbAModificar->tablaDirecciones,path);
 		list_add_in_index(colaBloqueados,index,dtbAModificar);
 		log_info_mutex(logger, "Se actualizó la tabla de direcciones del proceso: %d", pid);

@@ -292,6 +292,7 @@ int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbAFinalizar){
     int index = buscarDTBEnCola(colaEjecutando,dtbAFinalizar);
     pthread_mutex_unlock(&mutexEjecutandoList);
 
+
 	if(index >= 0){
 		pthread_mutex_lock(&mutexEjecutandoList);
 		t_dtb * dtbEjecutandoAFinalizar = (t_dtb *) list_remove(colaEjecutando,index);
@@ -304,8 +305,23 @@ int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbAFinalizar){
 	    pthread_mutex_unlock(&mutexExitList);
 	}
 	else
-	{
-		return EXIT_FAILURE;
+	{//TODO: Se hace un workaround para solucionar el tema de los procesos que quedan en BLOQ
+
+	    int index2 = buscarDTBEnCola(colaBloqueados, dtbAFinalizar);
+	    if (index2 >= 0)
+	    {
+	//    	pasarDTBdeBLOQUEADOaFINALIZADO()
+			pthread_mutex_lock(&mutexBloqueadosList);
+			t_dtb * dtbBloqAFinalizar = (t_dtb *) list_remove(colaBloqueados,index2);
+			pthread_mutex_unlock(&mutexBloqueadosList);
+
+			pthread_mutex_lock(&mutexExitList);
+			list_add(colaExit, dtbBloqAFinalizar);
+			pthread_mutex_unlock(&mutexExitList);
+			sem_post(&semaforoGradoMultiprgramacion);
+	    }
+	    // TODO: Aca termina el workaround
+//		return EXIT_FAILURE;
 	}
 
 	sem_post(&semaforoGradoMultiprgramacion);

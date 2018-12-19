@@ -404,6 +404,7 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg, t_infoGuardadoLinea* datosPaquet
 
 int cerrarArchivoSegPag(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socketSolicitud)
 {
+	bool pudoCerrar = false;
 	char * pidString = intToString(datosPaquete->pid);
 	t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
 	if (gdt == NULL)
@@ -427,6 +428,7 @@ int cerrarArchivoSegPag(t_package pkg, t_infoCerrarArchivo* datosPaquete, int so
 					t_pagina * pagina = list_get(listaPorSegmento,j);
 					liberarMarco(pagina->nroMarco);
 				}
+				pudoCerrar = true;
 			}
 		}
 		//ENVIAR MSJ DE EXITO A CPU
@@ -435,6 +437,14 @@ int cerrarArchivoSegPag(t_package pkg, t_infoCerrarArchivo* datosPaquete, int so
 			log_error_mutex(logger, "Error al avisar al CPU que se ha guardado correctamente la línea.");
 			exit_gracefully(-1);
 		}
+	}
+	if (pudoCerrar)
+	{
+		log_trace_mutex(logger, "El archivo %s del proceso %d fue cerrado correctamente", datosPaquete->path, datosPaquete->pid);
+	}
+	else
+	{
+		log_trace_mutex(logger, "El archivo %s del proceso %d no fue encontrado para cerrar.", datosPaquete->path, datosPaquete->pid);
 	}
 	return EXIT_SUCCESS;
 }
