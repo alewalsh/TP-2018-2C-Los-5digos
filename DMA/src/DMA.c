@@ -107,7 +107,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 				log_error_mutex(logger, "Hubo un error en la inicializacion del escriptorio");
 				break;
 			}
-        	log_info_mutex(logger, "Se cargo el escriptorio en MDJ y se notificó a S-AFA");
+        	log_info_mutex(logger, "Se cargo el escriptorio en FM9 y se notificó a S-AFA");
 			break;
 
 		/*
@@ -143,8 +143,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
         case CPU_DAM_CREAR:
         	if(crearArchivo(pkg,socketFD)){
-				log_error_mutex(logger, "Hubo un error al crear el archivo: %s",
-						pkg.data);
+				log_error_mutex(logger, "Hubo un error al crear el archivo: %s", pkg.data);
 				break;
 			}
 

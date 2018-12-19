@@ -284,15 +284,25 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         //LA PETICION "BORRAR ARCHIVO" SE FINALIZÓ
 		case DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS:
 		case DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO:
-		case DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO:{
-			int pid = copyIntFromBuffer(&pkg.data);
-			int result = copyIntFromBuffer(&pkg.data);
+		case DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO:
+		case DAM_SAFA_FAIL:
+		{
+			char * buffer = pkg.data;
+			int pid = copyIntFromBuffer(&buffer);
+			int result = copyIntFromBuffer(&buffer);
+			int cantIOProcess = copyIntFromBuffer(&buffer);
+			int cantLineasProceso = copyIntFromBuffer(&buffer);
+			if (cantIOProcess != 0 || cantLineasProceso != 0)
+				log_warning_mutex(logger, "Estas recibiendo información distinta a la que deberias recibir.");
 
 			if(confirmacionDMA(pid, result)){
 				//Error
 				log_error_mutex(logger, "No se pudo cargar el proceso pid: %d en memoria", pid);
 			}
-			log_info_mutex(logger,"Se cargó en memoria y se desbloqueó el proceso pid: %d", pid);
+			else
+			{
+				log_info_mutex(logger,"Se cargó en memoria y se desbloqueó el proceso pid: %d", pid);
+			}
 
 			break;
 	   }

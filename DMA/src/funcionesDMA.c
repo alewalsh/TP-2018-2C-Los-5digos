@@ -610,14 +610,19 @@ int enviarPkgDeFm9AMdj(char * path) {
 	}
 
 	int result;
-	if(response.code == DAM_MDJ_OK){
+	if(response.code == DAM_MDJ_OK)
+	{
 		result = EXIT_SUCCESS;
-	}else{
+		//SE ENVIA CONFIRMACION A SAFA
+		enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_CREADO);
+	}
+	else
+	{
 		result = EXIT_FAILURE;
+		//SE ENVIA CONFIRMACION A SAFA
+		enviarConfirmacionSafa(pid, result, 0, 0, ERROR_ARCHIVO);
 	}
 
-	//SE ENVIA CONFIRMACION A SAFA
-	enviarConfirmacionSafa(pid, result, 0, 0, ARCHIVO_CREADO);
 	free(bufferEnvio);
 	return result;
 }
@@ -801,29 +806,35 @@ void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int c
 	char *p = buffer;
 	copyIntToBuffer(&p, pid);
 	copyIntToBuffer(&p, result);
-	copyIntToBuffer(&p,cantidadIODelProceso);
+	copyIntToBuffer(&p, cantidadIODelProceso);
 	copyIntToBuffer(&p, cantLineasArchivo);
 
-	switch(code){
-	case ARCHIVO_CREADO:
-		msjCode = DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO;
-		break;
+	switch(code)
+	{
+		case ARCHIVO_CREADO:
+			msjCode = DAM_SAFA_CONFIRMACION_CREAR_ARCHIVO;
+			break;
 
-	case ARCHIVO_BORRADO:
-		msjCode = DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO;
-		break;
+		case ARCHIVO_BORRADO:
+			msjCode = DAM_SAFA_CONFIRMACION_BORRAR_ARCHIVO;
+			break;
 
-	case ARCHIVO_GUARDADO:
-		msjCode = DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS;
-		break;
+		case ARCHIVO_GUARDADO:
+			msjCode = DAM_SAFA_CONFIRMACION_DATOS_GUARDADOS;
+			break;
+		case ERROR_ARCHIVO:
+			msjCode = DAM_SAFA_FAIL;
+			break;
 	}
 
 	if (enviar(t_socketSafa->socket, msjCode, buffer, size, logger->logger)) {
 		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
 		free(buffer);
 	}
-
-	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
+	if (msjCode != DAM_SAFA_FAIL)
+		log_info_mutex(logger, "Mensaje de confirmacion a SAFA enviado");
+	else
+		log_info_mutex(logger, "Se envió el aviso de error al SAFA");
 	free(buffer);
 }
 

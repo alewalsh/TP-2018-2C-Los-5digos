@@ -135,7 +135,8 @@ void liberarRecursos(){
     free(rutaConfigSinCofig);
 }
 
-void destruirListas(){
+void destruirListas()
+{
 	if (list_size(colaNew) > 0) {
 		list_destroy_and_destroy_elements(colaNew,(void*)destruir_dtb);
 	} else {

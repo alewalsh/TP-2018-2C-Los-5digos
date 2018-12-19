@@ -416,9 +416,12 @@ int pasarDTBdeNEWaEXIT(t_dtb * dtbAExit){
 
 void pasarDTBSegunQuantumRestante(t_dtb * dtb){
 
-	if(dtb->quantumRestante > 0){
+	if(dtb->quantumRestante > 0)
+	{
 		pasarDTBdeBLOQaREADYESP(dtb);
-	}else{
+	}
+	else
+	{
 		pasarDTBdeBLOQaREADY(dtb);
 	}
 
@@ -436,13 +439,16 @@ void enviarDTBaCPU(t_dtb *dtbAEnviar, int socketCpu){
 		//Error al enviar
 		log_error_mutex(logger, "No se pudo enviar el DTB al CPU..");
 		int result = pasarDTBdeEXECaFINALIZADO(dtbAEnviar);
-		if(result == EXIT_FAILURE){
+		if(result == EXIT_FAILURE)
+		{
 			log_error_mutex(logger, "Error al finalizar el DTB..");
-	   }else{
+	    }
+		else
+		{
 		   log_error_mutex(logger, "SE FINALIZÓ EL PROCESO ID: %d POR INCONVENIENTES DE ENVIOS", dtbAEnviar->idGDT);
 		   //si estaba ejecutando -> Se hace signal del semaforo y se libera la cpu
 			liberarCpu(socketCpu);
-	   }
+	    }
 	}
 	log_info_mutex(logger, "Se envió el DTB a ejecutar a la CPU: %d",socketCpu);
 	free(paquete.data);
