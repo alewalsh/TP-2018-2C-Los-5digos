@@ -129,4 +129,7 @@ int finEjecucionFM9(int idGDT);
 
 t_cpu_operacion obtenerInstruccionMemoria(char * direccionEscriptorio, int idGDT, int posicion);
 bool encontrarPath(char * direccion);
+
+void notificarDesconexion();
+void sig_handler(int signo);
 #endif /* CPU_H_ */

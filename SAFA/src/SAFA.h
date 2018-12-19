@@ -107,7 +107,5 @@ void manejoCortoPlazo();
 void manejoLargoPlazo();
 
 void sig_handler(int signo);
-void exit_gracefully(int error);
 void liberarRecursos();
-
 #endif /* SAFA_H_ */

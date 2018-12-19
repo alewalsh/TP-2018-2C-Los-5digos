@@ -41,6 +41,9 @@ int main(int argc, char ** argv) {
 
 	printf("Se crearan los hilos de safa \n");
 
+	signal(SIGINT, sig_handler);
+	signal(SIGTERM, sig_handler);
+	signal(SIGKILL, sig_handler);
 	//Inicializo la consola del Planificador y los threads correspondientes
     pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
     pthread_create(&threadCambioConfig, &tattr, (void *) cambiosConfig, NULL);
@@ -56,11 +59,17 @@ int main(int argc, char ** argv) {
     pthread_join(threadLargoPlazo,NULL);*/
     pthread_join(threadConsola,NULL);
 
-    liberarRecursos();
-    destruirListas();
-	return EXIT_SUCCESS;
+    exit_gracefully(EXIT_SUCCESS);
 }
 
+void sig_handler(int signo)
+{
+  if (signo == SIGTERM || signo == SIGKILL || signo == SIGINT)
+  {
+	  log_warning_mutex(logger, "Se recibió una señal de finalizacion del proceso.");
+	  exit_gracefully(EXIT_FAILURE);
+  }
+}
 
 void inicializarRecursos(char * pathConfig){
 
@@ -191,7 +200,7 @@ void initMutexs(){
 	pthread_mutex_init(&mutexCpus, NULL);
 
 	pthread_mutex_init(&semDummy, NULL);
-	sem_init(&semaforoGradoMultiprgramacion, 0 ,conf->grado_mp);
+	sem_init(&semaforoGradoMultiprgramacion, true ,conf->grado_mp);
 	sem_init(&mandadosPorConsola, 0, 0);
 	sem_init(&semaforoCpu,0,0);
 

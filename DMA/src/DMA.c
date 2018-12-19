@@ -164,7 +164,6 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         case SOCKET_DISCONECT:
             close(socketFD);
             deleteSocketFromMaster(socketFD);
-            exit_gracefully(socketFD);
             break;
         default:
             log_warning_mutex(logger, "El mensaje recibido es: %s", codigoIDToString(pkg.code));
@@ -200,8 +199,8 @@ void cargarArchivoDeConfig(char * pathConfig) {
 }
 
 void configure_logger() {
-	//logger = log_create("DAM.log", "DAM", true, LOG_LEVEL_INFO);
-	logger = log_create_mutex("DAM.log", "DAM", true, LOG_LEVEL_TRACE);
+	logger = log_create_mutex("DAM.log", "DAM", true, LOG_LEVEL_INFO);
+//	logger = log_create_mutex("DAM.log", "DAM", true, LOG_LEVEL_TRACE);
 	log_info_mutex(logger, "Inicia proceso: Diego Armando Maradona (DAM)");
 }
 

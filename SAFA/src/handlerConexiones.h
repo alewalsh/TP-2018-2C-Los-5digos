@@ -20,6 +20,8 @@ extern fd_set master;
 extern fd_set readset;
 extern pthread_mutex_t mutexCpus;
 
+int socketBuscado;
+
 t_list* listaCpus;
 t_list* listaRecursoAsignados;
 // ------------------------------------------------------------------------------
@@ -35,4 +37,8 @@ void hacerWaitDeRecurso(char * recursoSolicitado, int pid, int socketCPU);
 void hacerSignalDeRecurso(char * recursoSolicitado);
 void actualizarMetricas(t_dtb * dtb);
 void manejarNuevaCPU(int nuevoFd);
+void finEjecucionCPU(int socket);
+bool buscarCPUPorSocket(t_cpus * cpu);
+void exit_gracefully(int error);
+void notificarDesconexionCPUs();
 #endif /* HANDLERCONEXIONES_H_ */

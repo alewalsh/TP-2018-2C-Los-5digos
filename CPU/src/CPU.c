@@ -16,21 +16,25 @@ int main(int argc, char ** argv) {
 	//t_list * lista = parseoInstrucciones(char * path, int cantidadLineas)
 	inicializarCPU(argv[1]);
 	log_trace_mutex(loggerCPU, "Se inicializó la CPU.");
+	signal(SIGINT, sig_handler);
+	signal(SIGTERM, sig_handler);
+	signal(SIGKILL, sig_handler);
     pthread_t threadPrincipal;
-//    sig_handler(SIGINT);
 	//Recibir DTB y verificar valor de flag de inicializacion
     pthread_create(&threadPrincipal, &tattr, (void *) recibirDTB, NULL);
 	pthread_join(threadPrincipal,NULL);
     exit_gracefully(EXIT_SUCCESS);
 }
 
-//void sig_handler(int signal)
-//{
-//	if (signal == SIGINT)
-//	{
-//		exit_gracefully(signal);
-//	}
-//}
+void sig_handler(int signo)
+{
+  if (signo == SIGTERM || signo == SIGKILL || signo == SIGINT)
+  {
+	  log_warning_mutex(loggerCPU, "Se recibió una señal de finalizacion del proceso.");
+	  exit_gracefully(EXIT_FAILURE);
+  }
+}
+
 void recibirDTB()
 {
 	while(1)
@@ -67,6 +71,10 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         		log_error_mutex(loggerCPU, "Hubo un error en el seteo del nuevo quantum.");
         		break;
         	}
+        	break;
+        case SAFA_CPU_DISCONNECT:
+            log_warning_mutex(loggerCPU, "Se desconectó el SAFA, procede a finalizarse la CPU.");
+        	exit_gracefully(SAFA_CPU_DISCONNECT);
         	break;
         case SOCKET_DISCONECT:
 //            handlerDisconnect(socketFD);
@@ -740,6 +748,8 @@ char * enumToProcess(int proceso)
 
 void exit_gracefully(int error)
 {
+	if (error != SAFA_CPU_DISCONNECT)
+		notificarDesconexion();
 	liberarMemoriaTSocket(t_socketDAM);
 	liberarMemoriaTSocket(t_socketSAFA);
 	liberarMemoriaTSocket(t_socketFM9);
@@ -749,6 +759,19 @@ void exit_gracefully(int error)
 	log_destroy_mutex(loggerCPU);
 	freeConfig(config, CPU);
 	exit(error);
+}
+
+void notificarDesconexion()
+{
+	if(enviar(t_socketSAFA->socket,CPU_SAFA_DISCONNECT,NULL, 0, loggerCPU->logger))
+	{
+		log_error_mutex(loggerCPU, "No se pudo enviar el fin de ejecución de la CPU.");
+//		return EXIT_FAILURE;
+	}
+	else
+	{
+		log_info_mutex(loggerCPU, "La desconexión del SAFA se ha realizado exitosamente");
+	}
 }
 
 void liberarMemoriaTSocket(t_socket * TSocket)

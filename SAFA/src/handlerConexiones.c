@@ -79,7 +79,7 @@ void manejarConexiones(){
         int result = select(getMaxfd() + 1, &readset, NULL, NULL, NULL);
         if (result == -1) {
             log_error_mutex(logger, "Error en el select: %s", strerror(errno));
-            exit(1);
+            exit_gracefully(EXIT_FAILURE);
         }
 
         log_trace_mutex(logger, "El valor del select es: %d", result);
@@ -121,6 +121,37 @@ void manejarConexiones(){
 
 }
 
+
+void exit_gracefully(int error)
+{
+	notificarDesconexionCPUs();
+	liberarRecursos();
+    destruirListas();
+	exit(error);
+}
+
+void notificarDesconexionCPUs()
+{
+	if (list_size(listaCpus) > 0)
+	{
+		for(int i =0; i < list_size(listaCpus); i++)
+		{
+			t_cpus * cpu = list_get(listaCpus, i);
+			if(enviar(cpu->socket,CPU_SAFA_DISCONNECT,NULL, 0, logger->logger))
+			{
+				log_error_mutex(logger, "No se pudo enviar el fin de ejecución del SAFA a las CPU.");
+			}
+			else
+			{
+				log_info_mutex(logger, "La desconexión del SAFA se ha realizado exitosamente");
+			}
+		}
+	}
+	else
+	{
+		log_info_mutex(logger, "No hay CPUs a las cuales avisar la desconexión.");
+	}
+}
 
 void manejarSolicitud(t_package pkg, int socketFD) {
     switch (pkg.code) {
@@ -278,8 +309,13 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 			hacerWaitDeRecurso(recurso,pid,socketFD);
 			break;
         }
-
+        case CPU_SAFA_DISCONNECT:
+        {
+        	finEjecucionCPU(socketFD);
+        	break;
+        }
         case SOCKET_DISCONECT:
+			deleteSocketFromMaster(socketFD);
             close(socketFD);
             break;
         default:
@@ -291,6 +327,22 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 
 //    free(pkg.data);
 
+}
+
+void finEjecucionCPU(int socket)
+{
+	pthread_mutex_lock(&mutexCpus);
+	socketBuscado = socket;
+	list_remove_by_condition(listaCpus, (void *) buscarCPUPorSocket);
+	pthread_mutex_unlock(&mutexCpus);
+	log_info_mutex(logger, "Se ha desconectado una CPU.");
+}
+
+bool buscarCPUPorSocket(t_cpus * cpu)
+{
+	if (cpu->socket == socketBuscado)
+		return true;
+	return false;
 }
 
 void initCpuList(){
