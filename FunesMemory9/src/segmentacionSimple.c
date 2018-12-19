@@ -154,6 +154,7 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 		int i = 0, offset = 0, tamanioPaqueteReal = 0;
 		int lineaLeida = 1;
 		int limite = segmento->limite;
+		int nroLinea = 1;
 		while(i < limite)
 		{
 			t_package paquete;
@@ -167,11 +168,15 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 				}
 			}
 			char * bufferLinea = paquete.data;
-			int nroLinea = copyIntFromBuffer(&bufferLinea);
+			nroLinea = copyIntFromBuffer(&bufferLinea);
 			int tamanioPaquete = copyIntFromBuffer(&bufferLinea);
 			char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
 			if (nroLinea != lineaLeida)
 			{
+				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
+				offset += (tamanioPaquete);
+				tamanioPaqueteReal += tamanioPaquete;
+				lineaLeida = nroLinea;
 				bufferGuardado[tamanioPaqueteReal] = '\n';
 				char * lineaAGuardar = prepararLineaMemoria(bufferGuardado);
 				log_trace_mutex(logger, "Se guardó la linea '%s' en la posicion de memoria: %d",lineaAGuardar, direccion(segmento->base,i));
@@ -179,24 +184,13 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 				i++;
 				offset = 0;
 				tamanioPaqueteReal = 0;
-				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
-				offset += (tamanioPaquete);
-				tamanioPaqueteReal += tamanioPaquete;
 			}
 			else
 			{
 				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
 				offset += (tamanioPaquete);
 				tamanioPaqueteReal += tamanioPaquete;
-			}
-			lineaLeida = nroLinea;
-			if (nroLinea == limite)
-			{
-				bufferGuardado[tamanioPaqueteReal] = '\n';
-				char * lineaAGuardar = prepararLineaMemoria(bufferGuardado);
-				log_trace_mutex(logger, "Se guardó la linea '%s' en la posicion de memoria: %d",lineaAGuardar, direccion(segmento->base,i));
-				guardarLinea(direccion(segmento->base,i), bufferGuardado);
-				i++;
+				lineaLeida = nroLinea;
 			}
 		}
 		free(bufferGuardado);
