@@ -348,9 +348,9 @@ int ejecutarGuardarEsquemaSegPag(t_package pkg, t_infoGuardadoLinea* datosPaquet
 	int cantidadSegmentos = dictionary_size(gdt->tablaSegmentos);
 	bool pudeGuardar = false;
 	int cantidadLineas = obtenerLineasProceso(datosPaquete->pid, datosPaquete->path);
-	int lineaBuscada = datosPaquete->linea;
+	int lineaBuscada = datosPaquete->linea - 1;
 	// PRIMERO VERIFICO SI TENGO LA CANTIDAD DE LINEAS DISPONIBLES PARA REALIZAR EL GUARDADO
-	if (cantidadLineas < datosPaquete->linea)
+	if (cantidadLineas < lineaBuscada)
 	{
 		return FM9_CPU_ACCESO_INVALIDO;
 	}
