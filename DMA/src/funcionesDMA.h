@@ -76,7 +76,7 @@ int enviarPkgDeFm9AMdj(char * path);
 bool crearArchivo(t_package paquete, int socketEnUso);
 bool borrarArchivo(t_package paquete, int socketEnUso);
 int contarCantidadLineas(char * string);
-int calcularCantidadPaquetes(int sizeOfFile);
+int calcularCantidadPaquetes(int sizeOfFile, int tamPaqueteRecibir);
 void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int cantLineasArchivo, int code);
 void enviarConfirmSafaScriptInit(int pid, int result, int cantidadIODelProceso, int cantLineasArchivo);
 void enviarConfirmSafaAbrirArchivo(int pid, int result, char * path);

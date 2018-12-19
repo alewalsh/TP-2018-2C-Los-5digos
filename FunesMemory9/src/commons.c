@@ -165,10 +165,8 @@ void realizarFlush(char * linea, int nroLinea, int transferSize, int socket)
 	char * lineaAEnviar = arrayLineas[0];
 	string_trim_right(&lineaAEnviar);
 	int tamanioLinea = string_length(lineaAEnviar) + 1;
-	int cantidadPaquetes = tamanioLinea / transferSize;
-	if(tamanioLinea % transferSize != 0){
-		cantidadPaquetes++;
-	}
+	int tamanioReal = transferSize - sizeof(int) -1;
+	int cantidadPaquetes = calcularCantidadPaquetes(tamanioLinea, tamanioReal);
 	int size = sizeof(int);
 	char * bufferInicial = malloc(size);
 	char * p = bufferInicial;
@@ -204,58 +202,70 @@ bool filtrarPorPid(t_pagina * pagina)
 	return false;
 }
 
+int calcularCantidadPaquetes(int sizeOfFile, int tamPaqueteRecibir) {
+	//Lo divido por mi transfer Size y me quedo con la parte entera
+	int cantPart = sizeOfFile / tamPaqueteRecibir;
+	if(sizeOfFile % tamPaqueteRecibir != 0){
+		cantPart++;
+	}
+	log_trace_mutex(logger, "Se recibiran %d paquetes", cantPart);
+
+	return cantPart;
+}
+
 void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int transferSize, int cantidadPaquetes, int nroLinea, int socket)
 {
 	char * buffer = lineaAEnviar;
-	//Si la linea es mayor a mi transfer size debo enviarlo en varios paquetes
-	if(tamanioLinea > transferSize)
+	//Tomo el tamaño total de la linea
+	int tamanioReal = transferSize - sizeof(int) - 1;
+	int viejoOffset = 0, offset = tamanioReal;
+	char * bufferEnvio;
+	char * p;
+	while (cantidadPaquetes > 0)
 	{
-		//por cada paquete...
-		for (int l = 0; l < cantidadPaquetes; l++)
+		// TODO: Analizar el caso donde hay más cantidad de paquetes, ese offset + transfer_size me genera desconfianza - Ale
+		if (cantidadPaquetes == 1)
 		{
-			char * sub; //substring a enviar
-			int inicio = transferSize * nroLinea, //posicion inicial del substring
-			fin = (transferSize * (nroLinea + 1))-1; //posicion final del substring
-
-			//Si es el ultimo paquete a enviar el fin es el tamanio de linea
-			if (nroLinea + 1 == cantidadPaquetes) {
-				fin = tamanioLinea;
-			}
-
-			sub = string_substring(buffer,inicio,fin);
-
-			int size = sizeof(int) + (strlen(sub)+1) * sizeof(char);
-			char * bufferAEnviar = (char *) malloc(size);
-			char * p = bufferAEnviar;
-			copyStringToBuffer(&p, sub); //BUFFER
-
-			//enviar
-			if(enviar(socket,DAM_FM9_ENVIO_PKG,bufferAEnviar,size,logger->logger))
+			char * datosRestantes = string_substring_from(buffer, viejoOffset);
+			int longitudDatos = string_length(datosRestantes) + 1;
+			int size = sizeof(int) + longitudDatos * sizeof(char);
+			if (size > transferSize)
+				log_error_mutex(logger, "Ojo, el size %d es mayor al transfer size %d, esto no deberia suceder", size, transferSize);
+			bufferEnvio = malloc(size);
+			p = bufferEnvio;
+			copyStringToBuffer(&p, datosRestantes); //BUFFER
+			if(enviar(socket, DAM_FM9_ENVIO_PKG, bufferEnvio, size, logger->logger))
 			{
-				log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
-				free(bufferAEnviar);
+				log_error_mutex(logger, "Error al enviar paquete al FM9.");
+				free(bufferEnvio);
 			}
-
-			free(bufferAEnviar);
+			free(datosRestantes);
 		}
-	}
-	else
-	{
-		//Si está dentro del tamaño permitido se envía la linea
-		int size = sizeof(int) + tamanioLinea;
-		char * bufferAEnviar = malloc(size);
-		char * p = bufferAEnviar;
-		copyStringToBuffer(&p, buffer);
-
-		if(enviar(socket,DAM_FM9_ENVIO_PKG,bufferAEnviar,size,logger->logger))
+		else
+		// if (cuantosPaquetes > 0)
 		{
-			log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
-			free(buffer);
-			free(bufferAEnviar);
+			char * retornoOffset = string_substring_until(buffer+viejoOffset, tamanioReal);
+			int longitudDatos = string_length(retornoOffset);
+			int size = sizeof(int) + longitudDatos * sizeof(char);
+			if (size > transferSize)
+				log_error_mutex(logger, "Ojo, el size %d es mayor al transfer size %d, esto no deberia suceder", size, transferSize);
+			bufferEnvio = malloc(size);
+			p = bufferEnvio;
+			copyStringToBuffer(&p, retornoOffset); //BUFFER
+			if(enviar(socket, DAM_FM9_ENVIO_PKG, bufferEnvio, transferSize, logger->logger))
+			{
+				log_error_mutex(logger, "Error al enviar validacion de archivo al DAM.");
+				free(bufferEnvio);
+			}
+			free(retornoOffset);
+
 		}
-		free(bufferAEnviar);
+		viejoOffset = offset;
+		offset = offset + tamanioReal;
+
+		cantidadPaquetes--;
+		free(bufferEnvio);
 	}
-	free(buffer);
 }
 
 char * obtenerLinea(int posicionMemoria)

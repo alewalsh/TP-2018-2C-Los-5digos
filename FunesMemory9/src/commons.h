@@ -73,4 +73,6 @@ void actualizarPosicionesLibres(int finalBitArray, int lineasEsperadas, t_bitarr
 void enviarInstruccion(int posicionMemoria, int socketSolicitud);
 void actualizarTablaDeSegmentos(int pid, t_segmento * segmento);
 bool filtrarPorSegmento(t_pagina * pagina);
+
+int calcularCantidadPaquetes(int sizeOfFile, int tamPaqueteRecibir);
 #endif /* SRC_COMMONS_H_ */

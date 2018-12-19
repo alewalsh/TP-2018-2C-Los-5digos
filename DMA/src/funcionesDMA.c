@@ -81,7 +81,8 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 	//TODO: Hacer validacion, si es size = 0, no corresponde enviar ninguna paquete.
 
 	//Calculo cuantos paquetes voy a recibir del fm9 segun mi transfer size
-	int cantPkg = calcularCantidadPaquetes(size);
+	int tamPaqueteRecibir = configDMA->transferSize - sizeof(int)-1;
+	int cantPkg = calcularCantidadPaquetes(size, tamPaqueteRecibir);
 
 	//Ahora se reciben los paquetes y se concatena tudo el archivo
 	//(Si el archivo es mayor que mi Transfersize recibo n paquetes del tamaño de mi transfersize)
@@ -172,64 +173,121 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 	{
 		//SE ENVIA LINEA POR LINEA AL FM9
 		// Agrego el i < cantLineas en vez de arrayLineas[i] porque de esta manera, evito enviar la linea vacia del final.
-		for (int k = 0; k < cantLineas; k++) {
+		for (int k = 0; k < cantLineas; k++)
+		{
 			//Linea -> buffer
 			char * buffer = arrayLineas[k];
 			//Tomo el tamaño total de la linea
 			int tamanioLinea = string_length(buffer);
 
-			//Si la linea es mayor a mi transfer size debo enviarlo en varios paquetes
-			if (tamanioLinea > configDMA->transferSize) {
-				//Calculo la cantidad de paquetes
-				int cantPaquetes = calcularCantidadPaquetes(tamanioLinea);
-
-				//por cada paquete...
-				for (int l = 0; l < cantPaquetes; l++) {
-					char * sub; //substring a enviar
-					int inicio = configDMA->transferSize * k, //posicion inicial del substring
-					fin = (configDMA->transferSize * (k + 1))-1; //posicion final del substring
-
-					//Si es el ultimo paquete a enviar el fin es el tamanio de linea
-					if (k + 1 == cantPaquetes) {
-						fin = tamanioLinea;
-					}
-
-					sub = string_substring(buffer,inicio,fin);
-
-					int size = sizeof(int) * 3 + (strlen(sub)+1) * sizeof(char);
-					char * bufferAEnviar = (char *) malloc(size);
-					char * p = bufferAEnviar;
-					copyIntToBuffer(&p, k + 1); //NRO LINEA
-					copyIntToBuffer(&p, strlen(sub) * sizeof(char)); //SIZE
-					copyStringToBuffer(&p, sub); //BUFFER
-
-					//enviar
-					if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG, bufferAEnviar, size, logger->logger)) {
-						log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
-						free(bufferAEnviar);
-						return EXIT_FAILURE;
-					}
-
-					free(bufferAEnviar);
-				}
-			} else {
-				//Si está dentro del tamaño permitido se envía la linea
-				int size = (sizeof(int) * 3) + (tamanioLinea+1) * sizeof(char);
-				char * bufferAEnviar = (char *) malloc(size);
-				char * p = bufferAEnviar;
-				copyIntToBuffer(&p, (k + 1));
-				copyIntToBuffer(&p, tamanioLinea * sizeof(char));
-				copyStringToBuffer(&p, buffer);
-
-				if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG, bufferAEnviar, size, logger->logger))
+			int tamanioReal = configDMA->transferSize - 3*sizeof(int) - 1;
+			int cantPaquetes = calcularCantidadPaquetes(tamanioLinea, tamanioReal);
+			int viejoOffset = 0, offset = tamanioReal;
+			char * bufferEnvio;
+			char * p;
+			while (cantPaquetes > 0)
+			{
+				// TODO: Analizar el caso donde hay más cantidad de paquetes, ese offset + transfer_size me genera desconfianza - Ale
+				if (cantPaquetes == 1)
 				{
-					log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
-					free(buffer);
-					return EXIT_FAILURE;
+					char * datosRestantes = string_substring_from(buffer, viejoOffset);
+					int longitudDatos = string_length(datosRestantes) + 1;
+					int size = sizeof(int) * 3 + longitudDatos * sizeof(char);
+					if (size > configDMA->transferSize)
+						log_error_mutex(logger, "Ojo, el size %d es mayor al transfer size %d, esto no deberia suceder", size, configDMA->transferSize);
+					bufferEnvio = malloc(size);
+					p = bufferEnvio;
+					copyIntToBuffer(&p, k + 2); //NRO LINEA
+					copyIntToBuffer(&p, longitudDatos); //SIZE
+					copyStringToBuffer(&p, datosRestantes); //BUFFER
+					if(enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG, bufferEnvio, size, logger->logger))
+					{
+						log_error_mutex(logger, "Error al enviar paquete al FM9.");
+						free(bufferEnvio);
+					}
+					free(datosRestantes);
 				}
-				free(bufferAEnviar);
+				else
+				// if (cuantosPaquetes > 0)
+				{
+					char * retornoOffset = string_substring_until(buffer+viejoOffset, tamanioReal);
+					int longitudDatos = string_length(retornoOffset);
+					int size = sizeof(int) * 3 + longitudDatos * sizeof(char);
+					if (size > configDMA->transferSize)
+						log_error_mutex(logger, "Ojo, el size %d es mayor al transfer size %d, esto no deberia suceder", size, configDMA->transferSize);
+
+					bufferEnvio = malloc(size);
+					p = bufferEnvio;
+					copyIntToBuffer(&p, k + 1); //NRO LINEA
+					copyIntToBuffer(&p, longitudDatos); //SIZE
+					copyStringToBuffer(&p, retornoOffset); //BUFFER
+					if(enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG, bufferEnvio, configDMA->transferSize, logger->logger))
+					{
+						log_error_mutex(logger, "Error al enviar validacion de archivo al DAM.");
+						free(bufferEnvio);
+					}
+					free(retornoOffset);
+
+				}
+				viejoOffset = offset;
+				offset = offset + tamanioReal;
+
+				cantPaquetes--;
+				free(bufferEnvio);
 			}
-			//free(arrayLineas[k]);
+//			//Si la linea es mayor a mi transfer size debo enviarlo en varios paquetes
+//			if (tamanioLinea > tamanioReal)
+//			{
+//				//Calculo la cantidad de paquetes
+//
+//				//por cada paquete...
+//				for (int l = 0; l < cantPaquetes; l++)
+//				{
+//					char * sub; //substring a enviar
+//					int inicio = tamanioReal * l, //posicion inicial del substring
+//					fin = (tamanioReal * (l + 1))-1; //posicion final del substring
+//
+//					//Si es el ultimo paquete a enviar el fin es el tamanio de linea
+//					if (l + 1 == cantPaquetes) {
+//						fin = tamanioLinea;
+//					}
+//
+//					sub = string_substring(buffer,inicio,fin);
+//
+//					int size = sizeof(int) * 3 + (strlen(sub)+1) * sizeof(char);
+//					char * bufferAEnviar = (char *) malloc(size);
+//					char * p = bufferAEnviar;
+//					copyIntToBuffer(&p, k + 1); //NRO LINEA
+//					copyIntToBuffer(&p, (strlen(sub) + 1)* sizeof(char)); //SIZE
+//					copyStringToBuffer(&p, sub); //BUFFER
+//
+//					//enviar
+//					if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG, bufferAEnviar, size, logger->logger)) {
+//						log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
+//						free(bufferAEnviar);
+//						return EXIT_FAILURE;
+//					}
+//
+//					free(bufferAEnviar);
+//				}
+//			} else {
+//				//Si está dentro del tamaño permitido se envía la linea
+//				int size = (sizeof(int) * 3) + (tamanioLinea+1) * sizeof(char);
+//				char * bufferAEnviar = (char *) malloc(size);
+//				char * p = bufferAEnviar;
+//				copyIntToBuffer(&p, (k + 1));
+//				copyIntToBuffer(&p, tamanioLinea * sizeof(char));
+//				copyStringToBuffer(&p, buffer);
+//
+//				if (enviar(t_socketFm9->socket, DAM_FM9_ENVIO_PKG, bufferAEnviar, size, logger->logger))
+//				{
+//					log_error_mutex(logger, "Error al enviar info del escriptorio a FM9");
+//					free(buffer);
+//					return EXIT_FAILURE;
+//				}
+//				free(bufferAEnviar);
+//			}
+//			//free(arrayLineas[k]);
 		}
 	}
 	else
@@ -240,7 +298,7 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 			int size = (sizeof(int) * 3) + tamanioBuffer * sizeof(char);
 			char * bufferAEnviar = (char *) malloc(size);
 			char * p = bufferAEnviar;
-			copyIntToBuffer(&p, (r + 1));
+			copyIntToBuffer(&p, (r + 2));
 			copyIntToBuffer(&p, tamanioBuffer-1);
 			copyStringToBuffer(&p, bufferEnvio);
 
@@ -416,14 +474,12 @@ int enviarPkgDeFm9AMdj(char * path) {
 	log_info_mutex(logger, "Se enviaron todos los datos  del proceso %s,al FileSystem.", path);
 
 	int tamanioBuffer = strlen(bufferTotal) + 1;
-	int cantidadPaquetes = tamanioBuffer / configDMA->transferSize;
-	if (tamanioBuffer % configDMA->transferSize != 0)
-	{
-		cantidadPaquetes++;
-	}
+	int tamanioReal = configDMA->transferSize - sizeof(int) - 1;
+	int cantidadPaquetes = calcularCantidadPaquetes(tamanioBuffer, tamanioReal);
+
 	//ENVIO A MDJ
 	//ENVIAR DATOS A MDJ: le envio EL PATH, EL INICIO Y EL SIZE A GUARDAR PARA QUE CALCULE LA CANTIDAD DE PAQUETES A ENVIAR
-	int sizeOfBuffer = sizeof(int) * 4 + (strlen(path)+1)*sizeof(char);
+	int sizeOfBuffer = sizeof(int) * 4 + (strlen(path)+1) * sizeof(char);
 	char * pkgToMdj = (char *) malloc(sizeOfBuffer);
 	char * ptr = pkgToMdj;
 	int inicio = 0;
@@ -440,27 +496,74 @@ int enviarPkgDeFm9AMdj(char * path) {
 	}
 	free(pkgToMdj);
 
-
-	int cantPaquetesAEnviar = calcularCantidadPaquetes(strlen(bufferTotal)+1);
-	for(int i= 0; i<cantPaquetesAEnviar; i++){
-		//tomo el paquete de un tamaño del transfer size
-		char * bufferOfTransferSize = string_substring(bufferTotal,i*configDMA->transferSize,((i+1)*configDMA->transferSize-1));
-
-		int size = (strlen(bufferOfTransferSize)+1)*sizeof(char) + sizeof(int);
-		char * bufferToMdj = malloc(size);
-		char * p = bufferToMdj;
-		copyStringToBuffer(&p,bufferOfTransferSize);
-
-		if (enviar(t_socketMdj->socket, DAM_MDJ_GUARDAR_DATOS, bufferToMdj,
-				size, logger->logger)) {
-			log_error_mutex(logger,
-					"Error al enviar el archivo a guardar al MDJ");
-			free(bufferToMdj);
-			free(bufferTotal);
-			return EXIT_FAILURE;
+	int viejoOffset = 0, offset = tamanioReal;
+	char * bufferEnvio;
+	char * p;
+//	int cantPaquetesAEnviar = calcularCantidadPaquetes(tamanioBuffer, tamanioReal);
+	while (cantidadPaquetes > 0)
+	{
+		// TODO: Analizar el caso donde hay más cantidad de paquetes, ese offset + transfer_size me genera desconfianza - Ale
+		if (cantidadPaquetes == 1)
+		{
+			char * datosRestantes = string_substring_from(bufferTotal, viejoOffset);
+			int longitudDatos = string_length(datosRestantes) + 1;
+			int size = sizeof(int) + longitudDatos * sizeof(char);
+			if (size > configDMA->transferSize)
+				log_error_mutex(logger, "Ojo, el size %d es mayor al transfer size %d, esto no deberia suceder", size, configDMA->transferSize);
+			bufferEnvio = malloc(size);
+			p = bufferEnvio;
+			copyStringToBuffer(&p, datosRestantes); //BUFFER
+			if(enviar(t_socketMdj->socket, DAM_MDJ_GUARDAR_DATOS, bufferEnvio, size, logger->logger))
+			{
+				log_error_mutex(logger, "Error al enviar paquete al FM9.");
+				free(bufferEnvio);
+			}
+			free(datosRestantes);
 		}
-		free(bufferToMdj);
+		else
+		// if (cuantosPaquetes > 0)
+		{
+			char * retornoOffset = string_substring_until(bufferTotal+viejoOffset, tamanioReal);
+			int longitudDatos = string_length(retornoOffset);
+			int size = sizeof(int) + longitudDatos * sizeof(char);
+			if (size > configDMA->transferSize)
+				log_error_mutex(logger, "Ojo, el size %d es mayor al transfer size %d, esto no deberia suceder", size, configDMA->transferSize);
+			bufferEnvio = malloc(size);
+			p = bufferEnvio;
+			copyStringToBuffer(&p, retornoOffset); //BUFFER
+			if(enviar(t_socketMdj->socket, DAM_MDJ_GUARDAR_DATOS, bufferEnvio, configDMA->transferSize, logger->logger))
+			{
+				log_error_mutex(logger, "Error al enviar validacion de archivo al DAM.");
+				free(bufferEnvio);
+			}
+			free(retornoOffset);
+
+		}
+		viejoOffset = offset;
+		offset = offset + tamanioReal;
+
+		cantidadPaquetes--;
+		free(bufferEnvio);
 	}
+//	for(int i= 0; i < cantidadPaquetes; i++)
+//	{
+//		//tomo el paquete de un tamaño del transfer size
+//		char * bufferOfTransferSize = string_substring(bufferTotal,i*configDMA->transferSize,((i+1)*configDMA->transferSize-1));
+//
+//		int size = (strlen(bufferOfTransferSize)+1)*sizeof(char) + sizeof(int);
+//		char * bufferToMdj = malloc(size);
+//		char * p = bufferToMdj;
+//		copyStringToBuffer(&p,bufferOfTransferSize);
+//
+//		if (enviar(t_socketMdj->socket, DAM_MDJ_GUARDAR_DATOS, bufferToMdj, size, logger->logger))
+//		{
+//			log_error_mutex(logger, "Error al enviar el archivo a guardar al MDJ");
+//			free(bufferToMdj);
+//			free(bufferTotal);
+//			return EXIT_FAILURE;
+//		}
+//		free(bufferToMdj);
+//	}
 	free(bufferTotal);
 
 	return EXIT_SUCCESS;
@@ -793,13 +896,13 @@ char * enumToProcess(int proceso) {
 	return nombreProceso;
 }
 
-int calcularCantidadPaquetes(int sizeOfFile) {
+int calcularCantidadPaquetes(int sizeOfFile, int tamPaqueteRecibir) {
 	//Lo divido por mi transfer Size y me quedo con la parte entera
-	int cantPart = sizeOfFile / configDMA->transferSize;
-	if(sizeOfFile % configDMA->transferSize != 0){
+	int cantPart = sizeOfFile / tamPaqueteRecibir;
+	if(sizeOfFile % tamPaqueteRecibir != 0){
 		cantPart++;
 	}
-//	log_info_mutex(logger, "Se recibiran %d paquetes", cantPart);
+	log_trace_mutex(logger, "Se recibiran %d paquetes", cantPart);
 
 	return cantPart;
 }
