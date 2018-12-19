@@ -222,7 +222,11 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 			char * contenidoLinea = copyStringFromBuffer(&bufferLinea);
 			if (nroLinea != lineaLeida)
 			{
-				t_pagina * pagina = list_get(paginasProceso,paginaActual);
+				t_pagina * pagina = list_get(paginasProceso, paginaActual);
+				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
+				offset += tamanioPaquete;
+				tamanioPaqueteReal += tamanioPaquete;
+				lineaLeida = nroLinea;
 				bufferGuardado[tamanioPaqueteReal] = '\n';
 				char * lineaAGuardar = prepararLineaMemoria(bufferGuardado);
 				guardarLinea(direccion(pagina->nroMarco,lineasGuardadas), lineaAGuardar);
@@ -235,28 +239,13 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 					lineasGuardadas = 0;
 					paginaActual++;
 				}
-
-				free(bufferGuardado);
-				bufferGuardado = malloc(config->tamMaxLinea);
-				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
-				offset += tamanioPaquete;
-				tamanioPaqueteReal += tamanioPaquete;
-
 			}
 			else
 			{
 				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
 				offset += tamanioPaquete;
 				tamanioPaqueteReal += tamanioPaquete;
-			}
-			lineaLeida = nroLinea;
-			if (nroLinea == cantidadLineas)
-			{
-				t_pagina * pagina = list_get(paginasProceso,paginaActual);
-				bufferGuardado[tamanioPaqueteReal] = '\n';
-				char * lineaAGuardar = prepararLineaMemoria(bufferGuardado);
-				guardarLinea(direccion(pagina->nroMarco,lineasGuardadas), lineaAGuardar);
-				i++;
+				lineaLeida = nroLinea;
 			}
 		}
 		free(bufferGuardado);

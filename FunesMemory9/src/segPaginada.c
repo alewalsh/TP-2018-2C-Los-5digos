@@ -154,7 +154,7 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 
 		gdt = dictionary_get(tablaProcesos,pidString);
 		char * bufferGuardado = malloc(config->tamMaxLinea);
-		int i = 0, lineasGuardadas = 0, tamanioPaqueteReal = 0;
+		int i = 0, lineasGuardadas = 0, tamanioPaqueteReal = 0, offset = 0;
 		int lineaLeida = 1;
 		int lineaActual = segmento->base;
 		int finalSegmento = segmento->base + segmento->limite;
@@ -182,37 +182,25 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 				t_list * listaPorSegmento = list_filter(gdt->tablaPaginas, (void *)filtrarPorSegmento);
 				pthread_mutex_unlock(&mutexSegmentoBuscado);
 				t_pagina * pagina = list_get(listaPorSegmento, posicionPagina);
+				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
+				offset += (tamanioPaquete);
+				tamanioPaqueteReal += tamanioPaquete;
 				bufferGuardado[tamanioPaqueteReal] = '\n';
+				lineaLeida = nroLinea;
 				char * lineaAGuardar = prepararLineaMemoria(bufferGuardado);
 				int posicionRelativaPagina = obtenerPosicionRelativaPagina(lineasGuardadas);
 				guardarLinea(direccion(pagina->nroMarco,posicionRelativaPagina), lineaAGuardar);
 				lineasGuardadas++;
 				tamanioPaqueteReal = 0;
-				free(bufferGuardado);
-				bufferGuardado = malloc(config->tamMaxLinea);
-				memcpy(bufferGuardado, contenidoLinea, tamanioPaquete);
-				tamanioPaqueteReal += tamanioPaquete;
 				lineaActual++;
+				offset = 0;
 			}
 			else
 			{
-				memcpy(bufferGuardado, contenidoLinea, tamanioPaquete);
+				memcpy(bufferGuardado+offset, contenidoLinea, tamanioPaquete);
+				offset += (tamanioPaquete);
 				tamanioPaqueteReal += tamanioPaquete;
-			}
-			lineaLeida = nroLinea;
-			if (nroLinea == segmento->limite)
-			{
-				int posicionPagina = lineasGuardadas / lineasXPagina;
-				pthread_mutex_lock(&mutexSegmentoBuscado);
-				nroSegmentoBuscado = segmento->nroSegmento;
-				t_list * listaPorSegmento = list_filter(gdt->tablaPaginas, (void *)filtrarPorSegmento);
-				pthread_mutex_unlock(&mutexSegmentoBuscado);
-				t_pagina * pagina = list_get(listaPorSegmento, posicionPagina);
-				bufferGuardado[tamanioPaqueteReal] = '\n';
-				char * lineaAGuardar = prepararLineaMemoria(bufferGuardado);
-				int posicionRelativaPagina = obtenerPosicionRelativaPagina(lineasGuardadas);
-				guardarLinea(direccion(pagina->nroMarco,posicionRelativaPagina), lineaAGuardar);
-				lineaActual++;
+				lineaLeida = nroLinea;
 			}
 		}
 		free(bufferGuardado);
