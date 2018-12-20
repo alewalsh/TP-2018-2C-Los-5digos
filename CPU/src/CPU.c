@@ -95,7 +95,6 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 int nuevoDummy(t_dtb * dtb, t_package paquete)
 {
 	// Luego de recibirlo tengo que verificar su flag de inicializacion
-	pthread_mutex_lock(&mutexSolicitudes);
 	// Si es 0, levanto un hilo y realizo  la operación Dummy - Iniciar G.DT
 	// Solicitarle al DAM la busqueda del Escriptorio en el MDJ
 	int longitudEscriptorio = strlen(dtb->dirEscriptorio) + 1;
@@ -106,7 +105,6 @@ int nuevoDummy(t_dtb * dtb, t_package paquete)
 			log_error_mutex(loggerCPU, "No se pudo enviar el ABORTA del Dummy al S-AFA.");
 			return EXIT_FAILURE;
 		}
-		pthread_mutex_unlock(&mutexSolicitudes);
 		return EXIT_FAILURE;
 	}
 	int size = 2*sizeof(int) + (longitudEscriptorio * sizeof(char));
@@ -118,7 +116,6 @@ int nuevoDummy(t_dtb * dtb, t_package paquete)
 	{
 		log_error_mutex(loggerCPU, "No se pudo enviar la busqueda del escriptorio al DAM.");
 		free(buffer);
-		pthread_mutex_unlock(&mutexSolicitudes);
 		return EXIT_FAILURE;
 	}
 	free(buffer);
@@ -128,12 +125,10 @@ int nuevoDummy(t_dtb * dtb, t_package paquete)
 	if(enviar(t_socketSAFA->socket,CPU_SAFA_BLOQUEAR_DUMMMY,paquete.data, paquete.size, loggerCPU->logger))
 	{
 		log_error_mutex(loggerCPU, "No se pudo enviar el bloqueo del Dummy al S-AFA.");
-		pthread_mutex_unlock(&mutexSolicitudes);
 		return EXIT_FAILURE;
 	}
 	log_info_mutex(loggerCPU, "Se envió el pedido de bloqueo del proceso %d al SAFA.", dtb->idGDT);
 	free(dtb);
-	pthread_mutex_unlock(&mutexSolicitudes);
 	return EXIT_SUCCESS;
 }
 
@@ -203,14 +198,11 @@ int realizarEjecucion(t_dtb * dtb)
 				case EXIT_FAILURE:
 					log_trace_mutex(loggerCPU, "La respuesta para la operacion %d del proceso %d fue EXIT FAILURE.",dtb->programCounter, dtb->idGDT);
 					log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
-					segFaultDTB = true;
-					pthread_mutex_lock(&mutexSolicitudes);
+					segFaultDTB = true;;
 					if (finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
 					{
-						pthread_mutex_unlock(&mutexSolicitudes);
 						log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
 					}
-					pthread_mutex_unlock(&mutexSolicitudes);
 					break;
 				case CONCENTRAR_EJECUTADO:
 					log_trace_mutex(loggerCPU, "La respuesta para la operacion %d del proceso %d fue CONCENTRAR EJECUTADO.",dtb->programCounter, dtb->idGDT);
@@ -281,7 +273,6 @@ int realizarEjecucion(t_dtb * dtb)
 
 t_cpu_operacion obtenerInstruccionMemoria(char * direccionEscriptorio, int idGDT, int posicion)
 {
-	pthread_mutex_lock(&mutexSolicitudes);
 	log_trace_mutex(loggerCPU, "Escriptorio: %s - Proceso %d - Program counter %d", direccionEscriptorio, idGDT, posicion);
 	int size = strlen(direccionEscriptorio)+1 + 3*sizeof(int);
 	char * buffer = malloc(size);
@@ -302,7 +293,6 @@ t_cpu_operacion obtenerInstruccionMemoria(char * direccionEscriptorio, int idGDT
 	char * bufferRecepcion = paquete.data;
 	char * instruccion = copyStringFromBuffer(&bufferRecepcion);
 	t_cpu_operacion operacion = parse(instruccion, false);
-	pthread_mutex_unlock(&mutexSolicitudes);
 	return operacion;
 }
 
@@ -488,7 +478,6 @@ t_package crearPaqueteSegunAccion(int accion, t_cpu_operacion * operacion, t_dtb
 int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int modulo)
 {
 	log_trace_mutex(loggerCPU, "Wait al mutex de solicitudes");
-	pthread_mutex_lock(&mutexSolicitudes);
 	int socket = 0;
 	// Segun la accion que se quiera realizar, se establece el codigo, el size y se llena el buffer.
 	t_package paquete = crearPaqueteSegunAccion(accion, operacion, dtb);
@@ -501,7 +490,6 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 		if (!list_is_empty((*dtb)->tablaDirecciones) && list_any_satisfy((*dtb)->tablaDirecciones, (void *) encontrarPath))
 		{
 			pthread_mutex_unlock(&mutexPath);
-			pthread_mutex_unlock(&mutexSolicitudes);
 			log_info_mutex(loggerCPU, "El archivo %s ya está abierto por el proceso %d.", operacion->argumentos.ABRIR.path, (*dtb)->idGDT);
 			return EXIT_SUCCESS;
 		}
@@ -524,7 +512,6 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 	if (paquete.code < 1 || strlen(paquete.data) < 1 || paquete.size < 1 || socket < 1)
 	{
 		log_trace_mutex(loggerCPU, "Signal al mutex de solicitudes.");
-		pthread_mutex_unlock(&mutexSolicitudes);
 		log_error_mutex(loggerCPU, "Hubo un error al intentar crear el paquete para el envio.");
 		return EXIT_FAILURE;
 	}
@@ -533,7 +520,6 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 	if(enviar(socket, paquete.code, paquete.data, paquete.size, loggerCPU->logger))
 	{
 		log_trace_mutex(loggerCPU, "Signal al mutex de solicitudes.");
-		pthread_mutex_unlock(&mutexSolicitudes);
 		log_error_mutex(loggerCPU, "Hubo un error en el envío del paquete.");
 		return EXIT_FAILURE;
 	}
@@ -541,17 +527,14 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 	if (modulo == DAM)
 	{
 		log_trace_mutex(loggerCPU, "Signal al mutex de solicitudes.");
-		pthread_mutex_unlock(&mutexSolicitudes);
 		return respuesta;
 	}
 	if (modulo == FM9)
 	{
 		log_trace_mutex(loggerCPU, "Signal al mutex de solicitudes.");
-		pthread_mutex_unlock(&mutexSolicitudes);
 		return ejecucionFM9(dtb, socket);
 	}
 	log_trace_mutex(loggerCPU, "Signal al mutex de solicitudes.");
-	pthread_mutex_unlock(&mutexSolicitudes);
 	return EXIT_SUCCESS;
 }
 

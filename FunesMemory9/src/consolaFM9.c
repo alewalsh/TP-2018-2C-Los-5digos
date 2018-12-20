@@ -11,24 +11,32 @@ void manejarConsolaFM9()
 {
 	log_info_mutex(logger, "Se esta ejecutando la consola del Funes Memory.");
 
-	char * token;
 	char * linea;
-	char * comandoSpliteado[2];
-	int i = 0;
 
 	while (1) {
 
 		linea = readline(">");
 
 		if (linea)
+		{
 			add_history(linea);
+
+			if (strlen(linea))
+				manejarLinea(linea);
+		}
 
 		if (strcmp(linea, "exit") == 0) {
 			free(linea);
 			break;
 		}
 	}
+}
 
+void manejarLinea(char * linea)
+{
+	char * token;
+	char * comandoSpliteado[2];
+	int i = 0;
 	token = strtok(linea," ");
 
 	while(token != NULL){
@@ -48,9 +56,12 @@ void manejarConsolaFM9()
 
 		}else{
 
-			log_info_mutex(logger,"El comando ingresado no es correcto \n");
+			log_info_mutex(logger,"El dump debe realizarse acompañado del ID del proceso, por favor intente nuevamente.");
 		}
-
+	}
+	else
+	{
+		log_info_mutex(logger, "Comando incorrecto.");
 	}
 
 }
@@ -62,6 +73,7 @@ void ejecutarDumpSegunEsquemaMemoria(char * pidString)
 	{
 		t_datosFlush * datos = malloc(sizeof(t_datosFlush));
 		datos->pid = pid;
+		pthread_mutex_lock(&mutexSolicitudes);
 		switch(config->modoEjecucion){
 
 			case SEG:
@@ -78,6 +90,7 @@ void ejecutarDumpSegunEsquemaMemoria(char * pidString)
 				log_warning_mutex(logger, "Modo de ejecución inexistente, verifique el archivo de configuracion y vuelva a iniciar el proceso.");
 				break;
 		}
+		pthread_mutex_unlock(&mutexSolicitudes);
 		free(datos);
 	}
 	else

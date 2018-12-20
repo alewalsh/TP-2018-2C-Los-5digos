@@ -81,8 +81,15 @@ void mainConsola() {
                 //obtengo el id del comando
                 int id = getIdFunction(comando);
 
-                //lo ejecuto
-                executeCommand(id, args);
+                if (id != -1)
+                {
+                    //lo ejecuto
+                    executeCommand(id, args);
+                }
+                else
+                {
+                    printf("Comando inválido.\n");
+                }
             }
 
         }

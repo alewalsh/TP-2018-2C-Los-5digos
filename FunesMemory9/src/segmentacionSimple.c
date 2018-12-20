@@ -247,23 +247,29 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 		{
 			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
 			int j = 0;
-			if (strcmp(segmento->archivo, data->path) == 0)
+			if (accion == AccionFLUSH)
 			{
+				if (strcmp(segmento->archivo, data->path) == 0)
+				{
+					while(j < segmento->limite)
+					{
+						char * linea = obtenerLinea(direccion(segmento->base, j));
+						realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
+						j++;
+						nroLinea++;
+					}
+				}
+
+			}
+			if (accion == AccionDUMP)
+			{
+				imprimirInfoAdministrativaSegmentacion(data->pid);
 				while(j < segmento->limite)
 				{
 					char * linea = obtenerLinea(direccion(segmento->base, j));
-					if (accion == AccionDUMP)
-					{
-						imprimirInfoAdministrativaSegmentacion(data->pid);
-						printf("Linea %d PID %d: %s\n", j, data->pid, linea);
-						log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
-					}
-					if (accion == AccionFLUSH)
-					{
-						realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
-					}
+					printf("Linea %d PID %d: %s\n", j, data->pid, linea);
+					log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
 					j++;
-					nroLinea++;
 				}
 			}
 		}

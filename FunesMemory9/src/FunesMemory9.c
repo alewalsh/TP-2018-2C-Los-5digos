@@ -24,10 +24,11 @@ int main(int argc, char** argv) {
 	storage = (char *)malloc(tamanioMemoria);
 	log_info_mutex(logger, "Se inicializÓ correctamente el FM9");
 	pthread_create(&threadConsolaFM9, &tattr, (void *) manejarConsolaFM9, NULL);
-	manejarConexiones();
+	pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
 	pthread_join(threadConsolaFM9, NULL);
-	free(storage);
-	return EXIT_SUCCESS;
+	pthread_join(threadConexiones, NULL);
+	exit_gracefully(EXIT_SUCCESS);
+//	return EXIT_SUCCESS;
 }
 
 void sig_handler(int signo)
@@ -133,6 +134,7 @@ void manejarConexiones(){
 
 void manejarSolicitud(t_package pkg, int socketFD) {
 
+//	pthread_mutex_lock(&mutexSolicitudes);
     switch (pkg.code) {
         case CPU_FM9_CONNECT:
 			printf("Se ha conectado el CPU.");
@@ -161,6 +163,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 			}
 			break;
         case CPU_FM9_FIN_GDT:
+        case DAM_FM9_FIN_GDT:
 			if(finGDTSegunEsquemaMemoria(pkg,socketFD)){
 				log_error_mutex(logger,"Error al finalizar el GDT en memoria");
 			}
@@ -182,6 +185,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
             break;
 
     }
+//	pthread_mutex_unlock(&mutexSolicitudes);
 
     free(pkg.data);
 

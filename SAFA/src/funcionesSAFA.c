@@ -218,6 +218,11 @@ int abortarDTB(t_dtb * dtb, int socketCPU){
 	//si no estaba ejecutando lo busco en la lista de bloqueados
 	if(result == EXIT_FAILURE){
 		result = pasarDTBdeBLOQUEADOaFINALIZADO(dtb);
+		if (result == EXIT_FAILURE)
+		{
+			// TODO: Lo libero de todas maneras porque si no, queda bloqueado ahi. Aunque probablemente, nunca se use asi.
+			sem_post(&semaforoGradoMultiprgramacion);
+		}
 	}else{
 		log_error_mutex(logger, "SE ABORTÓ EL PROCESO ID: %d", dtb->idGDT);
 		//si estaba ejecutando -> Se hace signal del semaforo y se libera la cpu

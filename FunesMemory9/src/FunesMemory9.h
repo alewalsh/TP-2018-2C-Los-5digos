@@ -58,6 +58,7 @@ pthread_mutex_t mutexExit;
 pthread_mutex_t mutexSolicitudes;
 
 pthread_t threadConsolaFM9;
+pthread_t threadConexiones;
 
 void sig_handler(int signo);
 void handlerDisconnect(int socketFD);

@@ -23,9 +23,11 @@
 extern char * storage;
 extern t_log_mutex * logger;
 extern configFM9 * config;
+extern pthread_mutex_t mutexSolicitudes;
 
 void manejarConsolaFM9();
 void ejecutarDumpSegunEsquemaMemoria(char * pidString);
 int esUnNumeroIDProceso(char * numero);
+void manejarLinea(char * linea);
 
 #endif /* SRC_CONSOLAFM9_H_ */

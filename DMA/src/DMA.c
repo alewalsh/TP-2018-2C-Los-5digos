@@ -159,7 +159,16 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
         	log_info_mutex(logger, "Se borró el archivo correctamente");
         	break;
-
+        case CPU_DAM_DISCONNECT:
+        {
+        	cpusConectadas--;
+        	if (cpusConectadas <= 0)
+        	{
+            	log_warning_mutex(logger, "Se finaliza la ejecución del DAM, debido a que no quedan CPUs conectadas.");
+            	exit_gracefully(EXIT_FAILURE);
+        	}
+        	break;
+        }
         case SOCKET_DISCONECT:
             close(socketFD);
             deleteSocketFromMaster(socketFD);
