@@ -208,8 +208,16 @@ void manejarDAM(t_package pkg)
 				statusEliminiar = validarArchivo(pathArchivoAEliminar);
 				if (statusEliminiar) {
 					log_error_mutex(loggerAtencionDAM, "Error no se pudo borrar: %s", pathArchivoAEliminar);
+					 if(enviar(socketDAM, DAM_MDJ_FAIL, NULL, NULL, loggerAtencionDAM->logger))
+						{
+							log_error_mutex(loggerAtencionDAM, "Error al enviar validacion de archivo al DAM.");
+						}
 				}else{
 					log_info_mutex(loggerAtencionDAM, "Archivo: %s Borrado\n", pathArchivoAEliminar);
+					 if(enviar(socketDAM, DAM_MDJ_OK, NULL, NULL, loggerAtencionDAM->logger))
+						{
+							log_error_mutex(loggerAtencionDAM, "Error al enviar validacion de archivo al DAM.");
+						}
 				}
 
 				free(pathArchivoAEliminar);
