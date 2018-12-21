@@ -92,6 +92,7 @@ void inicializarRecursos(char * pathConfig){
 
     pthread_attr_init(&tattr);
     //pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
+    ejecutoAlgunProceso = 0;
 
     initList();
     initMutexs();

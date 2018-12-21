@@ -73,6 +73,7 @@ int gdtCounter = 0;
 
 int totalSentenciasEjecutadas = 0;
 int sentenciasXDAM = 0;
+int ejecutoAlgunProceso;
 
 t_list* colaNew;			// Lista New.
 t_list* colaReady;			// Lista Ready.

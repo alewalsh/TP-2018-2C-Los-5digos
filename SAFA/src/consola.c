@@ -17,6 +17,7 @@ void executeCommand(int comando, char *args) {
     switch (comando) {
         case EJECUTAR:
             consolaEjecutar(args);
+            ejecutoAlgunProceso = 1;
             break;
         case STATUS:
         	if (args != NULL){
@@ -30,10 +31,14 @@ void executeCommand(int comando, char *args) {
 //            printf("Comando FINALIZAR seleccionado.\n");
             break;
         case METRICAS:
-        	if (args != NULL){
-                consolaMetricasDTB(args);}
-        	else {
-                consolaMetricas();}
+        	if(ejecutoAlgunProceso){
+        		if (args != NULL){
+					consolaMetricasDTB(args);}
+				else {
+					consolaMetricas();}
+        	}else{
+        		printf("Se debe ejecutar algún proceso para obtener unas métricas más reales.");
+        	}
             break;
         case EXIT:
         	seguirEjecutando = 0;

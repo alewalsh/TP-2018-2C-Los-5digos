@@ -15,7 +15,6 @@
 #include <semaphore.h>
 
 extern pthread_mutex_t mutexExit;
-
 extern t_list* colaNew;			// Lista New.
 extern t_list* colaReady;			// Lista Ready.
 extern t_list* colaBloqueados;		// Lista Bloqueados.
