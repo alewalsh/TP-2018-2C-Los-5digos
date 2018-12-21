@@ -934,16 +934,16 @@ int contarCantidadLineas(char * string) {
 int confirmarExistenciaFile(){
 	//Se recibe el archivo desde filesystem
 	t_package package;
-	int result = EXIT_FAILURE;
+	int result = -1;
 
 	//Recibo un primer mensaje para saber cuanto pesa el archivo
 	if (recibir(t_socketMdj->socket, &package, logger->logger)) {
 		log_error_mutex(logger, "No se pudo recibir el mensaje del MDJ");
-		return EXIT_FAILURE;
+		return -1;
 	}
 
 	if (package.code == DAM_MDJ_FAIL) {
-		return EXIT_FAILURE;
+		return -1;
 	}
 
 	//Recibo el tamaño del archivo a cargar
