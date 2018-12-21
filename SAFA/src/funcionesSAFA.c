@@ -212,23 +212,27 @@ int desbloquearDTB(t_dtb * dtb){
 int abortarDTB(t_dtb * dtb, int socketCPU){
 	//logica para abortar dtb
 
-	//primero busco en la cola de ejecutando
-	int result = pasarDTBdeEXECaFINALIZADO(dtb);
+	int index = buscarDTBEnCola(colaExit, dtb);
+	if (index < 0)
+	{
+		//primero busco en la cola de ejecutando
+		int result = pasarDTBdeEXECaFINALIZADO(dtb);
 
-	//si no estaba ejecutando lo busco en la lista de bloqueados
-	if(result == EXIT_FAILURE){
-		result = pasarDTBdeBLOQUEADOaFINALIZADO(dtb);
-		if (result == EXIT_FAILURE)
-		{
-			// TODO: Lo libero de todas maneras porque si no, queda bloqueado ahi. Aunque probablemente, nunca se use asi.
-			sem_post(&semaforoGradoMultiprgramacion);
+		//si no estaba ejecutando lo busco en la lista de bloqueados
+		if(result == EXIT_FAILURE){
+			result = pasarDTBdeBLOQUEADOaFINALIZADO(dtb);
+		}else{
+			log_error_mutex(logger, "SE ABORTÓ EL PROCESO ID: %d", dtb->idGDT);
+			//si estaba ejecutando -> Se hace signal del semaforo y se libera la cpu
+			liberarCpu(socketCPU);
 		}
-	}else{
-		log_error_mutex(logger, "SE ABORTÓ EL PROCESO ID: %d", dtb->idGDT);
-		//si estaba ejecutando -> Se hace signal del semaforo y se libera la cpu
-		liberarCpu(socketCPU);
+		return result;
 	}
-	return result;
+	else
+	{
+		log_info_mutex(logger, "El proceso ya había sido finalizado anteriormente.");
+		return EXIT_SUCCESS;
+	}
 }
 
 int abortarDTBNuevo(t_dtb * dtb){
@@ -250,10 +254,20 @@ int confirmacionDMA(int pid, int result){
 		result = desbloquearDTBsegunAlgoritmo(pid);
 	}else{ //HUBO UN ERROR AL CARGAR EL PROCESO EN MEMORIA
 		//se finaliza el proceso
-		pthread_mutex_lock(&mutexBloqueadosList);
-		t_dtb * dtb = buscarDTBPorPIDenCola(colaBloqueados, pid);
-		pthread_mutex_unlock(&mutexBloqueadosList);
-		pasarDTBdeBLOQUEADOaFINALIZADO(dtb);
+		int index = buscarPosicionPorPIDenCola(colaExit, pid);
+		if (index < 0)
+		{
+			pthread_mutex_lock(&mutexBloqueadosList);
+			t_dtb * dtb = buscarDTBPorPIDenCola(colaBloqueados, pid);
+			pthread_mutex_unlock(&mutexBloqueadosList);
+			pasarDTBdeBLOQUEADOaFINALIZADO(dtb);
+		}
+		else
+		{
+			log_info_mutex(logger, "El proceso ya había sido finalizado anteriormente");
+			result = EXIT_SUCCESS;
+		}
+
 	}
 	return result;
 }
