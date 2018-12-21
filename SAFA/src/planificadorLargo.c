@@ -18,18 +18,16 @@ int consolaNuevoGDT(char* scriptIngresado){
     return EXIT_SUCCESS;
 }
 
-int consolaMetricaDTB(char* dtbSolicitado){
+int consolaMetricaDTBEnNew(int idSolicitado){
 	int tiempo;
-	int idSolicitado = atoi(dtbSolicitado);
 
-//	t_metricaLP *metricaDelDTB = list_get(listaMetricasLP, idSolicitado);
-	t_metricaLP *metricaDelDTB = buscarMetricaPorPIDenCola(listaMetricasLP, idSolicitado);
+	t_metricaLP *metricaDelDTB = buscarMetricaLPPorPIDenCola(listaMetricasLP, idSolicitado);
 	tiempo = metricaDelDTB->tiempoEnNEW;
 
     return tiempo;
 }
 
-t_metricaLP * buscarMetricaPorPIDenCola(t_list * cola, int pid){
+t_metricaLP * buscarMetricaLPPorPIDenCola(t_list * cola, int pid){
 	t_metricaLP *metricaDelDTB;
 	int listSize = list_size(cola);
 	if(listSize<= 0) return NULL;
@@ -43,7 +41,6 @@ t_metricaLP * buscarMetricaPorPIDenCola(t_list * cola, int pid){
 	}
 	return metricaDelDTB;
 }
-
 
 void agregarDTBaMetricasLP(int id){
 	t_metricaLP *metrica = nuevaMetrica(id);
