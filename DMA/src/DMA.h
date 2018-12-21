@@ -83,4 +83,5 @@ void cargarEscriptorio();
 void exit_gracefully(int error);
 bool cerrarSockets();
 void manejarSolicitudDelCPU(t_package pkg, int socketFD);
+void finalizarEjecucionPID(t_package package);
 #endif /* DMA_H_ */

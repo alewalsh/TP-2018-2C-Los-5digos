@@ -104,7 +104,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
         case CPU_DAM_BUSQUEDA_ESCRIPTORIO:
         	if(!(leerEscriptorio(pkg,socketFD))){
-				log_error_mutex(logger, "Hubo un error en la inicializacion del escriptorio");
+				finalizarEjecucionPID(pkg);
 				break;
 			}
         	log_info_mutex(logger, "Se cargo el escriptorio en FM9 y se notificó a S-AFA");
@@ -118,7 +118,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         case CPU_DAM_ABRIR_ARCHIVO:
         	//Recibe un pkg con el path de archivo a abrir
         	if(abrirArchivo(pkg,socketFD)){
-        		log_error_mutex(logger, "Hubo un error al abrir el archivo: %s", pkg.data);
+				finalizarEjecucionPID(pkg);
 				break;
         	}
         	log_info_mutex(logger, "Se abrió el archivo correctamente");
@@ -133,8 +133,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
         */
         case CPU_DAM_FLUSH:
         	if(hacerFlush(pkg,socketFD)){
-				log_error_mutex(logger, "Hubo un error al hacer el flush del archivo: %s",
-						pkg.data);
+				finalizarEjecucionPID(pkg);
 				break;
         	}
         	log_info_mutex(logger, "Se realizó el flush correctamente");
@@ -143,7 +142,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
         case CPU_DAM_CREAR:
         	if(crearArchivo(pkg,socketFD)){
-				log_error_mutex(logger, "Hubo un error al crear el archivo: %s", pkg.data);
+				finalizarEjecucionPID(pkg);
 				break;
 			}
 
@@ -152,8 +151,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
         case CPU_DAM_BORRAR:
         	if(borrarArchivo(pkg,socketFD)){
-				log_error_mutex(logger, "Hubo un error al borrar el archivo: %s",
-						pkg.data);
+				finalizarEjecucionPID(pkg);
 				break;
 			}
 
@@ -182,6 +180,47 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 
     free(pkg.data);
 
+}
+
+void finalizarEjecucionPID(t_package package)
+{
+	char *buffer = package.data;
+	int pid = copyIntFromBuffer(&buffer);
+	char * path = copyStringFromBuffer(&buffer);
+
+	switch(package.code)
+	{
+		case CPU_DAM_BORRAR:
+			log_error_mutex(logger, "Hubo un error al borrar el archivo: %s", path);
+			break;
+		case CPU_DAM_CREAR:
+			log_error_mutex(logger, "Hubo un error al crear el archivo: %s", path);
+			break;
+		case CPU_DAM_FLUSH:
+			log_error_mutex(logger, "Hubo un error al hacer el flush del archivo: %s", path);
+			break;
+		case CPU_DAM_ABRIR_ARCHIVO:
+    		log_error_mutex(logger, "Hubo un error al abrir el archivo: %s", path);
+    		break;
+		case CPU_DAM_BUSQUEDA_ESCRIPTORIO:
+			log_error_mutex(logger, "Hubo un error en la inicializacion del escriptorio");
+			break;
+		default:
+			log_warning_mutex(logger, "No esperabas este codigo, ojo. %s", codigoIDToString(pkg.code));
+			break;
+	}
+	char * bufferEnvio = malloc(sizeof(int));
+	char * p = bufferEnvio;
+	copyIntToBuffer(&p, pid);
+	//SE ENVIA EL PATH DEL ARCHIVO AL MDJ PARA BORRAR EL MISMO
+	if (enviar(t_socketFm9->socket, DAM_FM9_FIN_GDT, bufferEnvio, sizeof(int), logger->logger))
+	{
+		log_error_mutex(logger, "Error al enviar el fin del GDT al FM9.");
+		free(bufferEnvio);
+		exit_gracefully(EXIT_FAILURE);
+	}
+	free(bufferEnvio);
+	log_info_mutex(logger, "Se informa del error al FM9 para que libere la memoria asignada al proceso %d", pid);
 }
 
 void initVariables() {

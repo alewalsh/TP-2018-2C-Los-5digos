@@ -830,6 +830,7 @@ void enviarConfirmacionSafa(int pid, int result, int cantidadIODelProceso, int c
 	if (enviar(t_socketSafa->socket, msjCode, buffer, size, logger->logger)) {
 		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
 		free(buffer);
+		exit_gracefully(EXIT_FAILURE);
 	}
 	if (msjCode != DAM_SAFA_FAIL)
 		log_info_mutex(logger, "Mensaje de confirmacion a SAFA enviado");

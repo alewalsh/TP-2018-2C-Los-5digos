@@ -74,8 +74,8 @@ void ejecutarDumpSegunEsquemaMemoria(char * pidString)
 		t_datosFlush * datos = malloc(sizeof(t_datosFlush));
 		datos->pid = pid;
 		pthread_mutex_lock(&mutexSolicitudes);
-		switch(config->modoEjecucion){
-
+		switch(config->modoEjecucion)
+		{
 			case SEG:
 				flushSegmentacion(0, datos, AccionDUMP);
 				break;
@@ -100,33 +100,20 @@ void ejecutarDumpSegunEsquemaMemoria(char * pidString)
 	}
 }
 
-//void dumpEnSegmentacionPura(int pid){
-//	//logica dump en segmentacion
-//}
-
-void dumpEnTPI(int pid){
-	//logica dump en TPI
-}
-
-void dumpEnSegPag(int pid){
-	//logica dump en seg. paginada
-}
-
 int esUnNumeroIDProceso(char * numero){
 	int longitud = strlen(numero);
 	int i;
-	for(i = 0;i<longitud;i++){
-
-		if(isdigit(numero[i])){
+	for(i = 0;i<longitud;i++)
+	{
+		if(isdigit(numero[i]))
+		{
 			i++;
 
-		}else{
-
-			return 1;
-
 		}
-
+		else
+		{
+			return 1;
+		}
 	}
-
 	return 0;
 }
