@@ -103,7 +103,7 @@ void manejarSolicitudDelCPU(t_package pkg, int socketFD) {
 		 */
 
         case CPU_DAM_BUSQUEDA_ESCRIPTORIO:
-        	if(!(leerEscriptorio(pkg,socketFD))){
+        	if(leerEscriptorio(pkg,socketFD)){
 				finalizarEjecucionPID(pkg);
 				break;
 			}

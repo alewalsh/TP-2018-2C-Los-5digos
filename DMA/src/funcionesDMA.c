@@ -36,8 +36,7 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 	//CONFIRMO EXISTENCIA DEL ARCHIVO
 	//mando un msj para saber si el archivo existe
 	if (enviar(t_socketMdj->socket, DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO, bufferEnvio, size, logger->logger)) {
-		log_error_mutex(logger,
-				"No se pudo enviar la busqueda del escriptorio al MDJ");
+		log_error_mutex(logger, "No se pudo enviar la busqueda del escriptorio al MDJ");
 		free(bufferEnvio);
 		return false;
 	}
@@ -58,20 +57,20 @@ bool leerEscriptorio(t_package paquete, int socketEnUso) {
 		result = EXIT_FAILURE;
 		enviarConfirmSafaScriptInit(pid, result, 0, 0);
 		free(bufferEnvio);
-		return false;
+		return result;
 	}else{
 		//no existe el archivo -> Se envia error al safa
 		result = EXIT_FAILURE;
 		enviarConfirmSafaScriptInit(pid, result, 0, 0);
 		free(bufferEnvio);
-		return false;
+		return result;
 	}
 
 	enviarConfirmSafaScriptInit(pid, result, cantIODelProceso, cantLineasDelArchivo);
 
 	free(bufferEnvio);
 	free(path);
-	return true;
+	return result;
 }
 
 //Se recibe uno o varios paquetes del MDJ y se envian al FM9
@@ -168,7 +167,10 @@ int enviarPkgDeMdjAFm9(int pid, char * path, int size) {
 		return EXIT_FAILURE;
 	}
 	free(buffer);
-
+	//Se recibe confirmacion de que hay memoria disponible en el FM9
+	int resultMemoriaDisponible = recibirConfirmacionInicioMemoria();
+	if (resultMemoriaDisponible == EXIT_FAILURE)
+		return resultMemoriaDisponible;
 	if (pudoSplitear)
 	{
 		//SE ENVIA LINEA POR LINEA AL FM9
@@ -331,7 +333,7 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 	char * path = copyStringFromBuffer(&buffer);
 
 //	free(buffer);
-	printf("Ehhh, voy a buscar %s para %d", path, pid);
+	log_info_mutex(logger,"Ehhh, voy a buscar %s para %d", path, pid);
 
 	//Se envia el path del archivo al filesystem
 	int size = ((strlen(path) + 1)*sizeof(char)) + sizeof(int);
@@ -344,7 +346,7 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 	if (enviar(t_socketMdj->socket, DAM_MDJ_CONFIRMAR_EXISTENCIA_ARCHIVO, bufferEnvio, size, logger->logger)) {
 		log_error_mutex(logger, "No se pudo enviar la busqueda del escriptorio al MDJ");
 		free(bufferEnvio);
-		return false;
+		return EXIT_FAILURE;
 	}
 	//recibo la confirmacion
 	int sizeOfFile = confirmarExistenciaFile();
@@ -358,13 +360,13 @@ bool abrirArchivo(t_package paquete, int socketEnUso) {
 		result = EXIT_FAILURE;
 		enviarConfirmSafaAbrirArchivo(pid, result, path);
 		free(bufferEnvio);
-		return EXIT_FAILURE;
+		return result;
 	}
 
 	enviarConfirmSafaAbrirArchivo(pid, result, path);
 	free(bufferEnvio);
 
-	return EXIT_SUCCESS;
+	return result;
 }
 
 /*
@@ -857,8 +859,10 @@ void enviarConfirmSafaScriptInit(int pid, int result, int cantidadIODelProceso, 
 		log_error_mutex(logger, "Error al enviar msj de confirmacion al SAFA.");
 		free(buffer);
 	}
-
-	log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado");
+	if (result == EXIT_FAILURE)
+		log_info_mutex(logger, "Se informa al SAFA que falló la carga del escriptorio en FM9.");
+	else
+		log_info_mutex(logger, "Mensaje de confirmacion a S-afa enviado.");
 	free(buffer);
 }
 
@@ -951,6 +955,22 @@ int confirmarExistenciaFile(){
 	result = copyIntFromBuffer(&buffer);
 
 	return result;
+}
+
+int recibirConfirmacionInicioMemoria()
+{
+	t_package package;
+
+	if (recibir(t_socketFm9->socket, &package, logger->logger)) {
+		log_error_mutex(logger, "Error al recibir los datos de memoria asociados al proceso");
+		return EXIT_FAILURE;
+	}
+	if (package.code == FM9_DAM_HAY_MEMORIA) {
+		return EXIT_SUCCESS;
+	} else {
+		return EXIT_FAILURE;
+	}
+
 }
 
 int recibirConfirmacionMemoria() {

@@ -140,10 +140,13 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 		t_gdt * gdt = dictionary_get(tablaProcesos,pidString);
 		free(pidString);
 		t_segmento * segmento = reservarSegmento(datosPaquete->cantidadLineasARecibir,gdt->tablaSegmentos,datosPaquete->path,paginasNecesarias);
-	//	int code = reservarPaginasNecesarias(paginasNecesarias, datosPaquete->pid, datosPaquete->path, cantLineas);
 		if (segmento == NULL)
 		{
 			logPosicionesLibres(estadoLineas,SPA);
+			if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
+			{
+				log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
+			}
 			return FM9_DAM_MEMORIA_INSUFICIENTE;
 		}
 		actualizarTablaDeSegmentos(datosPaquete->pid,segmento);
@@ -152,6 +155,11 @@ int ejecutarCargarEsquemaSegPag(t_package pkg, t_infoCargaEscriptorio* datosPaqu
 		// ESTO PARA QUE ESTA?????
 		contLineasUsadas += datosPaquete->cantidadLineasARecibir;
 
+		// Aviso al DAM que efectivamente hay memoria disponible
+		if (enviar(socketSolicitud, FM9_DAM_HAY_MEMORIA, NULL, 0, logger->logger)) {
+			log_error_mutex(logger, "Error al enviar aviso de memoria disponible al DAM");
+			return EXIT_FAILURE;
+		}
 		gdt = dictionary_get(tablaProcesos,pidString);
 		char * bufferGuardado = malloc(config->tamMaxLinea);
 		int i = 0, lineasGuardadas = 0, tamanioPaqueteReal = 0, offset = 0;
