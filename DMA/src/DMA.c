@@ -221,6 +221,14 @@ void finalizarEjecucionPID(t_package package)
 	}
 	free(bufferEnvio);
 	log_info_mutex(logger, "Se informa del error al FM9 para que libere la memoria asignada al proceso %d", pid);
+	if (recibir(t_socketFm9->socket, &package, logger->logger)) {
+		log_error_mutex(logger, "Error al recibir la confirmación de que la memoria fue liberada para el proceso %d", pid);
+	}
+	if (package.code == FM9_CPU_GDT_FINALIZADO) {
+		log_info_mutex(logger, "Se ha liberado la memoria asociada al proceso %d satisfactoriamente.", pid);
+	} else {
+		log_error_mutex(logger, "Ha ocurrido un error al intentar liberar la memoria del proceso %d.", pid);
+	}
 }
 
 void initVariables() {
