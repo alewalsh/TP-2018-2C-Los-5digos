@@ -46,80 +46,84 @@ void consolaStatus() {
 
 	//TODO: Separar en si tiene argumento o no tiene argumento. Hacer una funcion para printear cada cola
 	pthread_mutex_lock(&mutexNewList);
+
 	if(list_size(colaNew) != 0)
 	{
-		pthread_mutex_unlock(&mutexNewList);
 		imprimirNEW();
 	}
 	else
 	{
-		pthread_mutex_unlock(&mutexNewList);
 		printf("Cola NEW sin elementos\n");
 	}
 
+	pthread_mutex_unlock(&mutexNewList);
+
 	pthread_mutex_lock(&mutexReadyList);
+
 	if(list_size(colaReady) != 0)
 	{
-		pthread_mutex_unlock(&mutexReadyList);
 		imprimirREADY();
 	}
 	else
 	{
-		pthread_mutex_unlock(&mutexReadyList);
 		printf("Cola READY sin elementos\n");
 	}
 
+	pthread_mutex_unlock(&mutexReadyList);
+
 	pthread_mutex_lock(&mutexEjecutandoList);
+
 	if(list_size(colaEjecutando) != 0)
 	{
-		pthread_mutex_unlock(&mutexEjecutandoList);
 		imprimirEJECUTANDO();
 	}
 	else
 	{
-		pthread_mutex_unlock(&mutexEjecutandoList);
 		printf("Cola EJECUTANDO sin elementos\n");
 	}
+	pthread_mutex_unlock(&mutexEjecutandoList);
 
 	pthread_mutex_lock(&mutexBloqueadosList);
+
 	if(list_size(colaBloqueados) != 0)
 	{
-		pthread_mutex_unlock(&mutexBloqueadosList);
 		imprimirBLOQUEADOS();
 	}
 	else
 	{
-		pthread_mutex_unlock(&mutexBloqueadosList);
 		printf("Cola BLOQUEADOS sin elementos\n");
 	}
 
+	pthread_mutex_unlock(&mutexBloqueadosList);
+
 	pthread_mutex_lock(&mutexExitList);
+
 	if(list_size(colaExit) != 0)
 	{
-		pthread_mutex_unlock(&mutexExitList);
 		imprimirEXIT();
 	}
 	else
 	{
-		pthread_mutex_unlock(&mutexExitList);
 		printf("Cola EXIT sin elementos\n");
 	}
+	pthread_mutex_unlock(&mutexExitList);
 
 	pthread_mutex_lock(&mutexReadyEspList);
+
 	if(list_size(colaReadyEspecial) != 0)
 	{
-		pthread_mutex_unlock(&mutexReadyEspList);
 		imprimirREADYESPECIAL();
 	}
 	else
 	{
-		pthread_mutex_unlock(&mutexReadyEspList);
 		printf("Cola READY ESPECIAL sin elementos\n");
 	}
+
+	pthread_mutex_unlock(&mutexReadyEspList);
 }
 
 void imprimirNEW(){
-    pthread_mutex_lock(&mutexNewList);
+    //pthread_mutex_lock(&mutexNewList);
 	int size = list_size(colaNew);
     printf("\n*---------------------COLA NEW -----------------------*\n");
     int i;
@@ -128,11 +132,11 @@ void imprimirNEW(){
         printf("DTB numero: (%d) \n", dtb->idGDT);
     }
     printf("*-----------------------------------------------------*\n\n");
-    pthread_mutex_unlock(&mutexNewList);
+   // pthread_mutex_unlock(&mutexNewList);
 }
 
 void imprimirREADY(){
-	pthread_mutex_lock(&mutexReadyList);
+	//pthread_mutex_lock(&mutexReadyList);
 	int size = list_size(colaReady);
     printf("\n*---------------------COLA READY ---------------------*\n");
     int i;
@@ -141,11 +145,11 @@ void imprimirREADY(){
         printf("DTB numero: (%d) \n", dtb->idGDT);
     }
     printf("*-----------------------------------------------------*\n\n");
-	pthread_mutex_unlock(&mutexReadyList);
+	//pthread_mutex_unlock(&mutexReadyList);
 }
 
 void imprimirEJECUTANDO(){
-    pthread_mutex_lock(&mutexEjecutandoList);
+    //pthread_mutex_lock(&mutexEjecutandoList);
 	int size = list_size(colaEjecutando);
     printf("\n*---------------------COLA EJECUTANDO -----------------------*\n");
     int i;
@@ -154,11 +158,11 @@ void imprimirEJECUTANDO(){
         printf("DTB numero: (%d) \n", dtb->idGDT);
     }
     printf("*-----------------------------------------------------*\n\n");
-    pthread_mutex_unlock(&mutexEjecutandoList);
+    //pthread_mutex_unlock(&mutexEjecutandoList);
 }
 
 void imprimirBLOQUEADOS(){
-    pthread_mutex_lock(&mutexBloqueadosList);
+    //pthread_mutex_lock(&mutexBloqueadosList);
 	int size = list_size(colaBloqueados);
     printf("\n*---------------------COLA BLOQUEADOS -----------------------*\n");
     int i;
@@ -167,11 +171,11 @@ void imprimirBLOQUEADOS(){
         printf("DTB numero: (%d) \n", dtb->idGDT);
     }
     printf("*-----------------------------------------------------*\n\n");
-    pthread_mutex_unlock(&mutexBloqueadosList);
+    //pthread_mutex_unlock(&mutexBloqueadosList);
 }
 
 void imprimirEXIT(){
-    pthread_mutex_lock(&mutexExitList);
+    //pthread_mutex_lock(&mutexExitList);
 	int size = list_size(colaExit);
     printf("\n*---------------------COLA EXIT -----------------------*\n");
     int i;
@@ -180,11 +184,11 @@ void imprimirEXIT(){
         printf("DTB numero: (%d) \n", dtb->idGDT);
     }
     printf("*-----------------------------------------------------*\n\n");
-    pthread_mutex_unlock(&mutexExitList);
+    //pthread_mutex_unlock(&mutexExitList);
 }
 
 void imprimirREADYESPECIAL(){
-    pthread_mutex_lock(&mutexReadyEspList);
+    //pthread_mutex_lock(&mutexReadyEspList);
 	int size = list_size(colaReadyEspecial);
     printf("\n*---------------------COLA READY ESPECIAL -----------------------*\n");
     int i;
@@ -193,7 +197,7 @@ void imprimirREADYESPECIAL(){
         printf("DTB numero: (%d) \n", dtb->idGDT);
     }
     printf("*-----------------------------------------------------*\n\n");
-    pthread_mutex_unlock(&mutexReadyEspList);
+    //pthread_mutex_unlock(&mutexReadyEspList);
 }
 
 void consolaStatusDTB(char *args){
