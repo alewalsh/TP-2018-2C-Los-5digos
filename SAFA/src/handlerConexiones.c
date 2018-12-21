@@ -169,7 +169,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	{
         		log_error_mutex(logger, "Hubo un error al bloquear el DTB");
         	}else{
-        		log_info_mutex(logger, "FINALIZO EL PROCESO ID: %d",dtb->idGDT);
+        		log_info_mutex(logger, "SE BLOQUEÓ EL PROCESO ID: %d",dtb->idGDT);
         		//Se libera una cpu y se hace signal del semaforo
 				liberarCpu(socketFD);
         	}
