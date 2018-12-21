@@ -53,6 +53,8 @@ pthread_mutex_t semCargadoEnMemoria;
 pthread_mutex_t mutexTotalSentencias;
 pthread_mutex_t mutexSentenciasXDAM;
 
+pthread_mutex_t mutexRecursoBuscado;
+
 sem_t desbloquearDTBDummy;
 sem_t hayProcesosEnReady;
 sem_t mandadosPorConsola;

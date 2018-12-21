@@ -198,7 +198,7 @@ int realizarEjecucion(t_dtb * dtb)
 				case EXIT_FAILURE:
 					log_trace_mutex(loggerCPU, "La respuesta para la operacion %d del proceso %d fue EXIT FAILURE.",dtb->programCounter, dtb->idGDT);
 					log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
-					segFaultDTB = true;;
+					segFaultDTB = true;
 					if (finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
 					{
 						log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
@@ -254,6 +254,7 @@ int realizarEjecucion(t_dtb * dtb)
 		}
 		if (dtb->programCounter == dtb->cantidadLineas)
 		{
+			dtb->quantumRestante = 0;
 			if(finalizoEjecucionDTB(dtb, CPU_SAFA_FIN_EJECUCION_DTB))
 			{
 				log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
@@ -356,18 +357,22 @@ int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb)
 			(*dtb)->programCounter++;
 			return CONCENTRAR_EJECUTADO;
 		case WAIT:
-			if(manejarRecursosSAFA(operacion->argumentos.WAIT.recurso, (*dtb)->idGDT, WAIT))
+			respuesta = manejarRecursosSAFA(operacion->argumentos.WAIT.recurso, (*dtb)->idGDT, WAIT, (*dtb)->programCounter);
+			if(respuesta == EXIT_FAILURE)
 			{
 				log_error_mutex(loggerCPU, "No se pudo realizar el WAIT del recurso %s.", operacion->argumentos.WAIT.recurso);
 			}
 			log_trace_mutex(loggerCPU, "Operación WAIT ejecutada por el proceso %d.", (*dtb)->idGDT);
+			return respuesta;
 			break;
 		case SIGNAL:
-			if(manejarRecursosSAFA(operacion->argumentos.SIGNAL.recurso, (*dtb)->idGDT, SIGNAL))
+			respuesta = manejarRecursosSAFA(operacion->argumentos.SIGNAL.recurso, (*dtb)->idGDT, SIGNAL, 0);
+			if(respuesta == EXIT_FAILURE)
 			{
 				log_error_mutex(loggerCPU, "No se pudo realizar el SIGNAL del recurso %s.", operacion->argumentos.SIGNAL.recurso);
 			}
 			log_trace_mutex(loggerCPU, "Operación SIGNAL ejecutada por el proceso %d.", (*dtb)->idGDT);
+			return respuesta;
 			break;
 		case ABRIR: case FLUSH: case CREAR: case BORRAR:
 			respuesta = enviarAModulo(operacion, dtb, operacion->keyword, DAM);
@@ -591,7 +596,7 @@ int ejecucionFM9(t_dtb ** dtb, int socket)
 	return EXIT_SUCCESS;
 }
 
-int manejarRecursosSAFA(char * recurso, int idGDT, int accion)
+int manejarRecursosSAFA(char * recurso, int idGDT, int accion, int programCounterActual)
 {
 	int code;
 	if (accion == WAIT)
@@ -611,10 +616,14 @@ int manejarRecursosSAFA(char * recurso, int idGDT, int accion)
 	}
 	// Enviar la informacion del recurso y del idGDT que lo bloquea (o desbloquea) al SAFA
 	int size = (strlen(recurso) + 1) * sizeof(char) + 2*sizeof(int);
+	if (accion == WAIT)
+		size += sizeof(int);
 	char * buffer = malloc(size);
 	char * p = buffer;
 	copyStringToBuffer(&p, recurso);
 	copyIntToBuffer(&p,idGDT);
+	if (accion == WAIT)
+		copyIntToBuffer(&p,programCounterActual);
 	log_trace_mutex(loggerCPU, "Información cargada al buffer y se va a realizar el envío al SAFA.");
 	if(enviar(t_socketSAFA->socket,code,buffer, size, loggerCPU->logger))
 	{
@@ -624,6 +633,31 @@ int manejarRecursosSAFA(char * recurso, int idGDT, int accion)
 	}
 	log_trace_mutex(loggerCPU, "Se realizó el envío al SAFA.");
 	free(buffer);
+	if (accion == WAIT)
+	{
+		t_package pkg;
+		if(recibir(t_socketSAFA->socket, &pkg, loggerCPU->logger))
+		{
+			log_error_mutex(loggerCPU, "No se pudo recibir la respuesta del SAFA.");
+			return EXIT_FAILURE;
+		}
+		if (pkg.code == SAFA_CPU_BLOQUEO_WAIT)
+		{
+			log_trace_mutex(loggerCPU, "Se desaloja el proceso por estar bloqueado por el WAIT.");
+			return DTB_DESALOJADO;
+		}
+		else if (pkg.code == SAFA_CPU_INICIO_WAIT)
+		{
+			log_trace_mutex(loggerCPU, "Se creó el semaforo con el WAIT.");
+			return EXIT_SUCCESS;
+		}
+		else
+		{
+			log_trace_mutex(loggerCPU, "Se recibió un mensaje inesperado, por lo tanto, se finaliza el proceso.");
+			return EXIT_FAILURE;
+		}
+	}
+	log_trace_mutex(loggerCPU, "Se realizó el SIGNAL exitosamente.");
 	return EXIT_SUCCESS;
 }
 

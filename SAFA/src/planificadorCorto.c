@@ -220,11 +220,18 @@ t_dtb *pasarDTBdeREADYaEXEC(){
     t_dtb *primerDTBenReady = (t_dtb *) list_remove(colaReady,0);
     pthread_mutex_unlock(&mutexReadyList);
 
+//    t_dtb * dtbAEjecutar = verificarBloqueo();
+
     pthread_mutex_lock(&mutexEjecutandoList);
     list_add(colaEjecutando, primerDTBenReady);
     pthread_mutex_unlock(&mutexEjecutandoList);
     return primerDTBenReady;
 }
+
+//t_dtb * verificarBloqueo()
+//{
+//
+//}
 
 /*
  * FUNCION PARA PASAR EL PRIMER PROCESO DE LA COLA READY ESPECIAL A EJECUTAR

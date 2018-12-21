@@ -120,6 +120,7 @@ void liberarRecursos(){
     pthread_mutex_destroy(&semDummy);
     pthread_mutex_destroy(&semCargadoEnMemoria);
     pthread_mutex_destroy(&mutexPlanificando);
+    pthread_mutex_destroy(&mutexRecursoBuscado);
 
     pthread_mutex_destroy(&mutexTotalSentencias);
     pthread_mutex_destroy(&mutexSentenciasXDAM);
@@ -206,6 +207,7 @@ void initMutexs(){
 	pthread_mutex_init(&mutexgdtCounter, NULL);
 	pthread_mutex_init(&mutexDummy, NULL);
 	pthread_mutex_init(&semCargadoEnMemoria, NULL);
+	pthread_mutex_init(&mutexRecursoBuscado, NULL);
 
 	pthread_mutex_init(&mutexTotalSentencias, NULL);
 	pthread_mutex_init(&mutexSentenciasXDAM, NULL);

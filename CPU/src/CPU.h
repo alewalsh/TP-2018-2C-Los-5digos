@@ -108,7 +108,7 @@ int nuevoDummy(t_dtb * dtb, t_package paquete);
 int comenzarEjecucion(t_package paquete);
 int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb);
 int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int modulo);
-int manejarRecursosSAFA(char * recurso, int idGDT, int accion);
+int manejarRecursosSAFA(char * recurso, int idGDT, int accion, int programCounterActual);
 int setQuantum(t_package paquete);
 
 t_dtb * transformarPaqueteADTB(t_package paquete);

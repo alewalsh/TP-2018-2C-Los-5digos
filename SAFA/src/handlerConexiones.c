@@ -317,7 +317,8 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	//TODO Fijarse si hay que actualizar las metricas
         	char * recurso = copyStringFromBuffer(&pkg.data);
 			int pid = copyIntFromBuffer(&pkg.data);
-			hacerWaitDeRecurso(recurso,pid,socketFD);
+			int programCounterActual = copyIntFromBuffer(&pkg.data);
+			hacerWaitDeRecurso(recurso,pid,socketFD,programCounterActual);
 			break;
         }
         case CPU_SAFA_DISCONNECT:
@@ -388,20 +389,24 @@ void manejarNuevaCPU(int nuevoFd)
 
 void hacerSignalDeRecurso(char * recursoSolicitado){
 
-	for(int i =0; i<list_size(listaRecursoAsignados); i++){
-
+	for(int i =0; i<list_size(listaRecursoAsignados); i++)
+	{
 		t_recurso * recurso = list_get(listaRecursoAsignados,i);
 		int estaEnLaLista = strcmp(recurso->recursoId, recursoSolicitado);
-		if(estaEnLaLista == 0){
+		if(estaEnLaLista == 0)
+		{
 			t_recurso * recursoUsado = list_remove(listaRecursoAsignados, i);
-			if(list_size(recursoUsado->listProcesos)>0){
+			if(list_size(recursoUsado->listProcesos)>0)
+			{
 				//TIENE RECURSOS SOLICITANDOLO -> Se toma el primero y se desbloquea
-				int pidSolicitante = (int) list_remove(recursoUsado->listProcesos,0);
-				recursoUsado->procesoDuenio = pidSolicitante;
+				t_dtb * dtbSolicitante = list_remove(recursoUsado->listProcesos,0);
+				recursoUsado->procesoDuenio = dtbSolicitante->idGDT;
 
 				//Se desbloquea el proceso pid
-				desbloquearDTBsegunAlgoritmo(pidSolicitante);
-			}else{
+				desbloquearDTBsegunAlgoritmo(dtbSolicitante->idGDT);
+			}
+			else
+			{
 				//NO TIENE RECURSOS SOLICITANDOLO
 				recursoUsado->procesoDuenio = 0;
 			}
@@ -410,53 +415,81 @@ void hacerSignalDeRecurso(char * recursoSolicitado){
 	}
 }
 
-void hacerWaitDeRecurso(char * recursoSolicitado, int pid, int socketCPU){
+bool existeRecurso(t_recurso * recurso)
+{
+	if (strcmp(recurso->recursoId, recursoBuscado) == 0)
+		return true;
+	return false;
+}
 
-	int posicion = -1;
-
-	for(int i =0; i<list_size(listaRecursoAsignados); i++){
-
+void hacerWaitDeRecurso(char * recursoSolicitado, int pid, int socketCPU, int PCActual)
+{
+	bool realizoBloqueo = false;
+	for(int i =0; i < list_size(listaRecursoAsignados); i++)
+	{
 		t_recurso * recurso = list_get(listaRecursoAsignados,i);
 		int estaEnLaLista = strcmp(recurso->recursoId, recursoSolicitado);
-		if(estaEnLaLista == 0){
-			posicion = i;
-			t_recurso * recursoUsado = list_remove(listaRecursoAsignados, posicion);
-			if(recursoUsado->procesoDuenio == 0){
+		if(estaEnLaLista == 0)
+		{
+			t_recurso * recursoUsado = list_remove(listaRecursoAsignados, i);
+			if(recursoUsado->procesoDuenio == 0)
+			{
 				//EXISTE Y NO ESTA SIENDO USADO
 				//el recurso no se está utilizando
 				recursoUsado->procesoDuenio = pid;
-			}else{
+			}
+			else
+			{
 				//EXISTE Y ESTA SIENDO USADO
 				//Esta siendo usado y lo tengo que bloquear
-				list_add(recursoUsado->listProcesos,&pid);
+				t_dtb * newDTB = malloc(sizeof(t_dtb));
+				newDTB->idGDT = pid;
+				list_add(recursoUsado->listProcesos, newDTB);
 
 				//Se bloquea el proceso
 				pthread_mutex_lock(&mutexEjecutandoList);
 				t_dtb * dtb = buscarDTBPorPIDenCola(colaEjecutando,pid);
+				dtb->programCounter = PCActual;
 				pthread_mutex_unlock(&mutexEjecutandoList);
 				pasarDTBdeEXECaBLOQUED(dtb);
 
+				if(enviar(socketCPU,SAFA_CPU_BLOQUEO_WAIT,NULL, 0, logger->logger))
+				{
+					log_error_mutex(logger, "No se pudo enviar el bloqueo o desbloqueo del recurso al SAFA.");
+				}
 				//Se libera una cpu y se hace signal del semaforo
 				liberarCpu(socketCPU);
+				realizoBloqueo = true;
 			}
-			list_add_in_index(listaRecursoAsignados, posicion, recursoUsado);
+			list_add_in_index(listaRecursoAsignados, i, recursoUsado);
 		}
 	}
 
-
-	if(posicion >= 0){
-		//NO EXISTE
-		//Si no estaba en la lista lo tengo que crear
-		t_recurso * recursoCreado = crearRecurso(recursoSolicitado,pid);
-		list_add(listaRecursoAsignados, recursoCreado);
+	if (!realizoBloqueo)
+	{
+		bool recursoExistente = false;
+		pthread_mutex_lock(&mutexRecursoBuscado);
+		recursoBuscado = recursoSolicitado;
+		if (list_size(listaRecursoAsignados)>0)
+			recursoExistente = list_any_satisfy(listaRecursoAsignados, (void *)existeRecurso);
+		pthread_mutex_unlock(&mutexRecursoBuscado);
+		if(!recursoExistente)
+		{
+			//NO EXISTE -> Si no estaba en la lista lo tengo que crear
+			t_recurso * recursoCreado = crearRecurso(recursoSolicitado,pid);
+			list_add(listaRecursoAsignados, recursoCreado);
+			if(enviar(socketCPU,SAFA_CPU_INICIO_WAIT,NULL, 0, logger->logger))
+			{
+				log_error_mutex(logger, "No se pudo enviar el bloqueo o desbloqueo del recurso al SAFA.");
+			}
+		}
 	}
-
 }
 
 t_recurso* crearRecurso(char * recurso, int pid){
 	t_list * listaProcesos = list_create();
 	t_recurso * recursoStruct = malloc(sizeof(t_recurso));
-	recursoStruct->recursoId =recurso;
+	recursoStruct->recursoId = recurso;
 	recursoStruct->procesoDuenio = pid;
 	recursoStruct->listProcesos = listaProcesos;
 	return recursoStruct;

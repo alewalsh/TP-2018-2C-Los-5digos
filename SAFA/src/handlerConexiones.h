@@ -19,7 +19,9 @@ extern t_log_mutex *logger;
 extern fd_set master;
 extern fd_set readset;
 extern pthread_mutex_t mutexCpus;
+extern pthread_mutex_t mutexRecursoBuscado;
 
+char * recursoBuscado;
 int socketBuscado;
 
 t_list* listaCpus;
@@ -33,8 +35,9 @@ void manejarConexiones();
 void manejarSolicitud(t_package pkg, int socketFD);
 void initCpuList();
 t_recurso* crearRecurso(char * recurso, int pid);
-void hacerWaitDeRecurso(char * recursoSolicitado, int pid, int socketCPU);
+void hacerWaitDeRecurso(char * recursoSolicitado, int pid, int socketCPU, int PCActual);
 void hacerSignalDeRecurso(char * recursoSolicitado);
+bool existeRecurso(t_recurso * recurso);
 void actualizarMetricas(t_dtb * dtb);
 void manejarNuevaCPU(int nuevoFd);
 void finEjecucionCPU(int socket);
