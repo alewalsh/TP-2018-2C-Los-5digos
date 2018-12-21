@@ -153,6 +153,10 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 		if (segmento == NULL)
 		{
 			logPosicionesLibres(estadoLineas,SEG);
+			if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE_FRAG_EXTERNA,pkg.data,pkg.size,logger->logger))
+			{
+				log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
+			}
 			return FM9_DAM_MEMORIA_INSUFICIENTE_FRAG_EXTERNA;
 		}
 		actualizarTablaDeSegmentos(datosPaquete->pid,segmento);
@@ -160,6 +164,11 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 		// ESTO PARA QUE ESTA?????
 		contLineasUsadas += datosPaquete->cantidadLineasARecibir;
 
+		// Aviso al DAM que efectivamente hay memoria disponible
+		if (enviar(socketSolicitud, FM9_DAM_HAY_MEMORIA, NULL, 0, logger->logger)) {
+			log_error_mutex(logger, "Error al enviar aviso de memoria disponible al DAM");
+			return EXIT_FAILURE;
+		}
 		char * bufferGuardado = malloc(config->tamMaxLinea);
 		int i = 0, offset = 0, tamanioPaqueteReal = 0;
 		int lineaLeida = 1;

@@ -68,6 +68,7 @@ int isSetted(int socket);
 //------------------------------------------------------------------------------------------------------------------
 
 int recibirConfirmacionMemoria();
+int recibirConfirmacionInicioMemoria();
 bool leerEscriptorio(t_package paquete, int socketEnUso);
 bool abrirArchivo(t_package paquete, int socketEnUso);
 bool hacerFlush(t_package paquete, int socketEnUso);
