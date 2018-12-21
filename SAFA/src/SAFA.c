@@ -172,6 +172,16 @@ void destruirListas()
 	} else {
 		list_destroy(listaMetricasLP);
 	}
+	if(list_size(listaMetricasTR) > 0){
+		list_destroy_and_destroy_elements(listaMetricasTR, (void *) destruirMetricaTR);
+	}else{
+		list_destroy(listaMetricasTR);
+	}
+	if(list_size(listaMetricasTRDefinitiva) > 0){
+		list_destroy_and_destroy_elements(listaMetricasTRDefinitiva, (void *) destruirMetricaTR);
+	}else{
+		list_destroy(listaMetricasTRDefinitiva);
+	}
 }
 
 void initMutexs(){
@@ -218,6 +228,8 @@ void initList() {
 	colaEjecutando = list_create();
 	colaExit = list_create();
 	listaMetricasLP = list_create();
+	listaMetricasTR = list_create();
+	listaMetricasTRDefinitiva = list_create();
 }
 
 void cambiosConfig(){

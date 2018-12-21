@@ -23,7 +23,7 @@ extern t_list* colaEjecutando;     // Lista DTBs en ejec
 extern t_list* colaExit;		// Lista Terminados.
 extern t_list* colaReadyEspecial;
 //TODO: Vamos a tener que agregar la cola especial que creo Fran
-
+extern t_list* listaMetricasTRDefinitiva;
 extern sem_t mandadosPorConsola;
 
 void consolaEjecutar(char *args);
@@ -39,8 +39,11 @@ void consolaStatusDTB(char *args);
 void imprimirDTB(t_dtb * dtb);
 void consolaMetricasDTB(char *args);
 void consolaMetricas();
+void imprimirDtbsEnNew();
 void imprimirSentenciasDAM();
+void imprimirPromedioSentenciasDam();
 void imprimirSentenciasPromEnExit();
+void imprimirMetricaTiempoDeRespuestaPromedio();
 void consoleExit();
 void consoleHelp();
 void consoleClear();

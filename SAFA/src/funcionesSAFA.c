@@ -252,6 +252,8 @@ int confirmacionDMA(int pid, int result){
 	if(result == EXIT_SUCCESS){ //SE CARGÓ CORRECTAMENTE
 		//desbloqueo el proceso segun el algoritmo
 		result = desbloquearDTBsegunAlgoritmo(pid);
+		//ACTUALIZA LA METRICA DEFINITIVA DE TIEMPO DE RESPUESTA
+		actualizarListaDefinitivaMetricaTR(pid);
 	}else{ //HUBO UN ERROR AL CARGAR EL PROCESO EN MEMORIA
 		//se finaliza el proceso
 		int index = buscarPosicionPorPIDenCola(colaExit, pid);
@@ -271,6 +273,20 @@ int confirmacionDMA(int pid, int result){
 	}
 	return result;
 }
+
+void actualizarListaDefinitivaMetricaTR(int pid){
+	//borrar la metrica de listaMetricasTR y agregarlo en listaMetricasTRDefinitiva
+	int posicion = buscarPosicionPorPIDenCola(listaMetricasTR,pid);
+	if(posicion >= 0){
+		t_metricaTR * metricaAPasar = list_remove(listaMetricasTR, posicion);
+		list_add(listaMetricasTRDefinitiva,metricaAPasar);
+
+		//TODO VER SI SE DEBE LIMPIAR Y VOLVER A AGREGAR EN LA COLA DE METRICAS DE TIEMPO DE REPUESTA
+		metricaAPasar->tiempoDeRespuesta = 0;
+		list_add(listaMetricasTR,metricaAPasar);
+	}
+
+}
 int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){
 	int index = -1;
 	int listSize = list_size(cola);
@@ -284,6 +300,22 @@ int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){
 		}
 	}
 	return index;
+}
+
+int buscarDTBEnColaMetricasNew(t_dtb * dtbAbuscar){
+	int index = -1;
+	int listSize = list_size(listaMetricasLP);
+	if(listSize<= 0) return index;
+
+	for(int i = 0; i<listSize;i++){
+		t_metricaLP * dtb = list_get(listaMetricasLP,i);
+		if(dtb->idDTB == dtbAbuscar->idGDT){
+			index = i;
+			break;
+		}
+	}
+	return index;
+
 }
 t_dtb * buscarDTBPorPIDenCola(t_list * cola, int pid){
 	t_dtb * dtb;
@@ -493,6 +525,12 @@ void actualizarSentenciasPasaronPorDAM(int cantidadDeSentencias){
     pthread_mutex_unlock(&mutexSentenciasXDAM);
 }
 
+void actualizarMetricaTiempoDeRespuesta(int cantidadDeSentencias){
+	for(int i = 0; i< list_size(listaMetricasTR); i++){
+		t_metricaTR * metrica = list_get(listaMetricasTR,i);
+		metrica->tiempoDeRespuesta += cantidadDeSentencias;
+	}
+}
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA EL INOTIFY
 //------------------------------------------------------------------------------------------------------------------

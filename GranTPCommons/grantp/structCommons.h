@@ -38,6 +38,11 @@ typedef struct {
     int tiempoEnNEW;
 } t_metricaLP;
 
+typedef struct {
+	int idDTB;
+    int tiempoDeRespuesta;
+} t_metricaTR;
+
 typedef struct{
 	int pid;
 	char * path;

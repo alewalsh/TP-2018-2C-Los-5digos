@@ -142,7 +142,11 @@ void imprimirREADY(){
     int i;
     for (i = 0; i < size; i++) {
         t_dtb *dtb = (t_dtb *) list_get(colaReady, i);
-        printf("DTB numero: (%d) \n", dtb->idGDT);
+        if(dtb->esDummy){
+        	printf("DTB numero: (%d) <- Dummy \n ", dtb->idGDT);
+        }else{
+            printf("DTB numero: (%d) \n", dtb->idGDT);
+        }
     }
     printf("*-----------------------------------------------------*\n\n");
 	//pthread_mutex_unlock(&mutexReadyList);
@@ -155,7 +159,11 @@ void imprimirEJECUTANDO(){
     int i;
     for (i = 0; i < size; i++) {
         t_dtb *dtb = (t_dtb *) list_get(colaEjecutando, i);
-        printf("DTB numero: (%d) \n", dtb->idGDT);
+        if(dtb->esDummy){
+        	printf("DTB numero: (%d) <- Dummy \n ", dtb->idGDT);
+		}else{
+			printf("DTB numero: (%d) \n", dtb->idGDT);
+		}
     }
     printf("*-----------------------------------------------------*\n\n");
     //pthread_mutex_unlock(&mutexEjecutandoList);
@@ -168,7 +176,11 @@ void imprimirBLOQUEADOS(){
     int i;
     for (i = 0; i < size; i++) {
         t_dtb *dtb = (t_dtb *) list_get(colaBloqueados, i);
-        printf("DTB numero: (%d) \n", dtb->idGDT);
+        if(dtb->esDummy){
+		  printf("DTB numero: (%d) <- Dummy \n ", dtb->idGDT);
+	  }else{
+		  printf("DTB numero: (%d) \n", dtb->idGDT);
+	  }
     }
     printf("*-----------------------------------------------------*\n\n");
     //pthread_mutex_unlock(&mutexBloqueadosList);
@@ -294,28 +306,65 @@ void consolaMetricasDTB(char *args){
 
 void consolaMetricas(){
 
+	printf("*--------------------------------------------------------------------------*\n");
+	printf("*-------------------------------METRICAS-----------------------------------* \n");
+	printf("*--------------------------------------------------------------------------*\n\n");
+	imprimirDtbsEnNew();
 	imprimirSentenciasDAM();
 	imprimirSentenciasPromEnExit();
+	imprimirPromedioSentenciasDam();
+	imprimirMetricaTiempoDeRespuestaPromedio();
+}
 
+void imprimirDtbsEnNew(){
+
+	printf("*--------------------------------------------------------------------------*\n");
+	printf("1. Cant. de sentencias ejecutadas que esperó un DTB en la cola NEW\n\n");
+	for(int i = 0; i<list_size(listaMetricasLP); i++){
+		t_metricaLP * dtb = list_get(listaMetricasLP,i);
+		printf("DTB Id:%d -> %d | ",dtb->idDTB,dtb->tiempoEnNEW);
+	}
+	printf("\n*--------------------------------------------------------------------------*\n\n");
 }
 
 void imprimirSentenciasDAM(){
 
     pthread_mutex_lock(&mutexTotalSentencias);
     pthread_mutex_lock(&mutexSentenciasXDAM);
-    int i = totalSentenciasEjecutadas;
-    int j = sentenciasXDAM;
+    int totSentenciasINT = totalSentenciasEjecutadas;
+    int sentenciasPorDMAINT = sentenciasXDAM;
+    float totSentenciasFloat = totSentenciasINT;
+    float sentenciasPorDMAFloat = sentenciasPorDMAINT;
     pthread_mutex_unlock(&mutexTotalSentencias);
     pthread_mutex_unlock(&mutexSentenciasXDAM);
-	div_t x = div(i,j);
-	int prom = (i*100)/j;
+	float prom = sentenciasPorDMAFloat/totSentenciasFloat;
 
+    printf("*--------------------------------------------------------------------------*\n");
+    printf("2. Cant.de sentencias ejecutadas prom. del sistema que usaron a “El Diego” \n\n");
+    printf("Cantidad de Total de Sentencias Ejecutadas: %d \n", totSentenciasINT);
+    printf("Cantidad de Sentencias que pasaron por “El diego”: %d \n", sentenciasPorDMAINT);
+    printf("Cantidad promedio de sentencias que pasaron por “El diego”: %f \n", prom);
     printf("*--------------------------------------------------------------------------*\n\n");
-    printf("Cantidad de Total de Sentencias Ejecutadas: %d \n", i);
-    printf("Cantidad de Sentencias que pasaron por DAM: %d \n", j);
-    printf("Cantidad promedio de sentencias: %d \n", x.quot);
-    printf("PROMEDIO: %d \n", prom);
-    printf("*--------------------------------------------------------------------------*\n\n");
+}
+
+void imprimirPromedioSentenciasDam(){
+	pthread_mutex_lock(&mutexTotalSentencias);
+	pthread_mutex_lock(&mutexSentenciasXDAM);
+	int totSentenciasINT = totalSentenciasEjecutadas;
+	int sentenciasPorDMAINT = sentenciasXDAM;
+	float totSentenciasFloat = totSentenciasINT;
+	float sentenciasPorDMAFloat = sentenciasPorDMAINT;
+	pthread_mutex_unlock(&mutexTotalSentencias);
+	pthread_mutex_unlock(&mutexSentenciasXDAM);
+	float prom = sentenciasPorDMAFloat/totSentenciasFloat;
+	int porcentaje = (prom*100);
+
+	printf("*--------------------------------------------------------------------------*\n");
+	printf("4. Porcentaje de las sentencias ejecutadas promedio que fueron a “El Diego” \n\n");
+	printf("Cantidad de Total de Sentencias Ejecutadas: %d \n", totSentenciasINT);
+	printf("Cantidad promedio de sentencias que pasaron por “El diego”: %d \n", sentenciasPorDMAINT);
+	printf("Porcentaje de sentencias ejecutadas promedio que pasaron por “El diego”: %d%s \n", porcentaje,"%");
+	printf("*--------------------------------------------------------------------------*\n\n");
 }
 
 void imprimirSentenciasPromEnExit(){
@@ -328,13 +377,36 @@ void imprimirSentenciasPromEnExit(){
 		sentenciasTotales += dtb->programCounter;
 	}
 
-	sentenciasPromEnExit = sentenciasTotales / cantidadDTBEnExit;
-	printf("*--------------------------------------------------------------------------*\n\n");
+	float cantSentencias = sentenciasTotales;
+	float cantDtbEnExit = cantidadDTBEnExit;
+
+	sentenciasPromEnExit = cantSentencias / cantDtbEnExit;
+	printf("*--------------------------------------------------------------------------*\n");
+	printf("3. Cant. de sentencias ejecutadas prom. del sistema para que un DTB termine en la cola EXIT\n\n");
 	printf("La cantidad total de sentencias en la cola de EXIT es de: %d\n",sentenciasTotales);
 	printf("La cantidad de DTBs en la cola de EXIT es de: %d\n", cantidadDTBEnExit);
 	printf("La cantidad de sentencias promedio de la cola de EXIT es de: %d\n",sentenciasPromEnExit);
 	printf("*--------------------------------------------------------------------------*\n\n");
 
+}
+
+void imprimirMetricaTiempoDeRespuestaPromedio(){
+
+	int tiempoTotal = 0;
+	int sizeMetricasTR = list_size(listaMetricasTRDefinitiva);
+	for(int i = 0; i<list_size(listaMetricasTRDefinitiva); i++){
+		t_metricaTR * dtb = list_get(listaMetricasTRDefinitiva,i);
+		tiempoTotal += dtb->tiempoDeRespuesta;
+	}
+	float tiempoTotalFloat = tiempoTotal;
+	float sizeMetricasTRFloat = sizeMetricasTR;
+	float promedioTiempoDeRespuesta = tiempoTotalFloat/sizeMetricasTRFloat;
+	printf("*--------------------------------------------------------------------------*\n");
+	printf("5. Tiempo de Respuesta promedio del Sistema\n\n");
+	printf("La cantidad de respuestas que hubo: %d\n", sizeMetricasTR);
+	printf("El tiempo total de respuesta del sistema: %d\n", tiempoTotal);
+	printf("El tiempo de respuesta promedio del sistema: %f\n",promedioTiempoDeRespuesta);
+	printf("*--------------------------------------------------------------------------*\n\n");
 }
 
 void consoleClear() {
