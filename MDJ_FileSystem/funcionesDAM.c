@@ -128,7 +128,7 @@ void manejarDAM(t_package pkg)
 					free(datosArchivo);
 				} else {
 					//manda fail
-					log_error_mutex(loggerAtencionDAM, "Error no se pudo leer de: &s", pathArchivoALeer);
+					log_error_mutex(loggerAtencionDAM, "Error no se pudo leer de: %s", pathArchivoALeer);
 					enviar(socketDAM, DAM_MDJ_FAIL, NULL, 0,loggerAtencionDAM->logger);
 				}
 				free(pathArchivoALeer);
@@ -213,14 +213,14 @@ void manejarDAM(t_package pkg)
 					if (statusEliminiar) {
 						//se intetno eliminar pero sigue existiendo
 						log_error_mutex(loggerAtencionDAM, "Error no se pudo borrar: %s", pathArchivoAEliminar);
-						if(enviar(socketDAM, DAM_MDJ_FAIL, NULL, NULL, loggerAtencionDAM->logger))
+						if(enviar(socketDAM, DAM_MDJ_FAIL, NULL, 0, loggerAtencionDAM->logger))
 							{
 								log_error_mutex(loggerAtencionDAM, "Error al enviar negacion de archivo borrado al DAM.");
 							}
 					}else{
 						//eliminiacion OK
 						log_info_mutex(loggerAtencionDAM, "Archivo: %s Borrado\n", pathArchivoAEliminar);
-						if(enviar(socketDAM, DAM_MDJ_OK, NULL, NULL, loggerAtencionDAM->logger))
+						if(enviar(socketDAM, DAM_MDJ_OK, NULL, 0, loggerAtencionDAM->logger))
 							{
 								log_error_mutex(loggerAtencionDAM, "Error al enviar validacion de borrado de archivo al DAM.");
 							}
@@ -228,7 +228,7 @@ void manejarDAM(t_package pkg)
 				}else{
 					//el archivo no existe -> no se puede eliminar.
 					log_error_mutex(loggerAtencionDAM, "Error no se pudo borrar: %s porque no existe.", pathArchivoAEliminar);
-					if(enviar(socketDAM, DAM_MDJ_FAIL, NULL, NULL, loggerAtencionDAM->logger))
+					if(enviar(socketDAM, DAM_MDJ_FAIL, NULL, 0, loggerAtencionDAM->logger))
 					{
 						log_error_mutex(loggerAtencionDAM, "Error al enviar negacion de archivo borrado al DAM.");
 					}
