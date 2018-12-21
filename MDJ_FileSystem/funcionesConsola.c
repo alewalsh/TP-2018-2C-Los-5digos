@@ -3,6 +3,7 @@
 void inicializarCosnola() {
 
 	char * linea;
+	int ejecutado;
 
 	const char s[2] = " ";
 	char *token;
@@ -21,12 +22,14 @@ void inicializarCosnola() {
 		}
 
 		log_info_mutex(loggerMDJ, "Readline leyo: %s\n", linea);
+		ejecutado = 0;
 
 		//obtengo primer paramentro de la entrada.
 		token = strtok(linea, s);
 
 		//LS
 		if((token != NULL) && (strcmp(token, "ls") == 0)){
+			ejecutado = 1;
 			//obtengo segundo parametro de la entrada.
 			token = strtok(NULL, s);
 
@@ -44,6 +47,7 @@ void inicializarCosnola() {
 
 		//CD
 		if((token != NULL) && (strcmp(token, "cd") == 0)){
+			ejecutado = 1;
 			token = strtok(NULL, s);
 
 			if(token != NULL){
@@ -72,6 +76,7 @@ void inicializarCosnola() {
 
 		//MD5
 		if((token != NULL) && (strcmp(token, "md5") == 0)){
+			ejecutado = 1;
 			token = strtok(NULL, s);
 			char *pathMD5 = string_new();
 			string_append(&pathMD5, directorioActual);
@@ -105,6 +110,8 @@ void inicializarCosnola() {
 					free(metadataArchivoALeer->bloques);
 					free(metadataArchivoALeer);
 					free(datosMD5);
+				}else{
+					printf("Archivo inexistente. \n");
 				}
 				free(pathMD5);
 			}
@@ -112,6 +119,7 @@ void inicializarCosnola() {
 
 		//CAT
 		if((token != NULL) && (strcmp(token, "cat") == 0)){
+			ejecutado = 1;
 			token = strtok(NULL, s);
 			char *path = string_new();
 			string_append(&path, directorioActual);
@@ -140,14 +148,14 @@ void inicializarCosnola() {
 			}
 		free(path);
 		}
+		if(ejecutado == 0){
+			printf("Comando no reconocido. \n");
+		}
 	}
 	free(linea);
 }
 
 void eleESE(char *rutaDirectorio){
-	log_info_mutex(loggerMDJ, "LSeara: %s \n", rutaDirectorio);
-
-	printf("Contenido de %s: \n \n", rutaDirectorio);
 
 	DIR *directorio;
 	struct dirent *file;
@@ -155,11 +163,19 @@ void eleESE(char *rutaDirectorio){
 
 	directorio = opendir(rutaDirectorio);
 
-	while((file = readdir(directorio)) != NULL){
-		stat(file->d_name, &status);
-		if(strncmp(file->d_name, ".", 1) != 0){
-			printf("%s \n", file->d_name);
+	if(directorio != NULL){
+		log_info_mutex(loggerMDJ, "LSeara: %s \n", rutaDirectorio);
+
+		printf("Contenido de %s: \n \n", rutaDirectorio);
+
+		while((file = readdir(directorio)) != NULL){
+			stat(file->d_name, &status);
+			if(strncmp(file->d_name, ".", 1) != 0){
+				printf("%s \n", file->d_name);
+			}
 		}
+	}else{
+		printf("Ruta de directorio: %s inexistente.", rutaDirectorio);
 	}
 	printf("\n");
 	closedir(directorio);
