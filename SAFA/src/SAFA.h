@@ -73,6 +73,7 @@ int gdtCounter = 0;
 
 int totalSentenciasEjecutadas = 0;
 int sentenciasXDAM = 0;
+int ejecutoAlgunProceso;
 
 t_list* colaNew;			// Lista New.
 t_list* colaReady;			// Lista Ready.
@@ -81,6 +82,8 @@ t_list* colaEjecutando;     // Lista DTBs en ejec
 t_list* colaExit;		// Lista Terminados.
 t_list* colaReadyEspecial;
 t_list* listaMetricasLP;
+t_list* listaMetricasTR;
+t_list* listaMetricasTRDefinitiva; //Lista para mostrar en la metrica de tiempos de respuesta
 
 // ------------------------------------------------------------------------------
 //	VARIABLES SAFA
@@ -100,6 +103,7 @@ void destruirListas();
 void destruir_dtb(t_dtb * dtb);
 void liberarDirecciones(char * direccion);
 void destruirMetricaLP(t_metricaLP * metrica);
+void destruirMetricaTR(t_metricaTR * metrica);
 void initMutexs();
 void initList();
 void cambiosConfig();

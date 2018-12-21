@@ -67,8 +67,8 @@ extern configSAFA *conf;
 extern t_log_mutex *logger;
 
 extern int dummyBloqueado;
-
-
+extern t_list* listaMetricasTRDefinitiva;
+extern t_list* listaMetricasTR;
 
 
 //------------------------------------------------------------------------------------------------------------------
@@ -110,6 +110,7 @@ int desbloquearDTB(t_dtb * dtb);
 int abortarDTB(t_dtb * dtb, int socketCPU);
 int finEjecucionPorQuantum(t_dtb * dtb);
 int confirmacionDMA(int pid, int result);
+void actualizarListaDefinitivaMetricaTR(int pid);
 int abortarDTBNuevo(t_dtb * dtb);
 void actualizarIODtb(t_dtb * dtb, int cantIo, int cantLineasProceso);
 void actualizarTablaDirecciones(int pid, char * path);
@@ -129,6 +130,7 @@ void planificadorCPdesbloquearDummy();
 //		FUNCIONES PARA PLANIFICADOR CP
 //------------------------------------------------------------------------------------------------------------------
 int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar);
+int buscarDTBEnColaMetricasNew(t_dtb * dtbAbuscar);
 t_dtb * buscarDTBPorPIDenCola(t_list * cola, int pid);
 int buscarPosicionPorPIDenCola(t_list * cola, int pid);
 t_cpus *crearCpu();
@@ -141,7 +143,7 @@ int desbloquearDTBsegunAlgoritmo(int pid);
 //------------------------------------------------------------------------------------------------------------------
 void actualizarTotalSentenciasEjecutadas(int cantidadDeSentencias);
 void actualizarSentenciasPasaronPorDAM(int cantidadDeSentencias);
-
+void actualizarMetricaTiempoDeRespuesta(int cantidadDeSentencias);
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA INOTIFY
 //------------------------------------------------------------------------------------------------------------------

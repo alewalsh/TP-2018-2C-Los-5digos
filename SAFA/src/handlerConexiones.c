@@ -471,5 +471,7 @@ void actualizarMetricas(t_dtb * dtb){
 		actualizarMetricasDTBNew(instruccionesEjecutadas);
 		// Actualizo valor general para saber cuantas sentencias en total se ejecutaron.
 		actualizarTotalSentenciasEjecutadas(instruccionesEjecutadas);
+		// Actualizo metrica de tiempo de respuesta
+		actualizarMetricaTiempoDeRespuesta(instruccionesEjecutadas);
 	}
 }

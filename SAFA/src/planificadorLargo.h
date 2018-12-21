@@ -25,10 +25,12 @@ extern sem_t semaforoGradoMultiprgramacion;
 
 int consolaNuevoGDT(char*);
 t_metricaLP *nuevaMetrica(int id);
+t_metricaTR *nuevaMetricaTR(int id);
 void agregarDTBaMetricasLP(int id);
-int consolaMetricaDTB(char* dtbSolicitado);
+void agregarDTBaMetricasTR(int id);
+int consolaMetricaDTBEnNew(int idSolicitado);
 void actualizarMetricasDTBNew(int instruccionesEjecutadas);
-t_metricaLP * buscarMetricaPorPIDenCola(t_list * cola, int pid);
+t_metricaLP * buscarMetricaLPPorPIDenCola(t_list * cola, int pid);
 
 void planificadorLP();
 

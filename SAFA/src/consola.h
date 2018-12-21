@@ -27,7 +27,7 @@
 
 
 extern int estadoSAFA;
-
+extern int ejecutoAlgunProceso;
 
 //TODO:CHEKEAR LOS ORDENES DE LOS INCLUDE
 void mainConsola();

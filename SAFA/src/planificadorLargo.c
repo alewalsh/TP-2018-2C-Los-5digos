@@ -14,21 +14,20 @@ int consolaNuevoGDT(char* scriptIngresado){
 		return EXIT_FAILURE;
 	}
 	agregarDTBaMetricasLP(newDTB->idGDT);
+	agregarDTBaMetricasTR(newDTB->idGDT);
     return EXIT_SUCCESS;
 }
 
-int consolaMetricaDTB(char* dtbSolicitado){
+int consolaMetricaDTBEnNew(int idSolicitado){
 	int tiempo;
-	int idSolicitado = atoi(dtbSolicitado);
 
-//	t_metricaLP *metricaDelDTB = list_get(listaMetricasLP, idSolicitado);
-	t_metricaLP *metricaDelDTB = buscarMetricaPorPIDenCola(listaMetricasLP, idSolicitado);
+	t_metricaLP *metricaDelDTB = buscarMetricaLPPorPIDenCola(listaMetricasLP, idSolicitado);
 	tiempo = metricaDelDTB->tiempoEnNEW;
 
     return tiempo;
 }
 
-t_metricaLP * buscarMetricaPorPIDenCola(t_list * cola, int pid){
+t_metricaLP * buscarMetricaLPPorPIDenCola(t_list * cola, int pid){
 	t_metricaLP *metricaDelDTB;
 	int listSize = list_size(cola);
 	if(listSize<= 0) return NULL;
@@ -43,16 +42,27 @@ t_metricaLP * buscarMetricaPorPIDenCola(t_list * cola, int pid){
 	return metricaDelDTB;
 }
 
-
 void agregarDTBaMetricasLP(int id){
 	t_metricaLP *metrica = nuevaMetrica(id);
 	list_add(listaMetricasLP, metrica);
+}
+
+void agregarDTBaMetricasTR(int id){
+	t_metricaTR *metrica = nuevaMetricaTR(id);
+	list_add(listaMetricasTR, metrica);
 }
 
 t_metricaLP *nuevaMetrica(int id) {
 	t_metricaLP *nuevaMetrica = malloc(sizeof(t_metricaLP));
 	nuevaMetrica->idDTB = id;
 	nuevaMetrica->tiempoEnNEW = 0;
+	return nuevaMetrica;
+}
+
+t_metricaTR *nuevaMetricaTR(int id) {
+	t_metricaTR *nuevaMetrica = malloc(sizeof(t_metricaTR));
+	nuevaMetrica->idDTB = id;
+	nuevaMetrica->tiempoDeRespuesta = 0;
 	return nuevaMetrica;
 }
 
@@ -67,7 +77,7 @@ void actualizarMetricasDTBNew(int instruccionesEjecutadas){
 		for(int i = 0; i < list_size(colaNew);i++){
 
 			t_dtb * dtbNEW = list_get(colaNew,i);
-			int posicion = buscarDTBEnCola(listaMetricasLP,dtbNEW);
+			int posicion = buscarDTBEnColaMetricasNew(dtbNEW);
 
 			if(posicion >= 0){
 				t_metricaLP *dtbEnMetrica = list_remove(listaMetricasLP, posicion);

@@ -58,6 +58,10 @@ void destruirMetricaLP(t_metricaLP * metrica)
 	free(metrica);
 }
 
+void destruirMetricaTR(t_metricaTR * metrica)
+{
+	free(metrica);
+}
 void liberarSegmento(t_segmento *self)
 {
 	free(self->archivo);
