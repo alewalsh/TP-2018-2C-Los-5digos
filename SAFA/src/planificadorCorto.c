@@ -345,6 +345,30 @@ int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq){
 	return EXIT_SUCCESS;
 }
 
+int pasarDTBdeReadyaFINALIZADO(t_dtb * dtbABloq){
+
+    pthread_mutex_lock(&mutexReadyList);
+    int index = buscarDTBEnCola(colaReady,dtbABloq);
+    pthread_mutex_unlock(&mutexReadyList);
+
+	if(index >= 0){
+		pthread_mutex_lock(&mutexReadyList);
+		t_dtb * dtbReadyAFinalizar = (t_dtb *) list_remove(colaReady,index);
+		pthread_mutex_unlock(&mutexReadyList);
+
+		dtbReadyAFinalizar->programCounter = dtbABloq->programCounter;
+
+		pthread_mutex_lock(&mutexExitList);
+	    list_add(colaExit, dtbReadyAFinalizar);
+	    pthread_mutex_unlock(&mutexExitList);
+	}else{
+		return EXIT_FAILURE;
+	}
+	sem_post(&semaforoGradoMultiprgramacion);
+	return EXIT_SUCCESS;
+}
+
+
 void pasarDTBdeBLOQaREADYESP(t_dtb * dtbAReadyEsp){
 
 	pthread_mutex_lock(&mutexBloqueadosList);

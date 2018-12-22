@@ -26,9 +26,7 @@ void executeCommand(int comando, char *args) {
 	            consolaStatus();}
             break;
         case FINALIZAR:
-            consolaLiberar();
-//            consoleBlock(args);
-//            printf("Comando FINALIZAR seleccionado.\n");
+        	finalizarDTBporConsola(args);
             break;
         case METRICAS:
         	if(ejecutoAlgunProceso){
@@ -127,3 +125,5 @@ void consolePrintHeader() {
     printf("Para consultar comandos de consola escriba 'HELP'\n");
     printf("\n");
 }
+
+

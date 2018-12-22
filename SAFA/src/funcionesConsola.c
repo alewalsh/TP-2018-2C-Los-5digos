@@ -470,3 +470,26 @@ void freeCommand(char *command, char *args) {
         free(args);
 }
 
+void finalizarDTBporConsola(char * args){
+	int pid = atoi(args);
+	pthread_mutex_lock(&mutexBloqueadosList);
+	int posicionPID = buscarPosicionPorPIDenCola(colaBloqueados, pid);
+	pthread_mutex_unlock(&mutexBloqueadosList);
+	if(posicionPID >= 0 ){
+		pthread_mutex_lock(&mutexBloqueadosList);
+		t_dtb * dtbAFinalizar = list_get(colaBloqueados,posicionPID);
+		pthread_mutex_unlock(&mutexBloqueadosList);
+		pasarDTBdeBLOQUEADOaFINALIZADO(dtbAFinalizar);
+		return;
+	}
+	pthread_mutex_lock(&mutexReadyList);
+	int posicionReady = buscarPosicionPorPIDenCola(colaReady, pid);
+	pthread_mutex_unlock(&mutexReadyList);
+	if(posicionPID >= 0 ){
+		pthread_mutex_lock(&mutexReadyList);
+		t_dtb * dtbAFinalizar = list_get(colaReady,posicionReady);
+		pthread_mutex_unlock(&mutexReadyList);
+		pasarDTBdeReadyaFINALIZADO(dtbAFinalizar);
+		return;
+	}
+}

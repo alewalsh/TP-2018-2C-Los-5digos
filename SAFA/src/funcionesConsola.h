@@ -50,5 +50,6 @@ void consoleClear();
 int getIdFunction(char *function);
 void parseCommand(char *line, char **command, char **args);
 void freeCommand(char *command, char *args);
+void finalizarDTBporConsola(char *);
 
 #endif /* FUNCIONESCONSOLA_H_ */

@@ -138,6 +138,7 @@ int buscarPosicionPorPIDenCola(t_list * cola, int pid);
 t_cpus *crearCpu();
 int pasarDTBdeEXECaFINALIZADO(t_dtb * dtbABloq);
 int pasarDTBdeBLOQUEADOaFINALIZADO(t_dtb * dtbABloq);
+int pasarDTBdeReadyaFINALIZADO(t_dtb * dtbABloq);
 int desbloquearDTBsegunAlgoritmo(int pid);
 
 //------------------------------------------------------------------------------------------------------------------
