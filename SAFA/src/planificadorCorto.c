@@ -130,7 +130,9 @@ void planificadorCPdesbloquearDummy(int idGDT, char * dirScript)
     log_info_mutex(logger, "Hilo Planificador Largo. Post al semaforo del dummy.");
 	sem_post(&desbloquearDTBDummy);
     log_info_mutex(logger, "Hilo Planificador Largo. Set dummyBloqueado en 1.");
+    pthread_mutex_lock(&mutexDummy);
 	dummyBloqueado = 1;
+	pthread_mutex_unlock(&mutexDummy);
 }
 
 bool obtenerDummy(t_dtb * dtb)
@@ -467,7 +469,7 @@ int buscarCPULibre(){
     pthread_mutex_lock(&mutexCpus);
 	for(int i = 0; i<list_size(listaCpus);i++)
 	{
-		t_cpus * cpu = list_remove(listaCpus,i);
+		t_cpus * cpu = list_remove(listaCpus,0);
 		if(cpu->libre== 0)
 		{
 			cpu->libre = 1;

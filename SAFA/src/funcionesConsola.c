@@ -177,7 +177,7 @@ void imprimirBLOQUEADOS(){
     for (i = 0; i < size; i++) {
         t_dtb *dtb = (t_dtb *) list_get(colaBloqueados, i);
         if(dtb->esDummy){
-		  printf("DTB numero: (%d) <- Dummy \n ", dtb->idGDT);
+		  printf("DTB numero: (%d) <- Dummy \n", dtb->idGDT);
 	  }else{
 		  printf("DTB numero: (%d) \n", dtb->idGDT);
 	  }
@@ -320,10 +320,12 @@ void imprimirDtbsEnNew(){
 
 	printf("*--------------------------------------------------------------------------*\n");
 	printf("1. Cant. de sentencias ejecutadas que esperó un DTB en la cola NEW\n\n");
+	pthread_mutex_lock(&mutexMetricasLP);
 	for(int i = 0; i<list_size(listaMetricasLP); i++){
 		t_metricaLP * dtb = list_get(listaMetricasLP,i);
 		printf("DTB Id:%d -> %d | ",dtb->idDTB,dtb->tiempoEnNEW);
 	}
+	pthread_mutex_unlock(&mutexMetricasLP);
 	printf("\n*--------------------------------------------------------------------------*\n\n");
 }
 

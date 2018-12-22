@@ -25,6 +25,7 @@ extern pthread_mutex_t semCargadoEnMemoria;
 extern sem_t semaforoGradoMultiprgramacion;
 //Semaforo para el dummy
 extern pthread_mutex_t semDummy;
+extern pthread_mutex_t mutexMetricasLP;
 
 extern t_list* colaNew;			// Lista New.
 extern t_list* colaReady;			// Lista Ready.

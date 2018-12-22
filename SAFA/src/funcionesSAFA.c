@@ -304,9 +304,11 @@ int buscarDTBEnCola(t_list * cola, t_dtb * dtbABuscar){
 
 int buscarDTBEnColaMetricasNew(t_dtb * dtbAbuscar){
 	int index = -1;
+	pthread_mutex_lock(&mutexMetricasLP);
 	int listSize = list_size(listaMetricasLP);
+	pthread_mutex_unlock(&mutexMetricasLP);
 	if(listSize<= 0) return index;
-
+	pthread_mutex_lock(&mutexMetricasLP);
 	for(int i = 0; i<listSize;i++){
 		t_metricaLP * dtb = list_get(listaMetricasLP,i);
 		if(dtb->idDTB == dtbAbuscar->idGDT){
@@ -314,6 +316,7 @@ int buscarDTBEnColaMetricasNew(t_dtb * dtbAbuscar){
 			break;
 		}
 	}
+	pthread_mutex_unlock(&mutexMetricasLP);
 	return index;
 
 }
@@ -406,7 +409,7 @@ void liberarCpu(int socketCpu)
     pthread_mutex_lock(&mutexCpus);
 	for(int i = 0; i < list_size(listaCpus);i++)
 	{
-		t_cpus * cpu = list_remove(listaCpus,i);
+		t_cpus * cpu = list_remove(listaCpus,0);
 		if(cpu->socket == socketCpu)
 		{
 			cpu->libre = 0;
