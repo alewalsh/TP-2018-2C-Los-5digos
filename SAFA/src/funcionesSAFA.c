@@ -358,11 +358,11 @@ int desbloquearDTBsegunAlgoritmo(int pid){
 	pthread_mutex_unlock(&mutexBloqueadosList);
 	if(dtb->idGDT > 0){
 		switch(conf->algoritmo){
-		case RR:
-			pasarDTBdeBLOQaREADY(dtb);
-			break;
 		case VRR:
 			pasarDTBSegunQuantumRestante(dtb);
+			break;
+		default: //(RR Y ALGORITMO PROPIO)
+			pasarDTBdeBLOQaREADY(dtb);
 			break;
 		}
 	}else{
