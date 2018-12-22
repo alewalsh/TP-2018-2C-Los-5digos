@@ -204,7 +204,7 @@ void ejecutarIOBF(int socketCPU){
 	pthread_mutex_unlock(&mutexReadyList);
 
 	pasarDTBdeREADYaEXEC(dtb);
-	log_info_mutex(logger,"Se va a enviar el proceso %d al CPU",dtb->idGDT);
+	log_info_mutex(logger,"Se va a enviar el proceso %d al CPU con Cant de I/O: %d",dtb->idGDT,dtb->cantIO);
 	enviarDTBaCPU(dtb,socketCPU);
 
 }
