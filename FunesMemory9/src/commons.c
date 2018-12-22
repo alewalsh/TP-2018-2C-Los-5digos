@@ -22,7 +22,7 @@ char * prepararLineaMemoria(char * buffer)
 	char * linea = split[0];
 	linea[tamanioLinea] = '\n';
 	string_append(&lineaAGuardar, linea);
-	lineaAGuardar = string_substring_until(lineaAGuardar, config->tamMaxLinea - 1);
+//	lineaAGuardar = string_substring_until(lineaAGuardar, config->tamMaxLinea - 1);
 	free(split);
 	return lineaAGuardar;
 }
@@ -154,9 +154,9 @@ int posicionesLibres(t_bitarray ** bitArray)
 
 void guardarLinea(int posicionMemoria, char * linea)
 {
-	pthread_mutex_lock(&mutexSolicitudes);
+//	pthread_mutex_lock(&mutexSolicitudes);
 	memcpy(storage+posicionMemoria, linea, strlen(linea) + 1);
-	pthread_mutex_unlock(&mutexSolicitudes);
+//	pthread_mutex_unlock(&mutexSolicitudes);
 }
 
 void realizarFlush(char * linea, int nroLinea, int transferSize, int socket)
@@ -270,10 +270,10 @@ void enviarLineaComoPaquetes(char * lineaAEnviar, int tamanioLinea, int transfer
 
 char * obtenerLinea(int posicionMemoria)
 {
-	pthread_mutex_lock(&mutexSolicitudes);
+//	pthread_mutex_lock(&mutexSolicitudes);
 	char * buffer = malloc(config->tamMaxLinea);
 	memcpy(buffer, storage+posicionMemoria, config->tamMaxLinea);
-	pthread_mutex_unlock(&mutexSolicitudes);
+//	pthread_mutex_unlock(&mutexSolicitudes);
 	return buffer;
 }
 

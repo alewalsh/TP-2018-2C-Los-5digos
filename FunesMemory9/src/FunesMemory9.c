@@ -14,7 +14,7 @@
 pthread_attr_t tattr;
 
 int main(int argc, char** argv) {
-	logger = log_create_mutex("FM9.log", "FM9", true, LOG_LEVEL_INFO);
+	logger = log_create_mutex("FM9.log", "FM9", false, LOG_LEVEL_INFO);
 	config = cargarConfiguracion(argv[1], FM9, logger->logger);
 	signal(SIGINT, sig_handler);
 	signal(SIGTERM, sig_handler);
@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
 	inicializarContadores();
 	size_t tamanioMemoria = config->tamMemoria;
 	storage = (char *)malloc(tamanioMemoria);
-	log_info_mutex(logger, "Se inicializÓ correctamente el FM9");
+	log_info_mutex(logger, "Se inicializó correctamente el FM9");
 	pthread_create(&threadConsolaFM9, &tattr, (void *) manejarConsolaFM9, NULL);
 	pthread_create(&threadConexiones, &tattr, (void *) manejarConexiones, NULL);
 	pthread_join(threadConsolaFM9, NULL);
@@ -123,7 +123,9 @@ void manejarConexiones(){
 					}
 					else
 					{
+						pthread_mutex_lock(&mutexSolicitudes);
 						manejarSolicitud(pkg, i);
+						pthread_mutex_unlock(&mutexSolicitudes);
 					}
 
 				}

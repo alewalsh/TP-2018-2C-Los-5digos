@@ -80,11 +80,22 @@ int finGDTTPI(t_package pkg, int idGDT, int socketSolicitud)
 
 int flushTPI(int socketSolicitud, t_datosFlush * data, int accion)
 {
-	pthread_mutex_lock(&mutexPIDBuscado);
-	pidBuscado = data->pid;
-	pathBuscado = data->path;
-	t_list * paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPidYPath);
-	pthread_mutex_unlock(&mutexPIDBuscado);
+	t_list * paginasProceso;
+	if (accion == AccionFLUSH)
+	{
+		pthread_mutex_lock(&mutexPIDBuscado);
+		pidBuscado = data->pid;
+		pathBuscado = data->path;
+		paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPidYPath);
+		pthread_mutex_unlock(&mutexPIDBuscado);
+	}
+	if (accion == AccionDUMP)
+	{
+		pthread_mutex_lock(&mutexPIDBuscado);
+		pidBuscado = data->pid;
+		paginasProceso = list_filter(tablaPaginasInvertida,(void *)filtrarPorPid);
+		pthread_mutex_unlock(&mutexPIDBuscado);
+	}
 	int cantidadPaginas = list_size(paginasProceso);
 	if (cantidadPaginas <= 0)
 	{
@@ -113,6 +124,10 @@ int flushTPI(int socketSolicitud, t_datosFlush * data, int accion)
 				exit_gracefully(-1);
 			}
 		}
+		if (accion == AccionDUMP)
+		{
+			imprimirInfoAdministrativaTPI(data->pid);
+		}
 
 		// LUEGO RECORRO CADA SEGMENTO Y VOY ENVIANDO DE A UNA LINEA
 		int nroLinea = 1;
@@ -121,22 +136,26 @@ int flushTPI(int socketSolicitud, t_datosFlush * data, int accion)
 		{
 			t_pagina * pagina = list_get(paginasProceso, i);
 			int j = 0;
-			if (strcmp(pagina->path, data->path) == 0)
+			if (accion == AccionFLUSH)
+			{
+				if (strcmp(pagina->path, data->path) == 0)
+				{
+					while(j < pagina->lineasUtilizadas)
+					{
+						char * linea = obtenerLinea(direccion(pagina->nroMarco, j));
+						realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
+						nroLinea++;
+						j++;
+					}
+				}
+			}
+			if (accion == AccionDUMP)
 			{
 				while(j < pagina->lineasUtilizadas)
 				{
 					char * linea = obtenerLinea(direccion(pagina->nroMarco, j));
-					if (accion == AccionDUMP)
-					{
-						imprimirInfoAdministrativaTPI(data->pid);
-						printf("Linea %d PID %d: %s\n", j, data->pid, linea);
-						log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
-					}
-					if (accion == AccionFLUSH)
-					{
-						realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
-					}
-					nroLinea++;
+					printf("Nro Pagina %d Linea %d PID %d: %s\n", pagina->nroPagina, j, data->pid, linea);
+					log_info_mutex(logger, "Nro Pagina %d Linea %d PID %d: %s\n", pagina->nroPagina, j, data->pid, linea);
 					j++;
 				}
 			}
@@ -336,6 +355,8 @@ int cerrarArchivoTPI(t_package pkg, t_infoCerrarArchivo* datosPaquete, int socke
 	int cantidadPaginas = list_size(paginasProceso);
 	if (list_is_empty(paginasProceso))
 	{
+		// TODO: Si no encuentro una solución realmente elegante, aviso al DAM del error al cerrar el archivo.
+//		return EXIT_SUCCESS;
 		return FM9_CPU_PROCESO_INEXISTENTE;
 	}
 	int i = 0;

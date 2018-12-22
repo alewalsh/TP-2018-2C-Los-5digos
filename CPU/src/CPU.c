@@ -182,67 +182,79 @@ int realizarEjecucion(t_dtb * dtb)
 		// Comunicarse con el FM9 en caso de ser necesario.
 		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
 		// lo pase a la cola de Exit.
-
-		log_info_mutex(loggerCPU, "Se va a ejecutar la operacion %d del proceso %d.",dtb->programCounter, dtb->idGDT);
-		t_cpu_operacion operacion = obtenerInstruccionMemoria(dtb->dirEscriptorio, dtb->idGDT, dtb->programCounter);
-		if (operacion.valido)
+		if (dtb->programCounter == dtb->cantidadLineas)
 		{
-			int quantumRestante = (quantum - periodoEjecucion)-1;
-			dtb->quantumRestante = quantumRestante;
-			if (operacion.keyword != CONCENTRAR)
-				dtb->programCounter++;
-			int respuesta = ejecutarOperacion(&operacion, &dtb);
-			log_trace_mutex(loggerCPU, "Evalúo la respuesta de la operacion %d del proceso %d.",dtb->programCounter, dtb->idGDT);
-
-			switch(respuesta)
-			{
-				case EXIT_FAILURE:
-					log_trace_mutex(loggerCPU, "La respuesta para la operacion %d del proceso %d fue EXIT FAILURE.",dtb->programCounter, dtb->idGDT);
-					log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
-					segFaultDTB = true;
-					if (finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
-					{
-						log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
-					}
-					break;
-				case CONCENTRAR_EJECUTADO:
-					log_trace_mutex(loggerCPU, "La respuesta para la operacion %d del proceso %d fue CONCENTRAR EJECUTADO.",dtb->programCounter, dtb->idGDT);
-					periodoEjecucion++;
-					if (dtb->programCounter == dtb->cantidadLineas)
-					{
-						periodoEjecucion = quantum;
-						finEjecucion = true;
-					}
-					continue;
-					break;
-				default:
-					log_trace_mutex(loggerCPU, "La respuesta para la operacion %d del proceso %d fue otra.",dtb->programCounter, dtb->idGDT);
-					break;
-			}
-			if (respuesta == DTB_DESALOJADO)
-			{
-				hayDesalojo = true;
-				log_trace_mutex(loggerCPU, "Se desalojó al proceso %d.", dtb->idGDT);
-				break;
-			}
-			if (dtb->programCounter == dtb->cantidadLineas)
-			{
-				periodoEjecucion = quantum;
-				finEjecucion = true;
-			}
-			else
-			{
-				periodoEjecucion++;
-			}
+			periodoEjecucion = quantum;
+			finEjecucion = true;
 		}
 		else
 		{
-			log_info_mutex(loggerCPU, "Se aborta el proceso %d porque la operacion %d es inválida.", dtb->idGDT, dtb->programCounter);
-			if(finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
+			log_info_mutex(loggerCPU, "Se va a ejecutar la operacion %d del proceso %d.",dtb->programCounter, dtb->idGDT);
+			t_cpu_operacion operacion = obtenerInstruccionMemoria(dtb->dirEscriptorio, dtb->idGDT, dtb->programCounter);
+			if (operacion.valido)
 			{
-				log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
+				int quantumRestante = (quantum - periodoEjecucion)-1;
+				dtb->quantumRestante = quantumRestante;
+				if (operacion.keyword != CONCENTRAR)
+					dtb->programCounter++;
+				int respuesta = ejecutarOperacion(&operacion, &dtb);
+				log_trace_mutex(loggerCPU, "Evalúo la respuesta de la operacion %d del proceso %d.",dtb->programCounter - 1, dtb->idGDT);
+
+				switch(respuesta)
+				{
+					case EXIT_FAILURE:
+						log_trace_mutex(loggerCPU, "La respuesta para la operacion %d del proceso %d fue EXIT FAILURE.",dtb->programCounter - 1, dtb->idGDT);
+						log_error_mutex(loggerCPU, "Ha ocurrido un error durante la ejecucion de una operacion.");
+						segFaultDTB = true;
+						if (finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
+						{
+							log_error_mutex(loggerCPU, "Hubo un error en el envio del mensaje al SAFA.");
+						}
+						break;
+					case CONCENTRAR_EJECUTADO:
+						log_trace_mutex(loggerCPU, "La respuesta para la operacion %d del proceso %d fue CONCENTRAR EJECUTADO.",dtb->programCounter - 1, dtb->idGDT);
+						periodoEjecucion++;
+						if (dtb->programCounter == dtb->cantidadLineas)
+						{
+							periodoEjecucion = quantum;
+							finEjecucion = true;
+						}
+						continue;
+						break;
+					default:
+						log_trace_mutex(loggerCPU, "La respuesta para la operacion %d del proceso %d fue otra.",dtb->programCounter - 1, dtb->idGDT);
+						break;
+				}
+				if (respuesta == DTB_DESALOJADO)
+				{
+					if (operacion.argumentos.WAIT.recurso)
+					{
+						hayDesalojo = true;
+						break;
+					}
+					log_trace_mutex(loggerCPU, "Se desalojó al proceso %d.", dtb->idGDT);
+				}
+				if (dtb->programCounter == dtb->cantidadLineas)
+				{
+					periodoEjecucion = quantum;
+					finEjecucion = true;
+					log_trace_mutex(loggerCPU, "Se va a finalizar el proceso %d. PC = %d - Cant Lineas = %d.", dtb->idGDT, dtb->programCounter, dtb->cantidadLineas);
+				}
+				else
+				{
+					periodoEjecucion++;
+				}
+
 			}
-			break;
+			else
+			{
+				log_info_mutex(loggerCPU, "Se aborta el proceso %d porque la operacion %d es inválida.", dtb->idGDT, dtb->programCounter);
+				if(finalizoEjecucionDTB(dtb, CPU_SAFA_ABORTAR_DTB))
+				{
+					log_error_mutex(loggerCPU, "Hubo un error en la finalización de la ejecución del DTB.");
+				}
+				break;
+			}
 		}
 //		liberarOperacion(&operacion);
 	}

@@ -9,7 +9,8 @@
 
 void manejarConsolaFM9()
 {
-	log_info_mutex(logger, "Se esta ejecutando la consola del Funes Memory.");
+	printf("Se esta ejecutando la consola del Funes Memory.");
+//	log_info_mutex(logger, "Se esta ejecutando la consola del Funes Memory.");
 
 	char * linea;
 
@@ -45,7 +46,6 @@ void manejarLinea(char * linea)
 		i++;
 	}
 
-
 	if(strcmp(comandoSpliteado[0],"dump") == 0)
 	{
 		int esIdProceso = esUnNumeroIDProceso(comandoSpliteado[1]);
@@ -56,12 +56,14 @@ void manejarLinea(char * linea)
 
 		}else{
 
-			log_info_mutex(logger,"El dump debe realizarse acompañado del ID del proceso, por favor intente nuevamente.");
+			printf("El dump debe realizarse acompañado del ID del proceso, por favor intente nuevamente.");
+//			log_info_mutex(logger,"El dump debe realizarse acompañado del ID del proceso, por favor intente nuevamente.");
 		}
 	}
 	else
 	{
-		log_info_mutex(logger, "Comando incorrecto.");
+		printf("Comando incorrecto.");
+//		log_info_mutex(logger, "Comando incorrecto.");
 	}
 
 }
@@ -87,7 +89,7 @@ void ejecutarDumpSegunEsquemaMemoria(char * pidString)
 				break;
 			default:
 				printf("Modo de ejecución inexistente, verifique el archivo de configuracion y vuelva a iniciar el proceso.");
-				log_warning_mutex(logger, "Modo de ejecución inexistente, verifique el archivo de configuracion y vuelva a iniciar el proceso.");
+//				log_warning_mutex(logger, "Modo de ejecución inexistente, verifique el archivo de configuracion y vuelva a iniciar el proceso.");
 				break;
 		}
 		pthread_mutex_unlock(&mutexSolicitudes);
@@ -96,7 +98,7 @@ void ejecutarDumpSegunEsquemaMemoria(char * pidString)
 	else
 	{
 		printf("PID erróneo, por favor verifique la información ingreasada por consola.");
-		log_error_mutex(logger, "PID erróneo, por favor verifique la información ingreasada por consola.");
+//		log_error_mutex(logger, "PID erróneo, por favor verifique la información ingreasada por consola.");
 	}
 }
 

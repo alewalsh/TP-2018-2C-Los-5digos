@@ -275,9 +275,9 @@ int flushSegmentacion(int socketSolicitud, t_datosFlush * data, int accion)
 				imprimirInfoAdministrativaSegmentacion(data->pid);
 				while(j < segmento->limite)
 				{
-					char * linea = obtenerLinea(direccion(segmento->base, j));
-					printf("Linea %d PID %d: %s\n", j, data->pid, linea);
-					log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
+					char * linea = prepararLineaMemoria(obtenerLinea(direccion(segmento->base, j)));
+					printf("Linea %d PID %d: %s \n", j, data->pid, linea);
+					log_info_mutex(logger, "Linea %d PID %d: %s \n", j, data->pid, linea);
 					j++;
 				}
 			}
@@ -298,8 +298,8 @@ void imprimirInfoAdministrativaSegmentacion(int pid)
 	while(i < cantidadSegmentos)
 	{
 		t_segmento * segmento = dictionary_get(gdt->tablaSegmentos,intToString(i));
-		printf("PID %d: Nro Segmento %d - Base %d - Límite %d \n", pid, segmento->nroSegmento, segmento->base, segmento->limite);
-		log_info_mutex(logger, "PID %d: Nro Segmento %d - Base %d - Límite %d", pid, segmento->nroSegmento, segmento->base, segmento->limite);
+		printf("PID %d: Nro Segmento %d - Base %d - Límite %d \n", pid, segmento->nroSegmento, segmento->base, segmento->limite - 1);
+		log_info_mutex(logger, "PID %d: Nro Segmento %d - Base %d - Límite %d", pid, segmento->nroSegmento, segmento->base, segmento->limite - 1);
 		i++;
 	}
 }

@@ -273,6 +273,10 @@ int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int acci
 			}
 			free(buffer);
 		}
+		if (accion == AccionDUMP)
+		{
+			imprimirInfoAdministrativaSegPag(data->pid);
+		}
 
 		// LUEGO RECORRO CADA SEGMENTO Y VOY ENVIANDO DE A UNA LINEA
 		int nroLinea = 0;
@@ -280,7 +284,31 @@ int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int acci
 		{
 			t_segmento * segmento = dictionary_get(gdt->tablaSegmentos, intToString(i));
 			int j = segmento->base;
-			if (strcmp(segmento->archivo, data->path) == 0)
+			if (accion == AccionFLUSH)
+			{
+				if (strcmp(segmento->archivo, data->path) == 0)
+				{
+					int limiteSegmento = segmento->base+segmento->limite;
+					while(j < limiteSegmento)
+					{
+						int posicionPagina = j / lineasXPagina;
+						pthread_mutex_lock(&mutexSegmentoBuscado);
+						nroSegmentoBuscado = segmento->nroSegmento;
+						t_list * listaPorSegmento = list_filter(gdt->tablaPaginas, (void *)filtrarPorSegmento);
+						pthread_mutex_unlock(&mutexSegmentoBuscado);
+						t_pagina * pagina = list_get(listaPorSegmento, posicionPagina);
+						if (strcmp(pagina->path, data->path) == 0)
+						{
+							int posicionRelativaPagina = obtenerPosicionRelativaPagina(j);
+							char * linea = obtenerLinea(direccion(pagina->nroMarco, posicionRelativaPagina));
+							realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
+							nroLinea++;
+						}
+						j++;
+					}
+				}
+			}
+			if (accion == AccionDUMP)
 			{
 				int limiteSegmento = segmento->base+segmento->limite;
 				while(j < limiteSegmento)
@@ -291,22 +319,11 @@ int flushSegmentacionPaginada(int socketSolicitud, t_datosFlush * data, int acci
 					t_list * listaPorSegmento = list_filter(gdt->tablaPaginas, (void *)filtrarPorSegmento);
 					pthread_mutex_unlock(&mutexSegmentoBuscado);
 					t_pagina * pagina = list_get(listaPorSegmento, posicionPagina);
-					if (strcmp(pagina->path, data->path) == 0)
-					{
-						int posicionRelativaPagina = obtenerPosicionRelativaPagina(j);
-						char * linea = obtenerLinea(direccion(pagina->nroMarco, posicionRelativaPagina));
-						if (accion == AccionDUMP)
-						{
-							imprimirInfoAdministrativaSegPag(data->pid);
-							printf("Linea %d PID %d: %s\n", j, data->pid, linea);
-							log_info_mutex(logger, "Linea %d PID %d: %s\n", j, data->pid, linea);
-						}
-						if (accion == AccionFLUSH)
-						{
-							realizarFlush(linea, nroLinea, data->transferSize, socketSolicitud);
-						}
-						nroLinea++;
-					}
+					int posicionRelativaPagina = obtenerPosicionRelativaPagina(j);
+					char * linea = obtenerLinea(direccion(pagina->nroMarco, posicionRelativaPagina));
+					printf("Nro Pagina %d Linea %d PID %d: %s\n", pagina->nroPagina, j, data->pid, linea);
+					log_info_mutex(logger, "Nro Pagina %d Linea %d PID %d: %s\n", pagina->nroPagina, j, data->pid, linea);
+					nroLinea++;
 					j++;
 				}
 			}
