@@ -134,10 +134,10 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 		log_error_mutex(logger, "No hay memoria disponible para cargar el Escriptorio.");
 		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
 		logPosicionesLibres(estadoLineas,SEG);
-		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,NULL,0,logger->logger))
-		{
-			log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
-		}
+//		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,NULL,0,logger->logger))
+//		{
+//			log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
+//		}
 		return EXIT_FAILURE;
 	}
 	else
@@ -152,11 +152,12 @@ int ejecutarCargarEsquemaSegmentacion(t_package pkg, t_infoCargaEscriptorio* dat
 		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ LINEAS HAY LIBRES
 		if (segmento == NULL)
 		{
+			log_error_mutex(logger, "No se pudo reservar un segmento para el Escriptorio.");
 			logPosicionesLibres(estadoLineas,SEG);
-			if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE_FRAG_EXTERNA,NULL,0,logger->logger))
-			{
-				log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
-			}
+//			if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE_FRAG_EXTERNA,NULL,0,logger->logger))
+//			{
+//				log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
+//			}
 			return FM9_DAM_MEMORIA_INSUFICIENTE_FRAG_EXTERNA;
 		}
 		actualizarTablaDeSegmentos(datosPaquete->pid,segmento);
