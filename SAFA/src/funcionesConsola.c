@@ -268,7 +268,15 @@ void imprimirDTB(t_dtb * dtb){
     	}
     }
     printf("Cantidad de Lineas: %d \n", dtb->cantidadLineas );
-    printf("Quantum Restante: %d \n", dtb->quantumRestante );
+
+//    printf("Quantum Restante: %d \n", dtb->quantumRestante );
+    if(dtb->cantidadLineas == dtb->programCounter){
+    	printf("Quantum Restante: 0 \n");
+	} else {
+		printf("Quantum Restante: %d \n", dtb->quantumRestante );
+	}
+
+
     printf("Cantidad de I/O: %d \n", dtb->cantIO);
     printf("Dummy: %d \n",dtb->esDummy);
     printf("*-----------------------------------------------------*\n\n");
