@@ -24,6 +24,7 @@ extern t_list* colaReadyEspecial;
 //TODO: Vamos a tener que agregar la cola especial que creo Fran
 extern t_list* listaMetricasTRDefinitiva;
 extern sem_t mandadosPorConsola;
+extern pthread_mutex_t mutexMetricasLP;
 
 void consolaEjecutar(char *args);
 void consolaLiberar();

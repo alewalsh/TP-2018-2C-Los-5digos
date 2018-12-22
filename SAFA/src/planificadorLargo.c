@@ -20,8 +20,9 @@ int consolaNuevoGDT(char* scriptIngresado){
 
 int consolaMetricaDTBEnNew(int idSolicitado){
 	int tiempo;
-
+	pthread_mutex_lock(&mutexMetricasLP);
 	t_metricaLP *metricaDelDTB = buscarMetricaLPPorPIDenCola(listaMetricasLP, idSolicitado);
+	pthread_mutex_unlock(&mutexMetricasLP);
 	tiempo = metricaDelDTB->tiempoEnNEW;
 
     return tiempo;
@@ -44,7 +45,9 @@ t_metricaLP * buscarMetricaLPPorPIDenCola(t_list * cola, int pid){
 
 void agregarDTBaMetricasLP(int id){
 	t_metricaLP *metrica = nuevaMetrica(id);
+	pthread_mutex_lock(&mutexMetricasLP);
 	list_add(listaMetricasLP, metrica);
+	pthread_mutex_unlock(&mutexMetricasLP);
 }
 
 void agregarDTBaMetricasTR(int id){
@@ -80,9 +83,11 @@ void actualizarMetricasDTBNew(int instruccionesEjecutadas){
 			int posicion = buscarDTBEnColaMetricasNew(dtbNEW);
 
 			if(posicion >= 0){
+				pthread_mutex_lock(&mutexMetricasLP);
 				t_metricaLP *dtbEnMetrica = list_remove(listaMetricasLP, posicion);
 				dtbEnMetrica->tiempoEnNEW = dtbEnMetrica->tiempoEnNEW + instruccionesEjecutadas;
 				list_add(listaMetricasLP,dtbEnMetrica);
+				pthread_mutex_unlock(&mutexMetricasLP);
 			}
 
 		}

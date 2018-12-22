@@ -59,6 +59,7 @@ typedef struct{
 	char * recursoId;
 	int procesoDuenio;
 	t_list * listProcesos;
+	int valorSemaforo;
 } t_recurso;
 
 typedef struct{
