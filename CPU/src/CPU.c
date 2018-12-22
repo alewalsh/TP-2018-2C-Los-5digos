@@ -165,6 +165,7 @@ int realizarEjecucion(t_dtb * dtb)
 {
 	bool finEjecucion = false;
 	bool segFaultDTB = false;
+	bool hayDesalojo = false;
 	// Si es 1, levanto un hilo y comienzo la ejecución de sentencias
 	// if DTB->flagInicializado == 1
 	// Realizar las ejecuciones correspondientes definidas por el quantum de SAFA
@@ -220,6 +221,7 @@ int realizarEjecucion(t_dtb * dtb)
 			}
 			if (respuesta == DTB_DESALOJADO)
 			{
+				hayDesalojo = true;
 				log_trace_mutex(loggerCPU, "Se desalojó al proceso %d.", dtb->idGDT);
 				break;
 			}
@@ -245,7 +247,7 @@ int realizarEjecucion(t_dtb * dtb)
 //		liberarOperacion(&operacion);
 	}
 	pthread_mutex_unlock(&mutexQuantum);
-	if (!segFaultDTB)
+	if (!segFaultDTB && !hayDesalojo)
 	{
 		if (finEjecucion)
 		{
