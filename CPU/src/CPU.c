@@ -176,6 +176,8 @@ int realizarEjecucion(t_dtb * dtb)
 	log_info_mutex(loggerCPU, "El quantum restante que ejecutará el proceso es: %d", quantum - periodoEjecucion);
 	while(periodoEjecucion < quantum)
 	{
+		// RETARDO DE EJECUCION:
+		usleep(config->retardo * 1000);
 		// Comunicarse con el FM9 en caso de ser necesario.
 		// Si el FM9 indica un acceso invalido o error, se aborta el DTB informando a SAFA para que
 		// lo pase a la cola de Exit.
@@ -191,8 +193,6 @@ int realizarEjecucion(t_dtb * dtb)
 			int respuesta = ejecutarOperacion(&operacion, &dtb);
 			log_trace_mutex(loggerCPU, "Evalúo la respuesta de la operacion %d del proceso %d.",dtb->programCounter, dtb->idGDT);
 
-			// RETARDO DE EJECUCION:
-			usleep(config->retardo * 1000);
 			switch(respuesta)
 			{
 				case EXIT_FAILURE:
@@ -223,7 +223,6 @@ int realizarEjecucion(t_dtb * dtb)
 				log_trace_mutex(loggerCPU, "Se desalojó al proceso %d.", dtb->idGDT);
 				break;
 			}
-
 			if (dtb->programCounter == dtb->cantidadLineas)
 			{
 				periodoEjecucion = quantum;
@@ -366,7 +365,7 @@ int ejecutarOperacion(t_cpu_operacion * operacion, t_dtb ** dtb)
 			return respuesta;
 			break;
 		case SIGNAL:
-			respuesta = manejarRecursosSAFA(operacion->argumentos.SIGNAL.recurso, (*dtb)->idGDT, SIGNAL, 0);
+			respuesta = manejarRecursosSAFA(operacion->argumentos.SIGNAL.recurso, (*dtb)->idGDT, SIGNAL, (*dtb)->programCounter);
 			if(respuesta == EXIT_FAILURE)
 			{
 				log_error_mutex(loggerCPU, "No se pudo realizar el SIGNAL del recurso %s.", operacion->argumentos.SIGNAL.recurso);
