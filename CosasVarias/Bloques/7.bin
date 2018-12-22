@@ -1,2 +1,4 @@
-abrir /equipos/FerroCarrilOeste
-asignar /equipos/FerroCarrilOest
+abrir /equipos/Ferro
+asignar /equipos/Ferro 1 FCO
+concentrar
+asi

@@ -1,3 +1,3 @@
-e 1 FCO
+gnar /equipos/Ferro 2 Goleador:Chaparro
 concentrar
-asignar /equipos/FerroCarrilOeste 2 FCO Golea
+flush /equipo
