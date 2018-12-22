@@ -536,7 +536,7 @@ int enviarAModulo(t_cpu_operacion * operacion, t_dtb ** dtb, int accion, int mod
 	if (modulo == FM9)
 	{
 		log_trace_mutex(loggerCPU, "Signal al mutex de solicitudes.");
-		return ejecucionFM9(dtb, socket);
+		return ejecucionFM9(dtb, socket, operacion);
 	}
 	log_trace_mutex(loggerCPU, "Signal al mutex de solicitudes.");
 	return EXIT_SUCCESS;
@@ -564,7 +564,7 @@ int ejecucionDAM(t_dtb ** dtb)
 	return DTB_DESALOJADO;
 }
 
-int ejecucionFM9(t_dtb ** dtb, int socket)
+int ejecucionFM9(t_dtb ** dtb, int socket, t_cpu_operacion * operacion)
 {
 	t_package package;
 	if(recibir(socket, &package, loggerCPU->logger))
@@ -591,8 +591,26 @@ int ejecucionFM9(t_dtb ** dtb, int socket)
 	if (package.code == FM9_CPU_ARCHIVO_CERRADO)
 	{
 		log_info_mutex(loggerCPU, "El archivo correspondiente ha sido cerrado correctamente.");
+		cerrarArchivoDTB(dtb, operacion->argumentos.CLOSE.path);
 	}
 	return EXIT_SUCCESS;
+}
+
+void cerrarArchivoDTB(t_dtb ** dtb, char * pathCerrado)
+{
+	log_info_mutex(loggerCPU, "Se va a quitar el archivo %s de la tabla de direcciones del proceso %d", pathCerrado, (*dtb)->idGDT);
+	pthread_mutex_lock(&mutexPath);
+	pathBuscado = pathCerrado;
+	t_list * listaDirecciones = list_filter((*dtb)->tablaDirecciones, (void *) quitarArchivo);
+	pthread_mutex_unlock(&mutexPath);
+	(*dtb)->tablaDirecciones = listaDirecciones;
+}
+
+bool quitarArchivo(char * direccion)
+{
+	if (strcmp(direccion, pathBuscado) == 0)
+		return false;
+	return true;
 }
 
 int manejarRecursosSAFA(char * recurso, int idGDT, int accion, int programCounterActual)

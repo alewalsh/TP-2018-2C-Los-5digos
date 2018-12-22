@@ -40,8 +40,8 @@ void liberarGDT(t_gdt * gdt)
 
 void destruir_dtb(t_dtb * dtb)
 {
-	if(dtb->dirEscriptorio!=NULL)
-	free(dtb->dirEscriptorio);
+	if(dtb->dirEscriptorio != NULL)
+		free(dtb->dirEscriptorio);
 	if(dtb->tablaDirecciones != NULL){
 		list_destroy_and_destroy_elements(dtb->tablaDirecciones,(void *)liberarDirecciones);
 	}

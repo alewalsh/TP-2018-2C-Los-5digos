@@ -240,11 +240,11 @@ void logicaDevolverInstruccion(t_package pkg, int socketSolicitud, int code)
 	{
 		int errorCode = FM9_CPU_ERROR;
 		log_error_mutex(logger,"Error al devolver una instruccion.");
-//		if (enviar(socketSolicitud,errorCode,pkg.data,pkg.size,logger->logger))
-//		{
-//			log_error_mutex(logger, "Error al avisar al CPU del error al devolver una instruccion.");
-//			exit_gracefully(-1);
-//		}
+		if (enviar(socketSolicitud,errorCode,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU del error al devolver una instruccion.");
+			exit_gracefully(-1);
+		}
 	}
 	else
 	{
@@ -296,11 +296,11 @@ void logicaFinGDT(t_package pkg, int socketSolicitud, int code)
 	{
 		int errorCode = FM9_CPU_ERROR;
 		log_error_mutex(logger,"Error al finalizar el proceso indicado.");
-//		if (enviar(socketSolicitud,errorCode,pkg.data,pkg.size,logger->logger))
-//		{
-//			log_error_mutex(logger, "Error al avisar al CPU del error al finalizar el proceso.");
-//			exit_gracefully(-1);
-//		}
+		if (enviar(socketSolicitud,errorCode,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU del error al finalizar el proceso.");
+			exit_gracefully(-1);
+		}
 	}
 	else
 	{
@@ -350,11 +350,11 @@ void logicaCerrarArchivo(t_package pkg, int socketSolicitud, int code)
 	if (resultado != 0)
 	{
 		log_error_mutex(logger,"Error al cerrar el archivo indicado.");
-//		if (enviar(socketSolicitud,code,pkg.data,pkg.size,logger->logger))
-//		{
-//			log_error_mutex(logger, "Error al avisar al CPU del error al cerrar un archivo.");
-//			exit_gracefully(-1);
-//		}
+		if (enviar(socketSolicitud,code,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al CPU del error al cerrar un archivo.");
+			exit_gracefully(-1);
+		}
 	}
 	else
 	{
@@ -405,11 +405,11 @@ void logicaGuardarLinea(t_package pkg, int socketSolicitud, int code)
 	{
 		log_error_mutex(logger,"Error al guardar la línea especificada.");
 		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
-//		if (enviar(socketSolicitud,FM9_CPU_ERROR_LINEA_GUARDADA,pkg.data,pkg.size,logger->logger))
-//		{
-//			log_error_mutex(logger, "Error al avisar a la CPU del error en el guardado de la linea");
-//			exit_gracefully(-1);
-//		}
+		if (enviar(socketSolicitud,FM9_CPU_ERROR_LINEA_GUARDADA,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar a la CPU del error en el guardado de la linea");
+			exit_gracefully(-1);
+		}
 	}
 	else
 	{
@@ -461,11 +461,11 @@ void logicaCargarEscriptorio(t_package pkg, int socketSolicitud, int code)
 	{
 		log_error_mutex(logger,"Error al cargar el Escriptorio recibido.");
 		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
-//		if (enviar(socketSolicitud,FM9_DAM_ERROR_CARGA_ESCRIPTORIO,pkg.data,pkg.size,logger->logger))
-//		{
-//			log_error_mutex(logger, "Error al avisar al DAM del error en la carga del escriptorio");
-//			exit_gracefully(-1);
-//		}
+		if (enviar(socketSolicitud,FM9_DAM_ERROR_CARGA_ESCRIPTORIO,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al DAM del error en la carga del escriptorio");
+			exit_gracefully(-1);
+		}
 	}
 	else
 	{
@@ -519,11 +519,11 @@ void logicaFlush(t_package pkg, int socketSolicitud, int code)
 	{
 		log_error_mutex(logger,"Error al realizar el flush.");
 		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
-//		if (enviar(socketSolicitud,FM9_DAM_ERROR_FLUSH,pkg.data,pkg.size,logger->logger))
-//		{
-//			log_error_mutex(logger, "Error al avisar al DAM del error en el flush");
-//			exit_gracefully(-1);
-//		}
+		if (enviar(socketSolicitud,FM9_DAM_ERROR_FLUSH,pkg.data,pkg.size,logger->logger))
+		{
+			log_error_mutex(logger, "Error al avisar al DAM del error en el flush");
+			exit_gracefully(-1);
+		}
 	}
 	else
 	{

@@ -791,7 +791,7 @@ void conectarYRecibirHandshake(int puertoEscucha) {
 	log_info_mutex(logger, "El socket de escucha de DMA es: %d", socketEscucha);
 	addNewSocketToMaster(socketEscucha);
 
-	printf("Se conecto el CPU");
+	log_info_mutex(logger, "Se conecto una CPU");
 }
 
 

@@ -165,6 +165,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	// SI BLOQUEO ES PORQUE FUE A DAM, SUMO 1 a LA METRICA
         	actualizarSentenciasPasaronPorDAM(1);
 
+			archivoCerradoEnCPU(dtb->idGDT, dtb->tablaDirecciones);
         	if(bloquearDTB(dtb))
         	{
         		log_error_mutex(logger, "Hubo un error al bloquear el DTB");
@@ -179,6 +180,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
 
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	actualizarMetricas(dtb);
+			archivoCerradoEnCPU(dtb->idGDT, dtb->tablaDirecciones);
 
         	if(abortarDTB(dtb, socketFD))
         	{
@@ -190,6 +192,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         }
         case CPU_SAFA_ABORTAR_DTB_NUEVO:{
 			t_dtb * dtb = transformarPaqueteADTB(pkg);
+			archivoCerradoEnCPU(dtb->idGDT, dtb->tablaDirecciones);
 			if(abortarDTBNuevo(dtb))
 			{
 				log_error_mutex(logger, "Hubo un error al abortar el DTB.");
@@ -206,6 +209,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         case CPU_SAFA_FIN_EJECUCION_DTB:{
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	actualizarMetricas(dtb);
+			archivoCerradoEnCPU(dtb->idGDT, dtb->tablaDirecciones);
 
         	if(abortarDTB(dtb, socketFD))
 			{
@@ -219,6 +223,7 @@ void manejarSolicitud(t_package pkg, int socketFD) {
         	//TODO AGREGAR LIBERACION DE CPU
         	t_dtb * dtb = transformarPaqueteADTB(pkg);
         	actualizarMetricas(dtb);
+			archivoCerradoEnCPU(dtb->idGDT, dtb->tablaDirecciones);
 
         	if(finEjecucionPorQuantum(dtb)){
         		log_error_mutex(logger, "Hubo un error al llevar el DTB a la cola de READY por finalizacion de quantum.");
@@ -404,6 +409,7 @@ void hacerSignalDeRecurso(char * recursoSolicitado){
 
 				//Se desbloquea el proceso pid
 				desbloquearDTBsegunAlgoritmo(dtbSolicitante->idGDT);
+				destruir_dtb(dtbSolicitante);
 			}
 			else
 			{

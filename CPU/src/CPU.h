@@ -124,7 +124,7 @@ int eventoSAFA(t_dtb ** dtb, int code);
 
 int ejecucionDAM(t_dtb ** dtb);
 
-int ejecucionFM9(t_dtb ** dtb, int socket);
+int ejecucionFM9(t_dtb ** dtb, int socket, t_cpu_operacion * operacion);
 int finEjecucionFM9(int idGDT);
 
 t_cpu_operacion obtenerInstruccionMemoria(char * direccionEscriptorio, int idGDT, int posicion);
@@ -132,4 +132,6 @@ bool encontrarPath(char * direccion);
 
 void notificarDesconexion();
 void sig_handler(int signo);
+void cerrarArchivoDTB(t_dtb ** dtb, char * pathCerrado);
+bool quitarArchivo(char * direccion);
 #endif /* CPU_H_ */

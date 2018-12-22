@@ -244,7 +244,8 @@ int abortarDTBNuevo(t_dtb * dtb){
 	return result;
 }
 
-int finEjecucionPorQuantum(t_dtb * dtb){
+int finEjecucionPorQuantum(t_dtb * dtb)
+{
 	return pasarDTBdeEXECaREADY(dtb);
 }
 
@@ -399,6 +400,24 @@ void actualizarTablaDirecciones(int pid, char * path){
 		log_error_mutex(logger,"NO se encontró el proceso en la cola de bloqueados");
 	}
 	pthread_mutex_unlock(&mutexBloqueadosList);
+}
+
+void archivoCerradoEnCPU(int pid, t_list * tablaDireccionesNueva)
+{
+	pthread_mutex_lock(&mutexEjecutandoList);
+	// TODO: OJO QUE ESTÁ DEVOLVIENDO EL DUMMY Y NO EL GDT BUSCADO
+	int index = buscarPosicionPorPIDenCola(colaEjecutando,pid);
+	if(index >= 0){
+		t_dtb * dtbAModificar = list_remove(colaEjecutando,index);
+//		list_add(dtbAModificar->tablaDirecciones,path);
+		dtbAModificar->tablaDirecciones = tablaDireccionesNueva;
+		list_add_in_index(colaEjecutando,index,dtbAModificar);
+		log_info_mutex(logger, "Se actualizó la tabla de direcciones del proceso: %d", pid);
+	}else{
+		log_error_mutex(logger,"NO se encontró el proceso en la cola de bloqueados");
+	}
+	pthread_mutex_unlock(&mutexEjecutandoList);
+
 }
 
 void liberarCpu(int socketCpu)

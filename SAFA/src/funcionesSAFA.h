@@ -115,6 +115,7 @@ int abortarDTBNuevo(t_dtb * dtb);
 void actualizarIODtb(t_dtb * dtb, int cantIo, int cantLineasProceso);
 void actualizarTablaDirecciones(int pid, char * path);
 void liberarCpu(int socketCpu);
+void archivoCerradoEnCPU(int pid, t_list * tablaDireccionesNueva);
 //------------------------------------------------------------------------------------------------------------------
 //		FUNCIONES PARA MANEJO DEL DUMMY
 //------------------------------------------------------------------------------------------------------------------
