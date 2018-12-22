@@ -194,11 +194,11 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 		log_error_mutex(logger, "No hay memoria disponible para cargar el Escriptorio.");
 		// TODO: ESCIRIBIR EN EL LOG EL BIT VECTOR PARA COMPROBAR QUÉ PÁGINAS HAY LIBRES
 		logPosicionesLibres(estadoMarcos,TPI);
-		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
-		{
-			log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
-			//exit_gracefully(-1);
-		}
+//		if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
+//		{
+//			log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
+//			//exit_gracefully(-1);
+//		}
 		return EXIT_FAILURE;
 	}
 	else
@@ -207,10 +207,10 @@ int ejecutarCargarEsquemaTPI(t_package pkg, t_infoCargaEscriptorio* datosPaquete
 		if (code == FM9_DAM_MEMORIA_INSUFICIENTE)
 		{
 			logPosicionesLibres(estadoMarcos,TPI);
-			if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
-			{
-				log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
-			}
+//			if (enviar(socketSolicitud,FM9_DAM_MEMORIA_INSUFICIENTE,pkg.data,pkg.size,logger->logger))
+//			{
+//				log_error_mutex(logger, "Error al avisar al DAM de la memoria insuficiente.");
+//			}
 			return code;
 		}
 
